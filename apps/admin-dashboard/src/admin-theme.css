@@ -1,0 +1,293 @@
+/* Ultra-Minimalist Zinc Theme & Typography System */
+:root {
+  --bg-backdrop: #FAFAFA;       /* bg-zinc-50/50 */
+  --bg-card: #FFFFFF;           /* bg-white */
+  --border-subtle: rgba(228, 228, 231, 0.8); /* border-zinc-200/60 */
+  --text-primary: #18181B;      /* text-zinc-900 */
+  --text-secondary: #71717A;    /* text-zinc-500 */
+  --text-micro: #A1A1AA;        /* text-zinc-400 */
+  --btn-primary: #18181B;       /* bg-zinc-900 */
+  --btn-hover: #27272A;         /* hover:bg-zinc-800 */
+  --signal-green: #05A357;
+  --signal-blue: #276EF1;
+  --font-stack: "Inter", "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-stack);
+  background-color: var(--bg-backdrop);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Sidebar Navigation */
+.admin-sidebar {
+  width: 76px;
+  background-color: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  border-right: 1px solid var(--border-subtle);
+  z-index: 10;
+}
+
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px; /* rounded-xl */
+  background-color: var(--btn-primary);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 28px;
+}
+
+.sidebar-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  align-items: center;
+}
+
+.sidebar-nav-item {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px; /* rounded-xl */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 18px;
+  transition: all 150ms ease;
+}
+
+.sidebar-nav-item.active {
+  background-color: var(--btn-primary);
+  color: #FFFFFF;
+}
+
+.sidebar-nav-item:hover:not(.active) {
+  background-color: #F4F4F5;
+  color: var(--text-primary);
+}
+
+/* Main Workspace */
+.main-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-backdrop);
+}
+
+/* App Header */
+.command-header {
+  height: 68px;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+
+.command-title-group h1 {
+  font-size: 22px; /* text-2xl */
+  font-weight: 600; /* font-semibold */
+  letter-spacing: -0.025em; /* tracking-tight */
+  color: var(--text-primary);
+}
+
+.command-title-group p {
+  font-size: 13px; /* text-sm */
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* KPI Top Grid */
+.kpi-section {
+  padding: 24px 32px 0 32px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpi-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px; /* rounded-2xl */
+  padding: 24px; /* p-6 */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  transition: border-color 150ms ease;
+}
+
+.kpi-card:hover {
+  border-color: #D4D4D8;
+}
+
+.kpi-label {
+  font-size: 12px; /* text-xs */
+  font-weight: 500; /* font-medium */
+  color: var(--text-micro); /* text-zinc-400 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em; /* tracking-wider */
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 6px 0 2px 0;
+  letter-spacing: -0.02em;
+}
+
+.kpi-subtext {
+  font-size: 13px; /* text-sm */
+  color: var(--text-secondary); /* text-zinc-500 */
+  font-weight: 500;
+}
+
+/* Split Command View (~60% Left Map / ~40% Right Telemetry Grid) */
+.split-command-view {
+  flex: 1;
+  display: flex;
+  padding: 20px 32px 32px 32px;
+  gap: 20px;
+  height: calc(100vh - 190px);
+}
+
+.left-map-command {
+  flex: 1.5;
+  background-color: var(--bg-card);
+  border-radius: 16px; /* rounded-2xl */
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-control-bar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 5;
+}
+
+.map-search-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px; /* rounded-xl */
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  width: 260px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.btn-zinc-action {
+  background-color: var(--btn-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px; /* rounded-xl */
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.btn-zinc-action:hover {
+  background-color: var(--btn-hover);
+}
+
+.right-telemetry-panel {
+  flex: 1;
+  background-color: var(--bg-card);
+  border-radius: 16px; /* rounded-2xl */
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.telemetry-panel-header {
+  padding: 20px 24px; /* p-6 */
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.telemetry-panel-header h3 {
+  font-size: 15px; /* text-base */
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.telemetry-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.telemetry-grid-table th {
+  background-color: #FAFAFA;
+  color: var(--text-micro);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 11px;
+}
+
+.telemetry-grid-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.latency-tag {
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: #F4F4F5;
+  color: var(--text-secondary);
+}
+
+.latency-tag.good {
+  background-color: #ECFDF5;
+  color: var(--signal-green);
+}
