@@ -1,46 +1,1063 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './admin-theme.css';
-import AdminSidebar from './components/AdminSidebar';
-import KPIAnalyticsCards from './components/KPIAnalyticsCards';
-import CommandMap from './components/CommandMap';
-import TelemetryGrid from './components/TelemetryGrid';
+
+const initialDrivers = [
+  {
+    id: 'DRV-001',
+    name: 'P. Jayawardena',
+    license: 'LK-2019-47821',
+    expiry: '2027-08-14',
+    phone: '+94 77 123 4567',
+    status: 'Active',
+  },
+  {
+    id: 'DRV-002',
+    name: 'S. Perera',
+    license: 'LK-2021-88234',
+    expiry: '2028-03-22',
+    phone: '+94 71 987 6543',
+    status: 'Active',
+  },
+  {
+    id: 'DRV-003',
+    name: 'S. Fernando',
+    license: 'LK-2020-33012',
+    expiry: '2026-09-30',
+    phone: '+94 76 555 0012',
+    status: 'Active',
+  },
+];
+
+const initialBuses = [
+  {
+    id: 'BUS-001',
+    registration: 'NB-4712',
+    capacity: '52 seats',
+    mileage: '148,320 km',
+    status: 'Active',
+  },
+  {
+    id: 'BUS-002',
+    registration: 'KA-1234',
+    capacity: '45 seats',
+    mileage: '92,410 km',
+    status: 'Active',
+  },
+  {
+    id: 'BUS-003',
+    registration: 'NE-2041',
+    capacity: '52 seats',
+    mileage: '220,104 km',
+    status: 'Maintenance',
+  },
+];
+
+const initialRoutes = [
+  {
+    id: 'RT-001',
+    name: 'Colombo to Kandy',
+    start: 'Colombo Fort',
+    end: 'Kandy Bus Stand',
+    distance: '110 km',
+    stops: '8 stops',
+    status: 'Active',
+  },
+  {
+    id: 'RT-002',
+    name: 'Kandy to Matale',
+    start: 'Kandy Bus Stand',
+    end: 'Matale Town',
+    distance: '26 km',
+    stops: '4 stops',
+    status: 'Active',
+  },
+];
+
+const initialSummary = {
+  activeRoutes: 14,
+  registeredBuses: 26,
+  activeDrivers: 32,
+  fleetDistribution: {
+    active: 22,
+    idle: 4,
+    maintenance: 5,
+  },
+};
+
+const navItems = [
+  { section: 'Main', key: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  { section: 'Fleet Management', key: 'drivers', label: 'Drivers', icon: 'drivers' },
+  { section: 'Fleet Management', key: 'buses', label: 'Buses', icon: 'bus' },
+  { section: 'Network & Operations', key: 'routes', label: 'Routes', icon: 'route' },
+];
+
+const modalDefaults = {
+  driver: { name: '', license: '', expiry: '', phone: '' },
+  bus: { registration: '', capacity: '', mileage: '' },
+  route: { name: '', start: '', end: '', distance: '', stops: '' },
+};
 
 function App() {
-  const [activeTab, setActiveTab] = useState('fleet');
+  const [activePage, setActivePage] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [clock, setClock] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [drivers, setDrivers] = useState(initialDrivers);
+  const [buses, setBuses] = useState(initialBuses);
+  const [routes, setRoutes] = useState(initialRoutes);
+  const [summary, setSummary] = useState(initialSummary);
+  const [modalState, setModalState] = useState({
+    open: false,
+    entity: 'driver',
+    mode: 'add',
+    editId: null,
+  });
+  const [formData, setFormData] = useState(modalDefaults.driver);
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    entity: 'driver',
+    id: '',
+    label: '',
+  });
+
+  useEffect(() => {
+    const updateClock = () => {
+      setClock(
+        new Date().toLocaleString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      );
+    };
+
+    updateClock();
+    const interval = window.setInterval(updateClock, 60000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!notification) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setNotification(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [notification]);
+
+  const filteredDrivers = useMemo(
+    () =>
+      drivers.filter((driver) =>
+        [driver.id, driver.name, driver.license, driver.phone]
+          .join(' ')
+          .toLowerCase()
+          .includes(searchValue.toLowerCase())
+      ),
+    [drivers, searchValue]
+  );
+
+  const filteredBuses = useMemo(
+    () =>
+      buses.filter((bus) =>
+        [bus.id, bus.registration, bus.capacity, bus.status]
+          .join(' ')
+          .toLowerCase()
+          .includes(searchValue.toLowerCase())
+      ),
+    [buses, searchValue]
+  );
+
+  const filteredRoutes = useMemo(
+    () =>
+      routes.filter((route) =>
+        [route.id, route.name, route.start, route.end]
+          .join(' ')
+          .toLowerCase()
+          .includes(searchValue.toLowerCase())
+      ),
+    [routes, searchValue]
+  );
+
+  const fleetTotal = Object.values(summary.fleetDistribution).reduce((total, value) => total + value, 0);
+  const fleetChartStyle = {
+    background: `conic-gradient(
+      #0284c7 0deg ${(summary.fleetDistribution.active / fleetTotal) * 360}deg,
+      #94a3b8 ${(summary.fleetDistribution.active / fleetTotal) * 360}deg ${((summary.fleetDistribution.active + summary.fleetDistribution.idle) / fleetTotal) * 360}deg,
+      #f59e0b ${((summary.fleetDistribution.active + summary.fleetDistribution.idle) / fleetTotal) * 360}deg 360deg
+    )`,
+  };
+
+  const showNotification = (message) => setNotification(message);
+
+  const openModal = (entity, mode = 'add', record = null) => {
+    setModalState({
+      open: true,
+      entity,
+      mode,
+      editId: record?.id ?? null,
+    });
+
+    if (record) {
+      if (entity === 'driver') {
+        setFormData({
+          name: record.name,
+          license: record.license,
+          expiry: record.expiry,
+          phone: record.phone,
+        });
+      } else if (entity === 'bus') {
+        setFormData({
+          registration: record.registration,
+          capacity: record.capacity.replace(' seats', ''),
+          mileage: record.mileage.replace(' km', '').replaceAll(',', ''),
+        });
+      } else {
+        setFormData({
+          name: record.name,
+          start: record.start,
+          end: record.end,
+          distance: record.distance.replace(' km', ''),
+          stops: record.stops.replace(' stops', ''),
+        });
+      }
+      return;
+    }
+
+    setFormData(modalDefaults[entity]);
+  };
+
+  const closeModal = () => {
+    setModalState((current) => ({ ...current, open: false, editId: null }));
+    setFormData(modalDefaults[modalState.entity]);
+  };
+
+  const openConfirm = (entity, record) => {
+    const label =
+      entity === 'driver'
+        ? `driver ${record.id}`
+        : entity === 'bus'
+          ? `bus ${record.registration}`
+          : `route ${record.id}`;
+
+    setConfirmState({
+      open: true,
+      entity,
+      id: record.id,
+      label,
+    });
+  };
+
+  const closeConfirm = () => {
+    setConfirmState({ open: false, entity: 'driver', id: '', label: '' });
+  };
+
+  const updateField = (key, value) => {
+    setFormData((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateSummaryCount = (entity, delta, record = null) => {
+    setSummary((current) => {
+      const next = { ...current, fleetDistribution: { ...current.fleetDistribution } };
+
+      if (entity === 'driver') {
+        next.activeDrivers += delta;
+      }
+
+      if (entity === 'route') {
+        next.activeRoutes += delta;
+      }
+
+      if (entity === 'bus') {
+        next.registeredBuses += delta;
+        if (record?.status === 'Maintenance') {
+          next.fleetDistribution.maintenance += delta;
+        } else {
+          next.fleetDistribution.active += delta;
+        }
+      }
+
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    const { entity, mode, editId } = modalState;
+
+    if (entity === 'driver') {
+      const driverRecord = {
+        id: editId ?? `DRV-${String(drivers.length + 1).padStart(3, '0')}`,
+        name: formData.name || 'New Driver',
+        license: formData.license || 'LK-2026-00000',
+        expiry: formData.expiry || '2028-01-01',
+        phone: formData.phone || '+94 77 000 0000',
+        status: 'Active',
+      };
+
+      if (mode === 'edit') {
+        setDrivers((current) => current.map((driver) => (driver.id === editId ? driverRecord : driver)));
+        showNotification(`Driver ${driverRecord.name} updated successfully.`);
+      } else {
+        setDrivers((current) => [driverRecord, ...current]);
+        updateSummaryCount('driver', 1);
+        showNotification(`Driver ${driverRecord.name} added successfully.`);
+      }
+    }
+
+    if (entity === 'bus') {
+      const busRecord = {
+        id: editId ?? `BUS-${String(buses.length + 1).padStart(3, '0')}`,
+        registration: formData.registration || 'NB-0000',
+        capacity: `${formData.capacity || '50'} seats`,
+        mileage: `${Number(formData.mileage || 0).toLocaleString('en-US')} km`,
+        status: 'Active',
+      };
+
+      if (mode === 'edit') {
+        setBuses((current) => current.map((bus) => (bus.id === editId ? { ...bus, ...busRecord } : bus)));
+        showNotification(`Bus ${busRecord.registration} updated successfully.`);
+      } else {
+        setBuses((current) => [busRecord, ...current]);
+        updateSummaryCount('bus', 1, busRecord);
+        showNotification(`Bus ${busRecord.registration} registered successfully.`);
+      }
+    }
+
+    if (entity === 'route') {
+      const routeRecord = {
+        id: editId ?? `RT-${String(routes.length + 1).padStart(3, '0')}`,
+        name: formData.name || 'New Route',
+        start: formData.start || 'Start',
+        end: formData.end || 'End',
+        distance: `${formData.distance || '50'} km`,
+        stops: `${formData.stops || '2'} stops`,
+        status: 'Active',
+      };
+
+      if (mode === 'edit') {
+        setRoutes((current) => current.map((route) => (route.id === editId ? routeRecord : route)));
+        showNotification(`Route ${routeRecord.name} updated successfully.`);
+      } else {
+        setRoutes((current) => [routeRecord, ...current]);
+        updateSummaryCount('route', 1);
+        showNotification(`Route ${routeRecord.name} created and active.`);
+      }
+    }
+
+    closeModal();
+  };
+
+  const handleDelete = () => {
+    const { entity, id } = confirmState;
+
+    if (entity === 'driver') {
+      setDrivers((current) => current.filter((driver) => driver.id !== id));
+      updateSummaryCount('driver', -1);
+    }
+
+    if (entity === 'bus') {
+      const record = buses.find((bus) => bus.id === id);
+      setBuses((current) => current.filter((bus) => bus.id !== id));
+      if (record) {
+        updateSummaryCount('bus', -1, record);
+      }
+    }
+
+    if (entity === 'route') {
+      setRoutes((current) => current.filter((route) => route.id !== id));
+      updateSummaryCount('route', -1);
+    }
+
+    showNotification('Record deleted successfully.');
+    closeConfirm();
+  };
+
+  const currentPageTitle =
+    activePage === 'dashboard'
+      ? 'System Admin Dashboard'
+      : activePage === 'drivers'
+        ? 'Driver Management'
+        : activePage === 'buses'
+          ? 'Bus & Fleet Inventory'
+          : 'Create & Manage Routes';
 
   return (
-    <div className="admin-app-container">
-      {/* Jet Black (#09090B) Navigation Sidebar */}
-      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="admin-shell">
+      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-brand">
+          <div className="brand-icon">
+            <Icon type="menu" />
+          </div>
+          <div className="brand-copy">
+            <p className="brand-title">SRMSS</p>
+            <p className="brand-subtitle">Admin Operations</p>
+          </div>
+        </div>
 
-      {/* Main Command Workspace */}
-      <main className="main-workspace">
-        {/* Command Top Header */}
-        <header className="command-header">
-          <div className="command-title-group">
-            <h1>Fleet Operations Command Center</h1>
-            <p>Smart Bus Tracking System • Live GPS & Telemetry Engine</p>
+        <nav className="sidebar-nav">
+          {['Main', 'Fleet Management', 'Network & Operations'].map((section) => (
+            <div key={section}>
+              <div className="nav-section-label">{section}</div>
+              {navItems
+                .filter((item) => item.section === section)
+                .map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`nav-item ${activePage === item.key ? 'active' : ''}`}
+                    onClick={() => setActivePage(item.key)}
+                    aria-label={item.label}
+                  >
+                    <span className="nav-icon">
+                      <Icon type={item.icon} />
+                    </span>
+                    <span className="nav-label">{item.label}</span>
+                  </button>
+                ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className="sidebar-depot">
+          <p className="sidebar-depot-title">Central Command Depot</p>
+          <p className="sidebar-depot-copy">22 buses active, 4 in depot</p>
+        </div>
+
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">AD</div>
+          <div className="sidebar-user-copy">
+            <p className="sidebar-user-name">Admin Console</p>
+            <p className="sidebar-user-role">
+              Role: <span>Super Admin</span>
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <div className="main-panel">
+        <header className="main-header">
+          <div className="header-left">
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => setSidebarCollapsed((current) => !current)}
+              aria-label="Toggle sidebar"
+            >
+              <Icon type="menu" />
+            </button>
+
+            <div className="search-box">
+              <span className="search-icon">
+                <Icon type="search" />
+              </span>
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Search routes, buses, drivers…"
+                className="form-input search-input"
+              />
+            </div>
           </div>
 
-          <div className="header-status-pills">
-            <div className="status-pill online">
-              <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#05A357' }} />
-              <span>WebSocket Cluster: Connected</span>
-            </div>
+          <div className="header-right">
+            <span className="header-clock">{clock}</span>
+            <span className="system-status">
+              <span className="system-status-dot" />
+              System online
+            </span>
+            <button
+              type="button"
+              className="btn btn-secondary header-profile-btn"
+              onClick={() => showNotification('Admin session active.')}
+            >
+              Admin Profile
+            </button>
           </div>
         </header>
 
-        {/* Compact KPI Tiles */}
-        <KPIAnalyticsCards />
+        {notification && (
+          <div className="notification-banner" role="alert">
+            <div className="notification-card">
+              <p className="notification-text">{notification}</p>
+              <button type="button" className="notification-close" onClick={() => setNotification(null)}>
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
-        {/* Split Command View: Left ~60% Map / Right ~40% Telemetry Grid */}
-        <div className="split-command-view">
-          <CommandMap />
-          <TelemetryGrid />
+        <main className="page-scroll">
+          {activePage === 'dashboard' && (
+            <section className="page-section">
+              <div className="section-header">
+                <div>
+                  <h1>{currentPageTitle}</h1>
+                  <p>Overview synchronized with Driver & Passenger Apps</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary sync-btn"
+                  onClick={() => showNotification('Admin data synchronized across driver and passenger nodes.')}
+                >
+                  <Icon type="sync" />
+                  Sync System
+                </button>
+              </div>
+
+              <div className="kpi-grid">
+                <KpiCard
+                  label="Active Routes"
+                  value={summary.activeRoutes}
+                  subtitle="Live on Passenger App"
+                  icon="route"
+                />
+                <KpiCard
+                  label="Registered Buses"
+                  value={summary.registeredBuses}
+                  subtitle={`${summary.fleetDistribution.active} Active / ${summary.fleetDistribution.idle} Maintenance`}
+                  icon="bus"
+                />
+                <KpiCard
+                  label="Active Drivers"
+                  value={summary.activeDrivers}
+                  subtitle="Driver App Connected"
+                  icon="drivers"
+                />
+              </div>
+
+              <div className="dashboard-grid">
+                <div className="panel chart-panel">
+                  <h2>Fleet Status Distribution</h2>
+                  <div className="chart-layout">
+                    <div className="fleet-chart-shell">
+                      <div className="fleet-chart" style={fleetChartStyle}>
+                        <div className="fleet-chart-inner">
+                          <span>{fleetTotal}</span>
+                          <small>Buses</small>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="chart-legend">
+                      <LegendItem
+                        color="sky"
+                        label="Active Fleet"
+                        value={`${summary.fleetDistribution.active} buses`}
+                      />
+                      <LegendItem
+                        color="slate"
+                        label="Idle / Depot"
+                        value={`${summary.fleetDistribution.idle} buses`}
+                      />
+                      <LegendItem
+                        color="amber"
+                        label="Under Maintenance"
+                        value={`${summary.fleetDistribution.maintenance} buses`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="panel quick-panel">
+                  <div>
+                    <h2>Quick Management</h2>
+                    <p>Direct shortcuts to add assets & update routes</p>
+                    <div className="quick-actions">
+                      <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('driver')}>
+                        <span>+</span> Register New Driver
+                      </button>
+                      <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('bus')}>
+                        <span>+</span> Register New Bus / Vehicle
+                      </button>
+                      <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('route')}>
+                        <span>+</span> Create Network Route
+                      </button>
+                    </div>
+                  </div>
+                  <p className="quick-panel-footer">
+                    Theme matched with Driver UI & Passenger Booking Interface
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activePage === 'drivers' && (
+            <section className="page-section">
+              <div className="section-header">
+                <div>
+                  <h1>{currentPageTitle}</h1>
+                  <p>Register drivers and assign Driver App authorization</p>
+                </div>
+                <button type="button" className="btn btn-primary" onClick={() => openModal('driver')}>
+                  <Icon type="plus" />
+                  Add New Driver
+                </button>
+              </div>
+              <TableShell>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Driver ID</th>
+                      <th>Full Name</th>
+                      <th>License Number</th>
+                      <th>License Expiry</th>
+                      <th>Phone Number</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredDrivers.map((driver) => (
+                      <tr key={driver.id}>
+                        <td className="mono-cell">{driver.id}</td>
+                        <td className="table-strong">{driver.name}</td>
+                        <td className="mono-cell">{driver.license}</td>
+                        <td>{driver.expiry}</td>
+                        <td>{driver.phone}</td>
+                        <td>
+                          <StatusBadge status={driver.status} />
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}>
+                              Edit
+                            </button>
+                            <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableShell>
+            </section>
+          )}
+
+          {activePage === 'buses' && (
+            <section className="page-section">
+              <div className="section-header">
+                <div>
+                  <h1>{currentPageTitle}</h1>
+                  <p>Register new transit buses into the central system</p>
+                </div>
+                <button type="button" className="btn btn-primary" onClick={() => openModal('bus')}>
+                  <Icon type="plus" />
+                  Add New Bus
+                </button>
+              </div>
+              <TableShell>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Bus ID</th>
+                      <th>Registration No.</th>
+                      <th>Passenger Capacity</th>
+                      <th>Total Mileage</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredBuses.map((bus) => (
+                      <tr key={bus.id}>
+                        <td className="mono-cell">{bus.id}</td>
+                        <td className="mono-cell table-strong">{bus.registration}</td>
+                        <td>{bus.capacity}</td>
+                        <td>{bus.mileage}</td>
+                        <td>
+                          <StatusBadge status={bus.status} />
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}>
+                              Edit
+                            </button>
+                            <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableShell>
+            </section>
+          )}
+
+          {activePage === 'routes' && (
+            <section className="page-section">
+              <div className="section-header">
+                <div>
+                  <h1>{currentPageTitle}</h1>
+                  <p>Setup network paths for Passenger App display</p>
+                </div>
+                <button type="button" className="btn btn-primary" onClick={() => openModal('route')}>
+                  <Icon type="plus" />
+                  Create Route
+                </button>
+              </div>
+              <TableShell>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Route ID</th>
+                      <th>Route Name</th>
+                      <th>Start Terminal</th>
+                      <th>End Terminal</th>
+                      <th>Distance</th>
+                      <th>Stops</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRoutes.map((route) => (
+                      <tr key={route.id}>
+                        <td className="mono-cell">{route.id}</td>
+                        <td className="table-strong">{route.name}</td>
+                        <td>{route.start}</td>
+                        <td>{route.end}</td>
+                        <td>{route.distance}</td>
+                        <td>{route.stops}</td>
+                        <td>
+                          <StatusBadge status={route.status} />
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}>
+                              Edit
+                            </button>
+                            <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableShell>
+            </section>
+          )}
+        </main>
+      </div>
+
+      {modalState.open && (
+        <div className="overlay" onClick={(event) => event.target === event.currentTarget && closeModal()}>
+          <div className="modal-box">
+            <h3 className="modal-title">
+              {modalState.entity === 'driver'
+                ? modalState.mode === 'edit'
+                  ? 'Edit Driver'
+                  : 'Add New Driver'
+                : modalState.entity === 'bus'
+                  ? modalState.mode === 'edit'
+                    ? 'Edit Bus'
+                    : 'Add New Bus'
+                  : modalState.mode === 'edit'
+                    ? 'Edit Route'
+                    : 'Create New Route'}
+            </h3>
+
+            {modalState.entity === 'driver' && (
+              <div className="modal-form">
+                <Field label="Full Name *">
+                  <input
+                    className="form-input"
+                    value={formData.name}
+                    onChange={(event) => updateField('name', event.target.value)}
+                    placeholder="e.g. A. Bandara"
+                  />
+                </Field>
+                <Field label="License Number *">
+                  <input
+                    className="form-input mono-input"
+                    value={formData.license}
+                    onChange={(event) => updateField('license', event.target.value)}
+                    placeholder="LK-2024-XXXXX"
+                  />
+                </Field>
+                <div className="form-grid">
+                  <Field label="License Expiry *">
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={formData.expiry}
+                      onChange={(event) => updateField('expiry', event.target.value)}
+                    />
+                  </Field>
+                  <Field label="Phone Number *">
+                    <input
+                      className="form-input"
+                      value={formData.phone}
+                      onChange={(event) => updateField('phone', event.target.value)}
+                      placeholder="+94 7X XXX XXXX"
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
+
+            {modalState.entity === 'bus' && (
+              <div className="modal-form">
+                <Field label="Registration Number *">
+                  <input
+                    className="form-input mono-input"
+                    value={formData.registration}
+                    onChange={(event) => updateField('registration', event.target.value)}
+                    placeholder="e.g. ND-8899"
+                  />
+                </Field>
+                <div className="form-grid">
+                  <Field label="Seating Capacity *">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={formData.capacity}
+                      onChange={(event) => updateField('capacity', event.target.value)}
+                      placeholder="52"
+                    />
+                  </Field>
+                  <Field label="Initial Mileage (km)">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={formData.mileage}
+                      onChange={(event) => updateField('mileage', event.target.value)}
+                      placeholder="0"
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
+
+            {modalState.entity === 'route' && (
+              <div className="modal-form">
+                <Field label="Route Name *">
+                  <input
+                    className="form-input"
+                    value={formData.name}
+                    onChange={(event) => updateField('name', event.target.value)}
+                    placeholder="e.g. Colombo to Galle"
+                  />
+                </Field>
+                <div className="form-grid">
+                  <Field label="Start Terminal *">
+                    <input
+                      className="form-input"
+                      value={formData.start}
+                      onChange={(event) => updateField('start', event.target.value)}
+                      placeholder="Origin"
+                    />
+                  </Field>
+                  <Field label="End Terminal *">
+                    <input
+                      className="form-input"
+                      value={formData.end}
+                      onChange={(event) => updateField('end', event.target.value)}
+                      placeholder="Destination"
+                    />
+                  </Field>
+                </div>
+                <div className="form-grid">
+                  <Field label="Distance (km) *">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={formData.distance}
+                      onChange={(event) => updateField('distance', event.target.value)}
+                      placeholder="120"
+                    />
+                  </Field>
+                  <Field label="Intermediate Stops">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={formData.stops}
+                      onChange={(event) => updateField('stops', event.target.value)}
+                      placeholder="6"
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button type="button" className="btn btn-secondary" onClick={closeModal}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleSave}>
+                {modalState.entity === 'route'
+                  ? modalState.mode === 'edit'
+                    ? 'Save Route'
+                    : 'Create Route'
+                  : modalState.entity === 'bus'
+                    ? modalState.mode === 'edit'
+                      ? 'Save Bus'
+                      : 'Save Bus'
+                    : modalState.mode === 'edit'
+                      ? 'Save Driver'
+                      : 'Save Driver'}
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
+      )}
+
+      {confirmState.open && (
+        <div className="overlay confirm-overlay" onClick={(event) => event.target === event.currentTarget && closeConfirm()}>
+          <div className="confirm-box">
+            <div className="confirm-icon">
+              <Icon type="trash" />
+            </div>
+            <h3>Confirm Delete</h3>
+            <p className="confirm-copy">You are about to delete</p>
+            <p className="confirm-target">{confirmState.label}</p>
+            <p className="confirm-danger-text">This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn btn-secondary" onClick={closeConfirm}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-delete-primary" onClick={handleDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="field">
+      <span className="form-label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function TableShell({ children }) {
+  return <div className="panel table-shell">{children}</div>;
+}
+
+function KpiCard({ label, value, subtitle, icon }) {
+  return (
+    <div className="kpi-card">
+      <div className="kpi-topline">
+        <p>{label}</p>
+        <span className="kpi-icon">
+          <Icon type={icon} />
+        </span>
+      </div>
+      <strong>{value}</strong>
+      <span>{subtitle}</span>
+    </div>
+  );
+}
+
+function LegendItem({ color, label, value }) {
+  return (
+    <div className="legend-item">
+      <span className={`legend-swatch ${color}`} />
+      <div>
+        <p>{label}</p>
+        <strong>{value}</strong>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const className =
+    status === 'Maintenance'
+      ? 'badge badge-amber'
+      : status === 'Active'
+        ? 'badge badge-green'
+        : 'badge badge-gray';
+
+  return <span className={className}>{status}</span>;
+}
+
+function Icon({ type }) {
+  const commonProps = {
+    fill: 'none',
+    viewBox: '0 0 24 24',
+    'aria-hidden': 'true',
+  };
+
+  switch (type) {
+    case 'grid':
+      return (
+        <svg {...commonProps}>
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      );
+    case 'drivers':
+      return (
+        <svg {...commonProps}>
+          <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
+          <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'bus':
+      return (
+        <svg {...commonProps}>
+          <rect x="1" y="6" width="22" height="13" rx="2" stroke="currentColor" strokeWidth="2" />
+          <path d="M5 19v2M19 19v2M1 11h22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'route':
+      return (
+        <svg {...commonProps}>
+          <path d="M3 6h18M3 12h12M3 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'search':
+      return (
+        <svg {...commonProps}>
+          <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
+          <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'sync':
+      return (
+        <svg {...commonProps}>
+          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'plus':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      );
+    case 'trash':
+      return (
+        <svg {...commonProps}>
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'menu':
+    default:
+      return (
+        <svg {...commonProps}>
+          <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      );
+  }
 }
 
 export default App;
