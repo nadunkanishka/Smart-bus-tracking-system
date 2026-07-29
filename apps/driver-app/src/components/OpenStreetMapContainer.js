@@ -1,14 +1,43 @@
 import React from 'react';
-import { View, StyleSheet, Text, Platform } from 'react-native';
-import { COLORS, TYPOGRAPHY } from '../constants/theme';
+import { StyleSheet, View } from 'react-native';
+import {
+  buildOsrmRouteUrl,
+  OSM_ATTRIBUTION,
+  OSM_TILE_URL,
+  ROUTE_138_END,
+  ROUTE_138_FALLBACK_COORDS,
+  ROUTE_138_START,
+  ROUTE_138_WAYPOINTS,
+} from '../utils/route138';
 
-export default function OpenStreetMapContainer({ isOnDuty, routeName }) {
-  const isWeb = Platform.OS === 'web';
+const DEFAULT_BUS_COORDINATE = ROUTE_138_WAYPOINTS[2];
 
-  const busLat = 6.8721;
-  const busLng = 79.8884;
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  const osmDriverHtml = `
+export default function OpenStreetMapContainer({
+  isOnDuty,
+  routeName = '138',
+  liveCoordinate,
+  startCoordinate = ROUTE_138_START,
+  endCoordinate = ROUTE_138_END,
+}) {
+  const activeCoordinate = liveCoordinate || DEFAULT_BUS_COORDINATE;
+  const routeUrl = buildOsrmRouteUrl({
+    startCoordinate,
+    endCoordinate,
+    waypoints: ROUTE_138_WAYPOINTS,
+  });
+  const fallbackRouteJson = JSON.stringify(ROUTE_138_FALLBACK_COORDS);
+  const markerStatus = isOnDuty ? 'LIVE GPS' : 'OFFLINE';
+
+  const osmHtml = `
     <!DOCTYPE html>
     <html style="width:100%; height:100%; margin:0; padding:0;">
     <head>
@@ -17,14 +46,8 @@ export default function OpenStreetMapContainer({ isOnDuty, routeName }) {
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <style>
-        html, body, #map {
-          width: 100%;
-          height: 100%;
-          margin: 0;
-          padding: 0;
-          background: #F2F4F7;
-        }
-        .driver-bus-pill {
+        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #FAFAFA; }
+        .driver-osm-pill {
           background-color: ${isOnDuty ? '#05A357' : '#18181B'};
           color: #FFFFFF;
           padding: 6px 14px;
@@ -32,48 +55,41 @@ export default function OpenStreetMapContainer({ isOnDuty, routeName }) {
           font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
           font-size: 12px;
           font-weight: 700;
-          display: flex;
-          align-items: center;
-          gap: 6px;
           border: 2px solid #FFFFFF;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.3);
           white-space: nowrap;
-        }
-        .live-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background-color: #FFFFFF;
         }
       </style>
     </head>
     <body>
       <div id="map"></div>
       <script>
-        document.addEventListener("DOMContentLoaded", function() {
-          const map = L.map('map', { zoomControl: false }).setView([${busLat}, ${busLng}], 14);
-          
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
-          }).addTo(map);
+        const busPosition = [${activeCoordinate.latitude}, ${activeCoordinate.longitude}];
+        const fallbackRoute = ${fallbackRouteJson}.map(({ latitude, longitude }) => [latitude, longitude]);
+        const map = L.map('map', { zoomControl: false }).setView(busPosition, 14);
 
-          const routeCoords = [
-            [6.9344, 79.8428],
-            [6.9147, 79.8778],
-            [${busLat}, ${busLng}],
-            [6.8480, 79.9265]
-          ];
-          L.polyline(routeCoords, { color: '#276EF1', weight: 6, opacity: 0.85 }).addTo(map);
+        L.tileLayer('${OSM_TILE_URL}', {
+          maxZoom: 19,
+          attribution: '${OSM_ATTRIBUTION}'
+        }).addTo(map);
 
-          const driverIcon = L.divIcon({
-            className: 'driver-marker-wrapper',
-            html: '<div class="driver-bus-pill"><span class="live-dot"></span>🚌 NB-4521 (${isOnDuty ? 'LIVE' : 'STANDBY'})</div>',
-            iconSize: [160, 34],
-            iconAnchor: [80, 17]
-          });
-          L.marker([${busLat}, ${busLng}], { icon: driverIcon }).addTo(map);
+        const busIcon = L.divIcon({
+          className: 'driver-marker-wrapper',
+          html: '<div class="driver-osm-pill">NB-4521 ${escapeHtml(markerStatus)}</div>',
+          iconSize: [150, 32],
+          iconAnchor: [75, 16]
         });
+        L.marker(busPosition, { icon: busIcon }).addTo(map);
+
+        function drawRoute(points) {
+          const routeLine = L.polyline(points, { color: '#276EF1', weight: 6, opacity: 0.9 }).addTo(map);
+          map.fitBounds(routeLine.getBounds(), { padding: [48, 48], maxZoom: 14 });
+        }
+
+        fetch('${routeUrl}')
+          .then((response) => response.ok ? response.json() : Promise.reject(response))
+          .then((data) => drawRoute(data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng])))
+          .catch(() => drawRoute(fallbackRoute));
       </script>
     </body>
     </html>
@@ -81,28 +97,7 @@ export default function OpenStreetMapContainer({ isOnDuty, routeName }) {
 
   return (
     <View style={styles.container}>
-      {isWeb ? (
-        <iframe
-          title="Driver OpenStreetMap View"
-          srcDoc={osmDriverHtml}
-          style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-      ) : null}
-
-      <View style={styles.osmCanvasLayer}>
-        <View style={styles.osmMainRoad} />
-        <View style={styles.osmCrossRoad} />
-        <View style={styles.osmPolylineBlue} />
-
-        <View style={[styles.driverMarkerPill, { backgroundColor: isOnDuty ? COLORS.signalGreen : COLORS.zinc900 }]}>
-          <View style={styles.whiteDot} />
-          <Text style={styles.driverPillText}>🚌 NB-4521 ({isOnDuty ? 'ONLINE' : 'OFFLINE'})</Text>
-        </View>
-
-        <View style={styles.osmWatermarkTag}>
-          <Text style={styles.watermarkText}>© OpenStreetMap contributors</Text>
-        </View>
-      </View>
+      <iframe title="Driver OpenStreetMap View" srcDoc={osmHtml} style={styles.webMap} />
     </View>
   );
 }
@@ -116,77 +111,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F2F4F7',
+    backgroundColor: '#FAFAFA',
   },
-  osmCanvasLayer: {
-    flex: 1,
-    position: 'relative',
-  },
-  osmMainRoad: {
-    position: 'absolute',
-    top: '38%',
-    left: '-10%',
-    width: '120%',
-    height: 22,
-    backgroundColor: '#FFFFFF',
-    transform: [{ rotate: '-12deg' }],
-  },
-  osmCrossRoad: {
-    position: 'absolute',
-    top: '15%',
-    left: '42%',
-    width: 14,
-    height: '80%',
-    backgroundColor: '#FFFFFF',
-  },
-  osmPolylineBlue: {
-    position: 'absolute',
-    top: '40%',
-    left: '10%',
-    width: '75%',
-    height: 8,
-    backgroundColor: COLORS.signalBlue,
-    borderRadius: 4,
-    transform: [{ rotate: '-12deg' }],
-  },
-  driverMarkerPill: {
-    position: 'absolute',
-    top: '34%',
-    left: '38%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    zIndex: 10,
-  },
-  whiteDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: COLORS.white,
-    marginRight: 6,
-  },
-  driverPillText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  osmWatermarkTag: {
-    position: 'absolute',
-    top: 90,
-    right: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  watermarkText: {
-    fontSize: 9,
-    fontWeight: TYPOGRAPHY.weights.medium,
-    color: COLORS.zinc500,
+  webMap: {
+    width: '100%',
+    height: '100%',
+    border: 'none',
   },
 });

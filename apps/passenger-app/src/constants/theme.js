@@ -2,6 +2,7 @@ export const COLORS = {
   // Ultra-Minimalist Zinc Color Tokens
   zinc900: '#18181B', // text-zinc-900 / primary action
   zinc800: '#27272A',
+  zinc700: '#3F3F46',
   zinc600: '#52525B', // text-zinc-600 body
   zinc500: '#71717A', // text-zinc-500 secondary
   zinc400: '#A1A1AA', // text-zinc-400 micro labels

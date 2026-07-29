@@ -2,6 +2,7 @@ export const COLORS = {
   // Ultra-Minimalist Zinc Color Palette
   zinc900: '#18181B', // Deep Zinc / Monochrome Black
   zinc800: '#27272A', // Hover Zinc
+  zinc700: '#3F3F46',
   zinc600: '#52525B', // Body text
   zinc500: '#71717A', // Muted Secondary text
   zinc400: '#A1A1AA', // Micro-copy / Labels
@@ -9,6 +10,7 @@ export const COLORS = {
   zinc50: '#FAFAFA',  // Light neutral backdrop (zinc-50/50)
   white: '#FFFFFF',    // Container / Card background
   signalGreen: '#05A357', // Active telemetry indicator
+  signalBlue: '#276EF1',
   signalAmber: '#FFC043',
   signalRed: '#E11900',
 };
