@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './admin-theme.css';
 
+const API_BASE = 'http://localhost:5000/api';
+
 const initialDrivers = [
   {
     id: 'DRV-001',
@@ -34,6 +36,8 @@ const initialBuses = [
     registration: 'NB-4712',
     capacity: '52 seats',
     mileage: '148,320 km',
+    rawCapacity: 52,
+    rawMileage: 148320,
     status: 'Active',
   },
   {
@@ -41,6 +45,8 @@ const initialBuses = [
     registration: 'KA-1234',
     capacity: '45 seats',
     mileage: '92,410 km',
+    rawCapacity: 45,
+    rawMileage: 92410,
     status: 'Active',
   },
   {
@@ -48,6 +54,8 @@ const initialBuses = [
     registration: 'NE-2041',
     capacity: '52 seats',
     mileage: '220,104 km',
+    rawCapacity: 52,
+    rawMileage: 220104,
     status: 'Maintenance',
   },
 ];
@@ -59,7 +67,8 @@ const initialRoutes = [
     start: 'Colombo Fort',
     end: 'Kandy Bus Stand',
     distance: '110 km',
-    stops: '8 stops',
+    rawDistance: 110,
+    stops: ['Kadawatha', 'Nittambuwa', 'Kegalle', 'Peradeniya'],
     status: 'Active',
   },
   {
@@ -68,7 +77,8 @@ const initialRoutes = [
     start: 'Kandy Bus Stand',
     end: 'Matale Town',
     distance: '26 km',
-    stops: '4 stops',
+    rawDistance: 26,
+    stops: ['Katugastota', 'Akurana'],
     status: 'Active',
   },
 ];
@@ -94,7 +104,7 @@ const navItems = [
 const modalDefaults = {
   driver: { name: '', license: '', expiry: '', phone: '' },
   bus: { registration: '', capacity: '', mileage: '' },
-  route: { name: '', start: '', end: '', distance: '', stops: '' },
+  route: { name: '', start: '', end: '', distance: '', stops: [''] },
 };
 
 function App() {
@@ -107,6 +117,7 @@ function App() {
   const [buses, setBuses] = useState(initialBuses);
   const [routes, setRoutes] = useState(initialRoutes);
   const [summary, setSummary] = useState(initialSummary);
+  const [backendConnected, setBackendConnected] = useState(false);
   const [modalState, setModalState] = useState({
     open: false,
     entity: 'driver',
@@ -120,6 +131,86 @@ function App() {
     id: '',
     label: '',
   });
+
+  // Fetch MongoDB backend data on mount
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      try {
+        const [resD, resB, resR] = await Promise.all([
+          fetch(`${API_BASE}/drivers`),
+          fetch(`${API_BASE}/buses`),
+          fetch(`${API_BASE}/routes`),
+        ]);
+
+        let connected = false;
+
+        if (resD.ok) {
+          const dataD = await resD.json();
+          if (Array.isArray(dataD) && dataD.length > 0) {
+            setDrivers(
+              dataD.map((d) => ({
+                id: d.driverId || d._id || d.id,
+                rawId: d._id,
+                name: d.name,
+                license: d.license,
+                expiry: d.expiry,
+                phone: d.phone,
+                status: d.status || 'Active',
+              }))
+            );
+          }
+          connected = true;
+        }
+
+        if (resB.ok) {
+          const dataB = await resB.json();
+          if (Array.isArray(dataB) && dataB.length > 0) {
+            setBuses(
+              dataB.map((b) => ({
+                id: b.busId || b._id || b.id,
+                rawId: b._id,
+                registration: b.registration,
+                capacity: `${b.capacity} seats`,
+                mileage: `${Number(b.mileage || 0).toLocaleString('en-US')} km`,
+                rawCapacity: b.capacity,
+                rawMileage: b.mileage,
+                status: b.status || 'Active',
+              }))
+            );
+          }
+          connected = true;
+        }
+
+        if (resR.ok) {
+          const dataR = await resR.json();
+          if (Array.isArray(dataR) && dataR.length > 0) {
+            setRoutes(
+              dataR.map((r) => ({
+                id: r.routeId || r._id || r.id,
+                rawId: r._id,
+                name: r.name,
+                start: r.start,
+                end: r.end,
+                distance: `${r.distance} km`,
+                rawDistance: r.distance,
+                stops: Array.isArray(r.stops) ? r.stops : [],
+                status: r.status || 'Active',
+              }))
+            );
+          }
+          connected = true;
+        }
+
+        if (connected) {
+          setBackendConnected(true);
+        }
+      } catch (err) {
+        console.log('MongoDB API server offline. Defaulting to local UI state.');
+      }
+    };
+
+    fetchBackendData();
+  }, []);
 
   useEffect(() => {
     const updateClock = () => {
@@ -172,12 +263,13 @@ function App() {
 
   const filteredRoutes = useMemo(
     () =>
-      routes.filter((route) =>
-        [route.id, route.name, route.start, route.end]
+      routes.filter((route) => {
+        const stopsStr = Array.isArray(route.stops) ? route.stops.join(' ') : String(route.stops);
+        return [route.id, route.name, route.start, route.end, stopsStr]
           .join(' ')
           .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ),
+          .includes(searchValue.toLowerCase());
+      }),
     [routes, searchValue]
   );
 
@@ -197,7 +289,7 @@ function App() {
       open: true,
       entity,
       mode,
-      editId: record?.id ?? null,
+      editId: record?.rawId || record?.id || null,
     });
 
     if (record) {
@@ -211,16 +303,20 @@ function App() {
       } else if (entity === 'bus') {
         setFormData({
           registration: record.registration,
-          capacity: record.capacity.replace(' seats', ''),
-          mileage: record.mileage.replace(' km', '').replaceAll(',', ''),
+          capacity: record.rawCapacity ?? String(record.capacity).replace(' seats', ''),
+          mileage: record.rawMileage ?? String(record.mileage).replace(' km', '').replaceAll(',', ''),
         });
       } else {
         setFormData({
           name: record.name,
           start: record.start,
           end: record.end,
-          distance: record.distance.replace(' km', ''),
-          stops: record.stops.replace(' stops', ''),
+          distance: record.rawDistance ?? String(record.distance).replace(' km', ''),
+          stops: Array.isArray(record.stops)
+            ? record.stops.length > 0 ? record.stops : ['']
+            : typeof record.stops === 'string'
+              ? record.stops.split(',').map((s) => s.trim())
+              : [''],
         });
       }
       return;
@@ -237,15 +333,16 @@ function App() {
   const openConfirm = (entity, record) => {
     const label =
       entity === 'driver'
-        ? `driver ${record.id}`
+        ? `driver ${record.name || record.id}`
         : entity === 'bus'
           ? `bus ${record.registration}`
-          : `route ${record.id}`;
+          : `route ${record.name || record.id}`;
 
     setConfirmState({
       open: true,
       entity,
       id: record.id,
+      rawId: record.rawId || record.id,
       label,
     });
   };
@@ -283,90 +380,245 @@ function App() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const { entity, mode, editId } = modalState;
 
     if (entity === 'driver') {
-      const driverRecord = {
-        id: editId ?? `DRV-${String(drivers.length + 1).padStart(3, '0')}`,
+      const payload = {
         name: formData.name || 'New Driver',
-        license: formData.license || 'LK-2026-00000',
+        license: formData.license || `LK-2026-${Math.floor(10000 + Math.random() * 90000)}`,
         expiry: formData.expiry || '2028-01-01',
         phone: formData.phone || '+94 77 000 0000',
         status: 'Active',
       };
 
-      if (mode === 'edit') {
-        setDrivers((current) => current.map((driver) => (driver.id === editId ? driverRecord : driver)));
-        showNotification(`Driver ${driverRecord.name} updated successfully.`);
-      } else {
-        setDrivers((current) => [driverRecord, ...current]);
-        updateSummaryCount('driver', 1);
-        showNotification(`Driver ${driverRecord.name} added successfully.`);
+      try {
+        if (mode === 'edit') {
+          const res = await fetch(`${API_BASE}/drivers/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const saved = res.ok ? await res.json() : null;
+          setDrivers((current) =>
+            current.map((driver) =>
+              driver.id === editId || driver.rawId === editId
+                ? {
+                    ...driver,
+                    ...payload,
+                    id: saved?.driverId || driver.id,
+                    rawId: saved?._id || driver.rawId,
+                  }
+                : driver
+            )
+          );
+          showNotification(`Driver ${payload.name} updated successfully.`);
+        } else {
+          const res = await fetch(`${API_BASE}/drivers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const saved = res.ok ? await res.json() : null;
+          const newRec = {
+            id: saved?.driverId || saved?._id || `DRV-${String(drivers.length + 1).padStart(3, '0')}`,
+            rawId: saved?._id,
+            ...payload,
+          };
+          setDrivers((current) => [newRec, ...current]);
+          updateSummaryCount('driver', 1);
+          showNotification(`Driver ${payload.name} added successfully.`);
+        }
+      } catch (err) {
+        const newRec = {
+          id: editId || `DRV-${String(drivers.length + 1).padStart(3, '0')}`,
+          ...payload,
+        };
+        if (mode === 'edit') {
+          setDrivers((current) => current.map((d) => (d.id === editId || d.rawId === editId ? newRec : d)));
+        } else {
+          setDrivers((current) => [newRec, ...current]);
+          updateSummaryCount('driver', 1);
+        }
+        showNotification(`Driver ${payload.name} saved.`);
       }
     }
 
     if (entity === 'bus') {
-      const busRecord = {
-        id: editId ?? `BUS-${String(buses.length + 1).padStart(3, '0')}`,
+      const payload = {
         registration: formData.registration || 'NB-0000',
-        capacity: `${formData.capacity || '50'} seats`,
-        mileage: `${Number(formData.mileage || 0).toLocaleString('en-US')} km`,
+        capacity: Number(formData.capacity || 50),
+        mileage: Number(formData.mileage || 0),
         status: 'Active',
       };
 
-      if (mode === 'edit') {
-        setBuses((current) => current.map((bus) => (bus.id === editId ? { ...bus, ...busRecord } : bus)));
-        showNotification(`Bus ${busRecord.registration} updated successfully.`);
-      } else {
-        setBuses((current) => [busRecord, ...current]);
-        updateSummaryCount('bus', 1, busRecord);
-        showNotification(`Bus ${busRecord.registration} registered successfully.`);
+      try {
+        if (mode === 'edit') {
+          const res = await fetch(`${API_BASE}/buses/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const saved = res.ok ? await res.json() : null;
+          const formatted = {
+            id: saved?.busId || editId,
+            rawId: saved?._id,
+            registration: payload.registration,
+            capacity: `${payload.capacity} seats`,
+            mileage: `${payload.mileage.toLocaleString('en-US')} km`,
+            rawCapacity: payload.capacity,
+            rawMileage: payload.mileage,
+            status: payload.status,
+          };
+          setBuses((current) => current.map((bus) => (bus.id === editId || bus.rawId === editId ? formatted : bus)));
+          showNotification(`Bus ${payload.registration} updated successfully.`);
+        } else {
+          const res = await fetch(`${API_BASE}/buses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const saved = res.ok ? await res.json() : null;
+          const formatted = {
+            id: saved?.busId || saved?._id || `BUS-${String(buses.length + 1).padStart(3, '0')}`,
+            rawId: saved?._id,
+            registration: payload.registration,
+            capacity: `${payload.capacity} seats`,
+            mileage: `${payload.mileage.toLocaleString('en-US')} km`,
+            rawCapacity: payload.capacity,
+            rawMileage: payload.mileage,
+            status: payload.status,
+          };
+          setBuses((current) => [formatted, ...current]);
+          updateSummaryCount('bus', 1, formatted);
+          showNotification(`Bus ${payload.registration} registered successfully.`);
+        }
+      } catch (err) {
+        const formatted = {
+          id: editId || `BUS-${String(buses.length + 1).padStart(3, '0')}`,
+          registration: payload.registration,
+          capacity: `${payload.capacity} seats`,
+          mileage: `${payload.mileage.toLocaleString('en-US')} km`,
+          rawCapacity: payload.capacity,
+          rawMileage: payload.mileage,
+          status: payload.status,
+        };
+        if (mode === 'edit') {
+          setBuses((current) => current.map((b) => (b.id === editId || b.rawId === editId ? formatted : b)));
+        } else {
+          setBuses((current) => [formatted, ...current]);
+          updateSummaryCount('bus', 1, formatted);
+        }
+        showNotification(`Bus ${payload.registration} saved.`);
       }
     }
 
     if (entity === 'route') {
-      const routeRecord = {
-        id: editId ?? `RT-${String(routes.length + 1).padStart(3, '0')}`,
+      const cleanStops = (Array.isArray(formData.stops) ? formData.stops : [])
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const payload = {
         name: formData.name || 'New Route',
-        start: formData.start || 'Start',
-        end: formData.end || 'End',
-        distance: `${formData.distance || '50'} km`,
-        stops: `${formData.stops || '2'} stops`,
+        start: formData.start || 'Start Terminal',
+        end: formData.end || 'End Terminal',
+        distance: Number(formData.distance || 0),
+        stops: cleanStops,
         status: 'Active',
       };
 
-      if (mode === 'edit') {
-        setRoutes((current) => current.map((route) => (route.id === editId ? routeRecord : route)));
-        showNotification(`Route ${routeRecord.name} updated successfully.`);
-      } else {
-        setRoutes((current) => [routeRecord, ...current]);
-        updateSummaryCount('route', 1);
-        showNotification(`Route ${routeRecord.name} created and active.`);
+      try {
+        if (mode === 'edit') {
+          const res = await fetch(`${API_BASE}/routes/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const saved = res.ok ? await res.json() : null;
+          const formatted = {
+            id: saved?.routeId || editId,
+            rawId: saved?._id,
+            name: payload.name,
+            start: payload.start,
+            end: payload.end,
+            distance: `${payload.distance} km`,
+            rawDistance: payload.distance,
+            stops: cleanStops,
+            status: payload.status,
+          };
+          setRoutes((current) => current.map((route) => (route.id === editId || route.rawId === editId ? formatted : route)));
+          showNotification(`Route ${payload.name} updated successfully.`);
+        } else {
+          const res = await fetch(`${API_BASE}/routes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const saved = res.ok ? await res.json() : null;
+          const formatted = {
+            id: saved?.routeId || saved?._id || `RT-${String(routes.length + 1).padStart(3, '0')}`,
+            rawId: saved?._id,
+            name: payload.name,
+            start: payload.start,
+            end: payload.end,
+            distance: `${payload.distance} km`,
+            rawDistance: payload.distance,
+            stops: cleanStops,
+            status: payload.status,
+          };
+          setRoutes((current) => [formatted, ...current]);
+          updateSummaryCount('route', 1);
+          showNotification(`Route ${payload.name} created successfully.`);
+        }
+      } catch (err) {
+        const formatted = {
+          id: editId || `RT-${String(routes.length + 1).padStart(3, '0')}`,
+          name: payload.name,
+          start: payload.start,
+          end: payload.end,
+          distance: `${payload.distance} km`,
+          rawDistance: payload.distance,
+          stops: cleanStops,
+          status: payload.status,
+        };
+        if (mode === 'edit') {
+          setRoutes((current) => current.map((r) => (r.id === editId || r.rawId === editId ? formatted : r)));
+        } else {
+          setRoutes((current) => [formatted, ...current]);
+          updateSummaryCount('route', 1);
+        }
+        showNotification(`Route ${payload.name} saved.`);
       }
     }
 
     closeModal();
   };
 
-  const handleDelete = () => {
-    const { entity, id } = confirmState;
+  const handleDelete = async () => {
+    const { entity, id, rawId } = confirmState;
+    const targetId = rawId || id;
+
+    try {
+      await fetch(`${API_BASE}/${entity}s/${targetId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.log('Delete request API offline fallback');
+    }
 
     if (entity === 'driver') {
-      setDrivers((current) => current.filter((driver) => driver.id !== id));
+      setDrivers((current) => current.filter((driver) => driver.id !== id && driver.rawId !== targetId));
       updateSummaryCount('driver', -1);
     }
 
     if (entity === 'bus') {
-      const record = buses.find((bus) => bus.id === id);
-      setBuses((current) => current.filter((bus) => bus.id !== id));
+      const record = buses.find((bus) => bus.id === id || bus.rawId === targetId);
+      setBuses((current) => current.filter((bus) => bus.id !== id && bus.rawId !== targetId));
       if (record) {
         updateSummaryCount('bus', -1, record);
       }
     }
 
     if (entity === 'route') {
-      setRoutes((current) => current.filter((route) => route.id !== id));
+      setRoutes((current) => current.filter((route) => route.id !== id && route.rawId !== targetId));
       updateSummaryCount('route', -1);
     }
 
@@ -465,8 +717,8 @@ function App() {
           <div className="header-right">
             <span className="header-clock">{clock}</span>
             <span className="system-status">
-              <span className="system-status-dot" />
-              System online
+              <span className="system-status-dot" style={{ backgroundColor: backendConnected ? '#10b981' : '#f59e0b' }} />
+              {backendConnected ? 'MongoDB Connected' : 'System online'}
             </span>
             <button
               type="button"
@@ -613,7 +865,7 @@ function App() {
                   <tbody>
                     {filteredDrivers.map((driver) => (
                       <tr key={driver.id}>
-                        <td className="mono-cell">{driver.id}</td>
+                        <td className="mono-cell">{String(driver.id).slice(-8)}</td>
                         <td className="table-strong">{driver.name}</td>
                         <td className="mono-cell">{driver.license}</td>
                         <td>{driver.expiry}</td>
@@ -666,7 +918,7 @@ function App() {
                   <tbody>
                     {filteredBuses.map((bus) => (
                       <tr key={bus.id}>
-                        <td className="mono-cell">{bus.id}</td>
+                        <td className="mono-cell">{String(bus.id).slice(-8)}</td>
                         <td className="mono-cell table-strong">{bus.registration}</td>
                         <td>{bus.capacity}</td>
                         <td>{bus.mileage}</td>
@@ -712,7 +964,7 @@ function App() {
                       <th>Start Terminal</th>
                       <th>End Terminal</th>
                       <th>Distance</th>
-                      <th>Stops</th>
+                      <th>Intermediate Stops</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -720,12 +972,27 @@ function App() {
                   <tbody>
                     {filteredRoutes.map((route) => (
                       <tr key={route.id}>
-                        <td className="mono-cell">{route.id}</td>
+                        <td className="mono-cell">{String(route.id).slice(-8)}</td>
                         <td className="table-strong">{route.name}</td>
                         <td>{route.start}</td>
                         <td>{route.end}</td>
                         <td>{route.distance}</td>
-                        <td>{route.stops}</td>
+                        <td>
+                          {Array.isArray(route.stops) ? (
+                            route.stops.length > 0 ? (
+                              <div>
+                                <span style={{ fontWeight: 600 }}>{route.stops.length} stop{route.stops.length > 1 ? 's' : ''}</span>
+                                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                  {route.stops.join(' → ')}
+                                </div>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>Direct Route</span>
+                            )
+                          ) : (
+                            route.stops || 'N/A'
+                          )}
+                        </td>
                         <td>
                           <StatusBadge status={route.status} />
                         </td>
@@ -807,12 +1074,12 @@ function App() {
 
             {modalState.entity === 'bus' && (
               <div className="modal-form">
-                <Field label="Registration Number *">
+                <Field label="Registration Number (e.g. NB-4712) *">
                   <input
                     className="form-input mono-input"
                     value={formData.registration}
                     onChange={(event) => updateField('registration', event.target.value)}
-                    placeholder="e.g. ND-8899"
+                    placeholder="e.g. NB-4712"
                   />
                 </Field>
                 <div className="form-grid">
@@ -825,7 +1092,7 @@ function App() {
                       placeholder="52"
                     />
                   </Field>
-                  <Field label="Initial Mileage (km)">
+                  <Field label="Initial Mileage (km) *">
                     <input
                       type="number"
                       className="form-input"
@@ -854,7 +1121,7 @@ function App() {
                       className="form-input"
                       value={formData.start}
                       onChange={(event) => updateField('start', event.target.value)}
-                      placeholder="Origin"
+                      placeholder="Origin Terminal"
                     />
                   </Field>
                   <Field label="End Terminal *">
@@ -862,30 +1129,62 @@ function App() {
                       className="form-input"
                       value={formData.end}
                       onChange={(event) => updateField('end', event.target.value)}
-                      placeholder="Destination"
+                      placeholder="Destination Terminal"
                     />
                   </Field>
                 </div>
-                <div className="form-grid">
-                  <Field label="Distance (km) *">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.distance}
-                      onChange={(event) => updateField('distance', event.target.value)}
-                      placeholder="120"
-                    />
-                  </Field>
-                  <Field label="Intermediate Stops">
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={formData.stops}
-                      onChange={(event) => updateField('stops', event.target.value)}
-                      placeholder="6"
-                    />
-                  </Field>
-                </div>
+                <Field label="Distance (km) *">
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.distance}
+                    onChange={(event) => updateField('distance', event.target.value)}
+                    placeholder="120"
+                  />
+                </Field>
+
+                <Field label="Intermediate Stops (Enter each stop name)">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                    {(Array.isArray(formData.stops) ? formData.stops : ['']).map((stop, index) => (
+                      <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input
+                          className="form-input"
+                          value={stop}
+                          onChange={(e) => {
+                            const newStops = [...(Array.isArray(formData.stops) ? formData.stops : [])];
+                            newStops[index] = e.target.value;
+                            updateField('stops', newStops);
+                          }}
+                          placeholder={`Stop ${index + 1} Name (e.g. Peradeniya)`}
+                        />
+                        {Array.isArray(formData.stops) && formData.stops.length > 1 && (
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            style={{ padding: '8px 12px', fontSize: '13px' }}
+                            onClick={() => {
+                              const newStops = formData.stops.filter((_, i) => i !== index);
+                              updateField('stops', newStops);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ alignSelf: 'flex-start', marginTop: '6px', fontSize: '13px', padding: '6px 14px' }}
+                      onClick={() => {
+                        const currentStops = Array.isArray(formData.stops) ? formData.stops : [];
+                        updateField('stops', [...currentStops, '']);
+                      }}
+                    >
+                      + Add Stop Name
+                    </button>
+                  </div>
+                </Field>
               </div>
             )}
 
