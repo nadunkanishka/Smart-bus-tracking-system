@@ -8,6 +8,7 @@ const Driver = require('./models/Driver');
 const Bus = require('./models/Bus');
 const Route = require('./models/Route');
 const Counter = require('./models/Counter');
+const Admin = require('./models/Admin');
 
 dotenv.config();
 
@@ -17,8 +18,25 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and seed default admin
+connectDB().then(async (connected) => {
+  if (connected) {
+    try {
+      const adminCount = await Admin.countDocuments();
+      if (adminCount === 0) {
+        await Admin.create({
+          username: 'admin',
+          password: 'admin123',
+          name: 'Super Admin',
+          role: 'Super Admin',
+        });
+        console.log('Default admin account created: username: admin / password: admin123');
+      }
+    } catch (err) {
+      console.error('Admin seeding error:', err.message);
+    }
+  }
+});
 
 // Helper for auto-increment counter starting from 1
 async function getNextSequence(name) {
@@ -35,6 +53,60 @@ async function getNextSequence(name) {
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Smart Bus Tracking API is running' });
+});
+
+// AUTH ROUTES
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    const admin = await Admin.findOne({ username, password });
+    if (!admin) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: admin._id,
+        username: admin.username,
+        name: admin.name,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DASHBOARD SUMMARY ROUTE (Calculated live from real MongoDB data)
+app.get('/api/dashboard/summary', async (req, res) => {
+  try {
+    const [driverCount, busCount, routeCount, activeBuses, idleBuses, maintenanceBuses] = await Promise.all([
+      Driver.countDocuments({ status: 'Active' }),
+      Bus.countDocuments(),
+      Route.countDocuments({ status: 'Active' }),
+      Bus.countDocuments({ status: 'Active' }),
+      Bus.countDocuments({ status: 'Idle' }),
+      Bus.countDocuments({ status: 'Maintenance' }),
+    ]);
+
+    res.json({
+      activeRoutes: routeCount,
+      registeredBuses: busCount,
+      activeDrivers: driverCount,
+      fleetDistribution: {
+        active: activeBuses,
+        idle: idleBuses,
+        maintenance: maintenanceBuses,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // DRIVER ROUTES

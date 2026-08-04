@@ -990,3 +990,210 @@ svg {
     min-width: 760px;
   }
 }
+
+/* ==========================================================================
+   LOGIN SCREEN & MODERN CLEAN DELETE POPUP
+   ========================================================================== */
+
+.login-shell {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0284c7 100%);
+  font-family: 'DM Sans', sans-serif;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 36px 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+}
+
+.login-brand-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.login-subtitle {
+  margin: 6px 0 24px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.login-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+}
+
+.login-hint {
+  margin-top: 20px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 14px;
+}
+
+.login-hint code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+/* Modern Clean Delete Modal */
+.clean-delete-box {
+  width: 100%;
+  max-width: 400px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  border: 1px solid #f1f5f9;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.clean-delete-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  background: #fef2f2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: #ef4444;
+}
+
+.clean-delete-title {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.clean-delete-text {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.clean-delete-target-badge {
+  display: inline-block;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+
+.clean-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-cancel-soft {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-cancel-soft:hover {
+  background: #e2e8f0;
+}
+
+.btn-delete-confirm {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.btn-delete-confirm:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+

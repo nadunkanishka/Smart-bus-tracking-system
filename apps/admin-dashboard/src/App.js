@@ -3,104 +3,6 @@ import './admin-theme.css';
 
 const API_BASE = 'http://localhost:5000/api';
 
-const initialDrivers = [
-  {
-    id: 'DRV-001',
-    name: 'P. Jayawardena',
-    license: 'LK-2019-47821',
-    expiry: '2027-08-14',
-    phone: '+94 77 123 4567',
-    status: 'Active',
-  },
-  {
-    id: 'DRV-002',
-    name: 'S. Perera',
-    license: 'LK-2021-88234',
-    expiry: '2028-03-22',
-    phone: '+94 71 987 6543',
-    status: 'Active',
-  },
-  {
-    id: 'DRV-003',
-    name: 'S. Fernando',
-    license: 'LK-2020-33012',
-    expiry: '2026-09-30',
-    phone: '+94 76 555 0012',
-    status: 'Active',
-  },
-];
-
-const initialBuses = [
-  {
-    id: 'BUS-001',
-    registration: 'NB-4712',
-    capacity: '52 seats',
-    mileage: '148,320 km',
-    rawCapacity: 52,
-    rawMileage: 148320,
-    status: 'Active',
-  },
-  {
-    id: 'BUS-002',
-    registration: 'KA-1234',
-    capacity: '45 seats',
-    mileage: '92,410 km',
-    rawCapacity: 45,
-    rawMileage: 92410,
-    status: 'Active',
-  },
-  {
-    id: 'BUS-003',
-    registration: 'NE-2041',
-    capacity: '52 seats',
-    mileage: '220,104 km',
-    rawCapacity: 52,
-    rawMileage: 220104,
-    status: 'Maintenance',
-  },
-];
-
-const initialRoutes = [
-  {
-    id: 'RT-001',
-    name: 'Colombo to Kandy',
-    start: 'Colombo Fort',
-    end: 'Kandy Bus Stand',
-    distance: '110 km',
-    rawDistance: 110,
-    stops: ['Kadawatha', 'Nittambuwa', 'Kegalle', 'Peradeniya'],
-    status: 'Active',
-  },
-  {
-    id: 'RT-002',
-    name: 'Kandy to Matale',
-    start: 'Kandy Bus Stand',
-    end: 'Matale Town',
-    distance: '26 km',
-    rawDistance: 26,
-    stops: ['Katugastota', 'Akurana'],
-    status: 'Active',
-  },
-];
-
-const initialSummary = {
-  activeRoutes: 14,
-  registeredBuses: 26,
-  activeDrivers: 32,
-  fleetDistribution: {
-    active: 22,
-    idle: 4,
-    maintenance: 5,
-  },
-};
-
-const navItems = [
-  { section: 'Main', key: 'dashboard', label: 'Dashboard', icon: 'grid' },
-  { section: 'Fleet Management', key: 'drivers', label: 'Drivers', icon: 'drivers' },
-  { section: 'Fleet Management', key: 'buses', label: 'Buses', icon: 'bus' },
-  { section: 'Network & Operations', key: 'routes', label: 'Routes', icon: 'route' },
-];
-
 const modalDefaults = {
   driver: { name: '', license: '', expiry: '', phone: '' },
   bus: { registration: '', capacity: '', mileage: '' },
@@ -108,16 +10,41 @@ const modalDefaults = {
 };
 
 function App() {
+  // Auth State
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('adminUser') || 'null');
+    } catch {
+      return null;
+    }
+  });
+  const [loginCreds, setLoginCreds] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // App UI State
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const [clock, setClock] = useState('');
   const [notification, setNotification] = useState(null);
-  const [drivers, setDrivers] = useState(initialDrivers);
-  const [buses, setBuses] = useState(initialBuses);
-  const [routes, setRoutes] = useState(initialRoutes);
-  const [summary, setSummary] = useState(initialSummary);
+
+  // Data Collections (real data from MongoDB)
+  const [drivers, setDrivers] = useState([]);
+  const [buses, setBuses] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [summary, setSummary] = useState({
+    activeRoutes: 0,
+    registeredBuses: 0,
+    activeDrivers: 0,
+    fleetDistribution: {
+      active: 0,
+      idle: 0,
+      maintenance: 0,
+    },
+  });
   const [backendConnected, setBackendConnected] = useState(false);
+
+  // Modal & Confirm dialogs
   const [modalState, setModalState] = useState({
     open: false,
     entity: 'driver',
@@ -129,88 +56,95 @@ function App() {
     open: false,
     entity: 'driver',
     id: '',
+    rawId: '',
     label: '',
   });
 
-  // Fetch MongoDB backend data on mount
-  useEffect(() => {
-    const fetchBackendData = async () => {
-      try {
-        const [resD, resB, resR] = await Promise.all([
-          fetch(`${API_BASE}/drivers`),
-          fetch(`${API_BASE}/buses`),
-          fetch(`${API_BASE}/routes`),
-        ]);
+  // Fetch live MongoDB backend data & summary metrics
+  const fetchBackendData = async () => {
+    try {
+      const [resD, resB, resR, resS] = await Promise.all([
+        fetch(`${API_BASE}/drivers`),
+        fetch(`${API_BASE}/buses`),
+        fetch(`${API_BASE}/routes`),
+        fetch(`${API_BASE}/dashboard/summary`),
+      ]);
 
-        let connected = false;
+      let connected = false;
 
-        if (resD.ok) {
-          const dataD = await resD.json();
-          if (Array.isArray(dataD) && dataD.length > 0) {
-            setDrivers(
-              dataD.map((d) => ({
-                id: d.driverId || d._id || d.id,
-                rawId: d._id,
-                name: d.name,
-                license: d.license,
-                expiry: d.expiry,
-                phone: d.phone,
-                status: d.status || 'Active',
-              }))
-            );
-          }
-          connected = true;
+      if (resD.ok) {
+        const dataD = await resD.json();
+        if (Array.isArray(dataD)) {
+          setDrivers(
+            dataD.map((d) => ({
+              id: d.driverId || d._id || d.id,
+              rawId: d._id,
+              name: d.name,
+              license: d.license,
+              expiry: d.expiry,
+              phone: d.phone,
+              status: d.status || 'Active',
+            }))
+          );
         }
-
-        if (resB.ok) {
-          const dataB = await resB.json();
-          if (Array.isArray(dataB) && dataB.length > 0) {
-            setBuses(
-              dataB.map((b) => ({
-                id: b.busId || b._id || b.id,
-                rawId: b._id,
-                registration: b.registration,
-                capacity: `${b.capacity} seats`,
-                mileage: `${Number(b.mileage || 0).toLocaleString('en-US')} km`,
-                rawCapacity: b.capacity,
-                rawMileage: b.mileage,
-                status: b.status || 'Active',
-              }))
-            );
-          }
-          connected = true;
-        }
-
-        if (resR.ok) {
-          const dataR = await resR.json();
-          if (Array.isArray(dataR) && dataR.length > 0) {
-            setRoutes(
-              dataR.map((r) => ({
-                id: r.routeId || r._id || r.id,
-                rawId: r._id,
-                name: r.name,
-                start: r.start,
-                end: r.end,
-                distance: `${r.distance} km`,
-                rawDistance: r.distance,
-                stops: Array.isArray(r.stops) ? r.stops : [],
-                status: r.status || 'Active',
-              }))
-            );
-          }
-          connected = true;
-        }
-
-        if (connected) {
-          setBackendConnected(true);
-        }
-      } catch (err) {
-        console.log('MongoDB API server offline. Defaulting to local UI state.');
+        connected = true;
       }
-    };
 
-    fetchBackendData();
-  }, []);
+      if (resB.ok) {
+        const dataB = await resB.json();
+        if (Array.isArray(dataB)) {
+          setBuses(
+            dataB.map((b) => ({
+              id: b.busId || b._id || b.id,
+              rawId: b._id,
+              registration: b.registration,
+              capacity: `${b.capacity} seats`,
+              mileage: `${Number(b.mileage || 0).toLocaleString('en-US')} km`,
+              rawCapacity: b.capacity,
+              rawMileage: b.mileage,
+              status: b.status || 'Active',
+            }))
+          );
+        }
+        connected = true;
+      }
+
+      if (resR.ok) {
+        const dataR = await resR.json();
+        if (Array.isArray(dataR)) {
+          setRoutes(
+            dataR.map((r) => ({
+              id: r.routeId || r._id || r.id,
+              rawId: r._id,
+              name: r.name,
+              start: r.start,
+              end: r.end,
+              distance: `${r.distance} km`,
+              rawDistance: r.distance,
+              stops: Array.isArray(r.stops) ? r.stops : [],
+              status: r.status || 'Active',
+            }))
+          );
+        }
+        connected = true;
+      }
+
+      if (resS.ok) {
+        const summaryData = await resS.json();
+        setSummary(summaryData);
+      }
+
+      setBackendConnected(connected);
+    } catch (err) {
+      setBackendConnected(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchBackendData();
+    }
+  }, [user]);
 
   useEffect(() => {
     const updateClock = () => {
@@ -231,54 +165,55 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!notification) {
-      return undefined;
-    }
-
+    if (!notification) return undefined;
     const timer = window.setTimeout(() => setNotification(null), 4000);
     return () => window.clearTimeout(timer);
   }, [notification]);
 
-  const filteredDrivers = useMemo(
-    () =>
-      drivers.filter((driver) =>
-        [driver.id, driver.name, driver.license, driver.phone]
-          .join(' ')
-          .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ),
-    [drivers, searchValue]
-  );
+  // Auth Functions
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
 
-  const filteredBuses = useMemo(
-    () =>
-      buses.filter((bus) =>
-        [bus.id, bus.registration, bus.capacity, bus.status]
-          .join(' ')
-          .toLowerCase()
-          .includes(searchValue.toLowerCase())
-      ),
-    [buses, searchValue]
-  );
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginCreds),
+      });
 
-  const filteredRoutes = useMemo(
-    () =>
-      routes.filter((route) => {
-        const stopsStr = Array.isArray(route.stops) ? route.stops.join(' ') : String(route.stops);
-        return [route.id, route.name, route.start, route.end, stopsStr]
-          .join(' ')
-          .toLowerCase()
-          .includes(searchValue.toLowerCase());
-      }),
-    [routes, searchValue]
-  );
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error || 'Invalid credentials');
+        setLoginLoading(false);
+        return;
+      }
 
-  const fleetTotal = Object.values(summary.fleetDistribution).reduce((total, value) => total + value, 0);
+      setUser(data.user);
+      sessionStorage.setItem('adminUser', JSON.stringify(data.user));
+      setLoginLoading(false);
+    } catch (err) {
+      setLoginError('Could not connect to backend server. Make sure node backend is running.');
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    sessionStorage.removeItem('adminUser');
+  };
+
+  // Modern fleet chart calculation
+  const fleetTotal = Object.values(summary.fleetDistribution || {}).reduce((tot, v) => tot + v, 0) || 1;
+  const activePct = ((summary.fleetDistribution?.active || 0) / fleetTotal) * 360;
+  const idlePct = (((summary.fleetDistribution?.active || 0) + (summary.fleetDistribution?.idle || 0)) / fleetTotal) * 360;
+
   const fleetChartStyle = {
     background: `conic-gradient(
-      #0284c7 0deg ${(summary.fleetDistribution.active / fleetTotal) * 360}deg,
-      #94a3b8 ${(summary.fleetDistribution.active / fleetTotal) * 360}deg ${((summary.fleetDistribution.active + summary.fleetDistribution.idle) / fleetTotal) * 360}deg,
-      #f59e0b ${((summary.fleetDistribution.active + summary.fleetDistribution.idle) / fleetTotal) * 360}deg 360deg
+      #0284c7 0deg ${activePct}deg,
+      #94a3b8 ${activePct}deg ${idlePct}deg,
+      #f59e0b ${idlePct}deg 360deg
     )`,
   };
 
@@ -333,10 +268,10 @@ function App() {
   const openConfirm = (entity, record) => {
     const label =
       entity === 'driver'
-        ? `driver ${record.name || record.id}`
+        ? `Driver: ${record.name}`
         : entity === 'bus'
-          ? `bus ${record.registration}`
-          : `route ${record.name || record.id}`;
+          ? `Bus: ${record.registration}`
+          : `Route: ${record.name}`;
 
     setConfirmState({
       open: true,
@@ -348,36 +283,11 @@ function App() {
   };
 
   const closeConfirm = () => {
-    setConfirmState({ open: false, entity: 'driver', id: '', label: '' });
+    setConfirmState({ open: false, entity: 'driver', id: '', rawId: '', label: '' });
   };
 
   const updateField = (key, value) => {
     setFormData((current) => ({ ...current, [key]: value }));
-  };
-
-  const updateSummaryCount = (entity, delta, record = null) => {
-    setSummary((current) => {
-      const next = { ...current, fleetDistribution: { ...current.fleetDistribution } };
-
-      if (entity === 'driver') {
-        next.activeDrivers += delta;
-      }
-
-      if (entity === 'route') {
-        next.activeRoutes += delta;
-      }
-
-      if (entity === 'bus') {
-        next.registeredBuses += delta;
-        if (record?.status === 'Maintenance') {
-          next.fleetDistribution.maintenance += delta;
-        } else {
-          next.fleetDistribution.active += delta;
-        }
-      }
-
-      return next;
-    });
   };
 
   const handleSave = async () => {
@@ -394,53 +304,22 @@ function App() {
 
       try {
         if (mode === 'edit') {
-          const res = await fetch(`${API_BASE}/drivers/${editId}`, {
+          await fetch(`${API_BASE}/drivers/${editId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const saved = res.ok ? await res.json() : null;
-          setDrivers((current) =>
-            current.map((driver) =>
-              driver.id === editId || driver.rawId === editId
-                ? {
-                    ...driver,
-                    ...payload,
-                    id: saved?.driverId || driver.id,
-                    rawId: saved?._id || driver.rawId,
-                  }
-                : driver
-            )
-          );
           showNotification(`Driver ${payload.name} updated successfully.`);
         } else {
-          const res = await fetch(`${API_BASE}/drivers`, {
+          await fetch(`${API_BASE}/drivers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const saved = res.ok ? await res.json() : null;
-          const newRec = {
-            id: saved?.driverId || saved?._id || `DRV-${String(drivers.length + 1).padStart(3, '0')}`,
-            rawId: saved?._id,
-            ...payload,
-          };
-          setDrivers((current) => [newRec, ...current]);
-          updateSummaryCount('driver', 1);
           showNotification(`Driver ${payload.name} added successfully.`);
         }
       } catch (err) {
-        const newRec = {
-          id: editId || `DRV-${String(drivers.length + 1).padStart(3, '0')}`,
-          ...payload,
-        };
-        if (mode === 'edit') {
-          setDrivers((current) => current.map((d) => (d.id === editId || d.rawId === editId ? newRec : d)));
-        } else {
-          setDrivers((current) => [newRec, ...current]);
-          updateSummaryCount('driver', 1);
-        }
-        showNotification(`Driver ${payload.name} saved.`);
+        showNotification(`Saved driver ${payload.name}.`);
       }
     }
 
@@ -454,62 +333,22 @@ function App() {
 
       try {
         if (mode === 'edit') {
-          const res = await fetch(`${API_BASE}/buses/${editId}`, {
+          await fetch(`${API_BASE}/buses/${editId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const saved = res.ok ? await res.json() : null;
-          const formatted = {
-            id: saved?.busId || editId,
-            rawId: saved?._id,
-            registration: payload.registration,
-            capacity: `${payload.capacity} seats`,
-            mileage: `${payload.mileage.toLocaleString('en-US')} km`,
-            rawCapacity: payload.capacity,
-            rawMileage: payload.mileage,
-            status: payload.status,
-          };
-          setBuses((current) => current.map((bus) => (bus.id === editId || bus.rawId === editId ? formatted : bus)));
           showNotification(`Bus ${payload.registration} updated successfully.`);
         } else {
-          const res = await fetch(`${API_BASE}/buses`, {
+          await fetch(`${API_BASE}/buses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const saved = res.ok ? await res.json() : null;
-          const formatted = {
-            id: saved?.busId || saved?._id || `BUS-${String(buses.length + 1).padStart(3, '0')}`,
-            rawId: saved?._id,
-            registration: payload.registration,
-            capacity: `${payload.capacity} seats`,
-            mileage: `${payload.mileage.toLocaleString('en-US')} km`,
-            rawCapacity: payload.capacity,
-            rawMileage: payload.mileage,
-            status: payload.status,
-          };
-          setBuses((current) => [formatted, ...current]);
-          updateSummaryCount('bus', 1, formatted);
           showNotification(`Bus ${payload.registration} registered successfully.`);
         }
       } catch (err) {
-        const formatted = {
-          id: editId || `BUS-${String(buses.length + 1).padStart(3, '0')}`,
-          registration: payload.registration,
-          capacity: `${payload.capacity} seats`,
-          mileage: `${payload.mileage.toLocaleString('en-US')} km`,
-          rawCapacity: payload.capacity,
-          rawMileage: payload.mileage,
-          status: payload.status,
-        };
-        if (mode === 'edit') {
-          setBuses((current) => current.map((b) => (b.id === editId || b.rawId === editId ? formatted : b)));
-        } else {
-          setBuses((current) => [formatted, ...current]);
-          updateSummaryCount('bus', 1, formatted);
-        }
-        showNotification(`Bus ${payload.registration} saved.`);
+        showNotification(`Saved bus ${payload.registration}.`);
       }
     }
 
@@ -529,69 +368,27 @@ function App() {
 
       try {
         if (mode === 'edit') {
-          const res = await fetch(`${API_BASE}/routes/${editId}`, {
+          await fetch(`${API_BASE}/routes/${editId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const saved = res.ok ? await res.json() : null;
-          const formatted = {
-            id: saved?.routeId || editId,
-            rawId: saved?._id,
-            name: payload.name,
-            start: payload.start,
-            end: payload.end,
-            distance: `${payload.distance} km`,
-            rawDistance: payload.distance,
-            stops: cleanStops,
-            status: payload.status,
-          };
-          setRoutes((current) => current.map((route) => (route.id === editId || route.rawId === editId ? formatted : route)));
           showNotification(`Route ${payload.name} updated successfully.`);
         } else {
-          const res = await fetch(`${API_BASE}/routes`, {
+          await fetch(`${API_BASE}/routes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
-          const saved = res.ok ? await res.json() : null;
-          const formatted = {
-            id: saved?.routeId || saved?._id || `RT-${String(routes.length + 1).padStart(3, '0')}`,
-            rawId: saved?._id,
-            name: payload.name,
-            start: payload.start,
-            end: payload.end,
-            distance: `${payload.distance} km`,
-            rawDistance: payload.distance,
-            stops: cleanStops,
-            status: payload.status,
-          };
-          setRoutes((current) => [formatted, ...current]);
-          updateSummaryCount('route', 1);
           showNotification(`Route ${payload.name} created successfully.`);
         }
       } catch (err) {
-        const formatted = {
-          id: editId || `RT-${String(routes.length + 1).padStart(3, '0')}`,
-          name: payload.name,
-          start: payload.start,
-          end: payload.end,
-          distance: `${payload.distance} km`,
-          rawDistance: payload.distance,
-          stops: cleanStops,
-          status: payload.status,
-        };
-        if (mode === 'edit') {
-          setRoutes((current) => current.map((r) => (r.id === editId || r.rawId === editId ? formatted : r)));
-        } else {
-          setRoutes((current) => [formatted, ...current]);
-          updateSummaryCount('route', 1);
-        }
-        showNotification(`Route ${payload.name} saved.`);
+        showNotification(`Saved route ${payload.name}.`);
       }
     }
 
     closeModal();
+    fetchBackendData();
   };
 
   const handleDelete = async () => {
@@ -600,31 +397,65 @@ function App() {
 
     try {
       await fetch(`${API_BASE}/${entity}s/${targetId}`, { method: 'DELETE' });
+      showNotification('Record deleted successfully from MongoDB.');
     } catch (err) {
-      console.log('Delete request API offline fallback');
+      showNotification('Record deleted.');
     }
 
-    if (entity === 'driver') {
-      setDrivers((current) => current.filter((driver) => driver.id !== id && driver.rawId !== targetId));
-      updateSummaryCount('driver', -1);
-    }
-
-    if (entity === 'bus') {
-      const record = buses.find((bus) => bus.id === id || bus.rawId === targetId);
-      setBuses((current) => current.filter((bus) => bus.id !== id && bus.rawId !== targetId));
-      if (record) {
-        updateSummaryCount('bus', -1, record);
-      }
-    }
-
-    if (entity === 'route') {
-      setRoutes((current) => current.filter((route) => route.id !== id && route.rawId !== targetId));
-      updateSummaryCount('route', -1);
-    }
-
-    showNotification('Record deleted successfully.');
     closeConfirm();
+    fetchBackendData();
   };
+
+  // If not logged in, render Login View
+  if (!user) {
+    return (
+      <div className="login-shell">
+        <div className="login-card">
+          <div className="login-brand-icon">
+            <BrandLogo />
+          </div>
+          <h2 className="login-title">Smart Bus Tracking</h2>
+          <p className="login-subtitle">Admin Control Panel Login</p>
+
+          {loginError && <div className="login-error">{loginError}</div>}
+
+          <form onSubmit={handleLoginSubmit} className="login-form">
+            <label className="field">
+              <span className="form-label">Username</span>
+              <input
+                type="text"
+                className="form-input"
+                value={loginCreds.username}
+                onChange={(e) => setLoginCreds({ ...loginCreds, username: e.target.value })}
+                placeholder="Enter admin username"
+                required
+              />
+            </label>
+
+            <label className="field">
+              <span className="form-label">Password</span>
+              <input
+                type="password"
+                className="form-input"
+                value={loginCreds.password}
+                onChange={(e) => setLoginCreds({ ...loginCreds, password: e.target.value })}
+                placeholder="Enter password"
+                required
+              />
+            </label>
+
+            <button type="submit" className="login-btn" disabled={loginLoading}>
+              {loginLoading ? 'Signing In…' : 'Sign In to Dashboard'}
+            </button>
+          </form>
+
+          <div className="login-hint">
+            Default credentials: <code>admin</code> / <code>admin123</code>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentPageTitle =
     activePage === 'dashboard'
@@ -640,10 +471,10 @@ function App() {
       <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-icon">
-            <Icon type="menu" />
+            <BrandLogo />
           </div>
           <div className="brand-copy">
-            <p className="brand-title">SRMSS</p>
+            <p className="brand-title">SmartBus Console</p>
             <p className="brand-subtitle">Admin Operations</p>
           </div>
         </div>
@@ -652,7 +483,12 @@ function App() {
           {['Main', 'Fleet Management', 'Network & Operations'].map((section) => (
             <div key={section}>
               <div className="nav-section-label">{section}</div>
-              {navItems
+              {[
+                { section: 'Main', key: 'dashboard', label: 'Dashboard', icon: 'grid' },
+                { section: 'Fleet Management', key: 'drivers', label: 'Drivers', icon: 'drivers' },
+                { section: 'Fleet Management', key: 'buses', label: 'Buses', icon: 'bus' },
+                { section: 'Network & Operations', key: 'routes', label: 'Routes', icon: 'route' },
+              ]
                 .filter((item) => item.section === section)
                 .map((item) => (
                   <button
@@ -673,16 +509,18 @@ function App() {
         </nav>
 
         <div className="sidebar-depot">
-          <p className="sidebar-depot-title">Central Command Depot</p>
-          <p className="sidebar-depot-copy">22 buses active, 4 in depot</p>
+          <p className="sidebar-depot-title">MongoDB Realtime Sync</p>
+          <p className="sidebar-depot-copy">
+            {summary.registeredBuses} buses, {summary.activeDrivers} drivers online
+          </p>
         </div>
 
         <div className="sidebar-user">
           <div className="sidebar-avatar">AD</div>
           <div className="sidebar-user-copy">
-            <p className="sidebar-user-name">Admin Console</p>
+            <p className="sidebar-user-name">{user.name || user.username}</p>
             <p className="sidebar-user-role">
-              Role: <span>Super Admin</span>
+              Role: <span>{user.role || 'Super Admin'}</span>
             </p>
           </div>
         </div>
@@ -690,7 +528,7 @@ function App() {
 
       <div className="main-panel">
         <header className="main-header">
-          <div className="header-left">
+          <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
               type="button"
               className="icon-button"
@@ -699,33 +537,27 @@ function App() {
             >
               <Icon type="menu" />
             </button>
-
-            <div className="search-box">
-              <span className="search-icon">
-                <Icon type="search" />
-              </span>
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder="Search routes, buses, drivers…"
-                className="form-input search-input"
-              />
-            </div>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
+              {currentPageTitle}
+            </h3>
           </div>
 
           <div className="header-right">
             <span className="header-clock">{clock}</span>
             <span className="system-status">
-              <span className="system-status-dot" style={{ backgroundColor: backendConnected ? '#10b981' : '#f59e0b' }} />
-              {backendConnected ? 'MongoDB Connected' : 'System online'}
+              <span
+                className="system-status-dot"
+                style={{ backgroundColor: backendConnected ? '#10b981' : '#f59e0b' }}
+              />
+              {backendConnected ? 'MongoDB Connected' : 'Local State Mode'}
             </span>
             <button
               type="button"
               className="btn btn-secondary header-profile-btn"
-              onClick={() => showNotification('Admin session active.')}
+              onClick={handleLogout}
+              title="Sign Out of Admin Console"
             >
-              Admin Profile
+              Sign Out ({user.username})
             </button>
           </div>
         </header>
@@ -746,16 +578,19 @@ function App() {
             <section className="page-section">
               <div className="section-header">
                 <div>
-                  <h1>{currentPageTitle}</h1>
-                  <p>Overview synchronized with Driver & Passenger Apps</p>
+                  <h1>System Dashboard</h1>
+                  <p>Real-time analytics fetched directly from your MongoDB Database</p>
                 </div>
                 <button
                   type="button"
                   className="btn btn-secondary sync-btn"
-                  onClick={() => showNotification('Admin data synchronized across driver and passenger nodes.')}
+                  onClick={() => {
+                    fetchBackendData();
+                    showNotification('Refreshed data from MongoDB.');
+                  }}
                 >
                   <Icon type="sync" />
-                  Sync System
+                  Refresh Data
                 </button>
               </div>
 
@@ -763,32 +598,32 @@ function App() {
                 <KpiCard
                   label="Active Routes"
                   value={summary.activeRoutes}
-                  subtitle="Live on Passenger App"
+                  subtitle="Active network routes"
                   icon="route"
                 />
                 <KpiCard
                   label="Registered Buses"
                   value={summary.registeredBuses}
-                  subtitle={`${summary.fleetDistribution.active} Active / ${summary.fleetDistribution.idle} Maintenance`}
+                  subtitle={`${summary.fleetDistribution?.active || 0} Active / ${summary.fleetDistribution?.maintenance || 0} Maintenance`}
                   icon="bus"
                 />
                 <KpiCard
                   label="Active Drivers"
                   value={summary.activeDrivers}
-                  subtitle="Driver App Connected"
+                  subtitle="Authorized drivers in system"
                   icon="drivers"
                 />
               </div>
 
               <div className="dashboard-grid">
                 <div className="panel chart-panel">
-                  <h2>Fleet Status Distribution</h2>
+                  <h2>Fleet Status Distribution (Real-Time)</h2>
                   <div className="chart-layout">
                     <div className="fleet-chart-shell">
                       <div className="fleet-chart" style={fleetChartStyle}>
                         <div className="fleet-chart-inner">
                           <span>{fleetTotal}</span>
-                          <small>Buses</small>
+                          <small>Total Buses</small>
                         </div>
                       </div>
                     </div>
@@ -797,17 +632,17 @@ function App() {
                       <LegendItem
                         color="sky"
                         label="Active Fleet"
-                        value={`${summary.fleetDistribution.active} buses`}
+                        value={`${summary.fleetDistribution?.active || 0} buses`}
                       />
                       <LegendItem
                         color="slate"
                         label="Idle / Depot"
-                        value={`${summary.fleetDistribution.idle} buses`}
+                        value={`${summary.fleetDistribution?.idle || 0} buses`}
                       />
                       <LegendItem
                         color="amber"
                         label="Under Maintenance"
-                        value={`${summary.fleetDistribution.maintenance} buses`}
+                        value={`${summary.fleetDistribution?.maintenance || 0} buses`}
                       />
                     </div>
                   </div>
@@ -816,7 +651,7 @@ function App() {
                 <div className="panel quick-panel">
                   <div>
                     <h2>Quick Management</h2>
-                    <p>Direct shortcuts to add assets & update routes</p>
+                    <p>Shortcuts to instantly add assets into MongoDB</p>
                     <div className="quick-actions">
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('driver')}>
                         <span>+</span> Register New Driver
@@ -830,7 +665,7 @@ function App() {
                     </div>
                   </div>
                   <p className="quick-panel-footer">
-                    Theme matched with Driver UI & Passenger Booking Interface
+                    Connected to MongoDB database <code>smart_bus_tracking</code>
                   </p>
                 </div>
               </div>
@@ -842,7 +677,7 @@ function App() {
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
-                  <p>Register drivers and assign Driver App authorization</p>
+                  <p>Manage and register system drivers stored in MongoDB</p>
                 </div>
                 <button type="button" className="btn btn-primary" onClick={() => openModal('driver')}>
                   <Icon type="plus" />
@@ -863,28 +698,36 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredDrivers.map((driver) => (
-                      <tr key={driver.id}>
-                        <td className="mono-cell">{String(driver.id).slice(-8)}</td>
-                        <td className="table-strong">{driver.name}</td>
-                        <td className="mono-cell">{driver.license}</td>
-                        <td>{driver.expiry}</td>
-                        <td>{driver.phone}</td>
-                        <td>
-                          <StatusBadge status={driver.status} />
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}>
-                              Edit
-                            </button>
-                            <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}>
-                              Delete
-                            </button>
-                          </div>
+                    {drivers.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
+                          No drivers registered yet. Click "Add New Driver" to add one!
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      drivers.map((driver) => (
+                        <tr key={driver.id}>
+                          <td className="mono-cell">{driver.id}</td>
+                          <td className="table-strong">{driver.name}</td>
+                          <td className="mono-cell">{driver.license}</td>
+                          <td>{driver.expiry}</td>
+                          <td>{driver.phone}</td>
+                          <td>
+                            <StatusBadge status={driver.status} />
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}>
+                                Edit
+                              </button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </TableShell>
@@ -896,7 +739,7 @@ function App() {
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
-                  <p>Register new transit buses into the central system</p>
+                  <p>Register new transit buses into MongoDB inventory</p>
                 </div>
                 <button type="button" className="btn btn-primary" onClick={() => openModal('bus')}>
                   <Icon type="plus" />
@@ -916,27 +759,35 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBuses.map((bus) => (
-                      <tr key={bus.id}>
-                        <td className="mono-cell">{String(bus.id).slice(-8)}</td>
-                        <td className="mono-cell table-strong">{bus.registration}</td>
-                        <td>{bus.capacity}</td>
-                        <td>{bus.mileage}</td>
-                        <td>
-                          <StatusBadge status={bus.status} />
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}>
-                              Edit
-                            </button>
-                            <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}>
-                              Delete
-                            </button>
-                          </div>
+                    {buses.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
+                          No buses registered yet. Click "Add New Bus" to register a bus!
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      buses.map((bus) => (
+                        <tr key={bus.id}>
+                          <td className="mono-cell">{bus.id}</td>
+                          <td className="mono-cell table-strong">{bus.registration}</td>
+                          <td>{bus.capacity}</td>
+                          <td>{bus.mileage}</td>
+                          <td>
+                            <StatusBadge status={bus.status} />
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}>
+                                Edit
+                              </button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </TableShell>
@@ -948,7 +799,7 @@ function App() {
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
-                  <p>Setup network paths for Passenger App display</p>
+                  <p>Setup network paths and intermediate stop lists in MongoDB</p>
                 </div>
                 <button type="button" className="btn btn-primary" onClick={() => openModal('route')}>
                   <Icon type="plus" />
@@ -970,44 +821,52 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRoutes.map((route) => (
-                      <tr key={route.id}>
-                        <td className="mono-cell">{String(route.id).slice(-8)}</td>
-                        <td className="table-strong">{route.name}</td>
-                        <td>{route.start}</td>
-                        <td>{route.end}</td>
-                        <td>{route.distance}</td>
-                        <td>
-                          {Array.isArray(route.stops) ? (
-                            route.stops.length > 0 ? (
-                              <div>
-                                <span style={{ fontWeight: 600 }}>{route.stops.length} stop{route.stops.length > 1 ? 's' : ''}</span>
-                                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                                  {route.stops.join(' → ')}
-                                </div>
-                              </div>
-                            ) : (
-                              <span style={{ color: '#94a3b8' }}>Direct Route</span>
-                            )
-                          ) : (
-                            route.stops || 'N/A'
-                          )}
-                        </td>
-                        <td>
-                          <StatusBadge status={route.status} />
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}>
-                              Edit
-                            </button>
-                            <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}>
-                              Delete
-                            </button>
-                          </div>
+                    {routes.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
+                          No network routes created yet. Click "Create Route" to create one!
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      routes.map((route) => (
+                        <tr key={route.id}>
+                          <td className="mono-cell">{route.id}</td>
+                          <td className="table-strong">{route.name}</td>
+                          <td>{route.start}</td>
+                          <td>{route.end}</td>
+                          <td>{route.distance}</td>
+                          <td>
+                            {Array.isArray(route.stops) ? (
+                              route.stops.length > 0 ? (
+                                <div>
+                                  <span style={{ fontWeight: 600 }}>{route.stops.length} stop{route.stops.length > 1 ? 's' : ''}</span>
+                                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                    {route.stops.join(' → ')}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span style={{ color: '#94a3b8' }}>Direct Route</span>
+                              )
+                            ) : (
+                              route.stops || 'N/A'
+                            )}
+                          </td>
+                          <td>
+                            <StatusBadge status={route.status} />
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}>
+                                Edit
+                              </button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </TableShell>
@@ -1193,45 +1052,48 @@ function App() {
                 Cancel
               </button>
               <button type="button" className="btn btn-primary" onClick={handleSave}>
-                {modalState.entity === 'route'
-                  ? modalState.mode === 'edit'
-                    ? 'Save Route'
-                    : 'Create Route'
-                  : modalState.entity === 'bus'
-                    ? modalState.mode === 'edit'
-                      ? 'Save Bus'
-                      : 'Save Bus'
-                    : modalState.mode === 'edit'
-                      ? 'Save Driver'
-                      : 'Save Driver'}
+                Save Changes
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Modern Clean Delete Modal */}
       {confirmState.open && (
         <div className="overlay confirm-overlay" onClick={(event) => event.target === event.currentTarget && closeConfirm()}>
-          <div className="confirm-box">
-            <div className="confirm-icon">
-              <Icon type="trash" />
+          <div className="clean-delete-box">
+            <div className="clean-delete-icon-wrapper">
+              <svg fill="none" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
-            <h3>Confirm Delete</h3>
-            <p className="confirm-copy">You are about to delete</p>
-            <p className="confirm-target">{confirmState.label}</p>
-            <p className="confirm-danger-text">This action cannot be undone.</p>
-            <div className="confirm-actions">
-              <button type="button" className="btn btn-secondary" onClick={closeConfirm}>
+            <h3 className="clean-delete-title">Delete Confirmation</h3>
+            <p className="clean-delete-text">Are you sure you want to permanently remove this record from MongoDB?</p>
+            <div className="clean-delete-target-badge">{confirmState.label}</div>
+            <div className="clean-delete-actions">
+              <button type="button" className="btn-cancel-soft" onClick={closeConfirm}>
                 Cancel
               </button>
-              <button type="button" className="btn btn-delete-primary" onClick={handleDelete}>
-                Delete
+              <button type="button" className="btn-delete-confirm" onClick={handleDelete}>
+                Delete Item
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function BrandLogo() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="22" height="22" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="5" width="20" height="13" rx="3" stroke="currentColor" />
+      <path d="M6 18v2M18 18v2M2 11h20M7 8h3M14 8h3" strokeLinecap="round" />
+      <circle cx="7" cy="14" r="1" fill="currentColor" />
+      <circle cx="17" cy="14" r="1" fill="currentColor" />
+    </svg>
   );
 }
 
@@ -1322,13 +1184,6 @@ function Icon({ type }) {
       return (
         <svg {...commonProps}>
           <path d="M3 6h18M3 12h12M3 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'search':
-      return (
-        <svg {...commonProps}>
-          <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" />
-          <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
     case 'sync':
