@@ -1,183 +1,137 @@
 # 🚌 Smart Bus Tracking & Arrival Prediction System
 
-Welcome! This is a complete system for tracking buses in real time. It broadcasts live bus locations from a driver's phone to an online map so passengers can see where their bus is and when it will arrive.
+A complete real-time bus tracking system. Broadcast live GPS locations from a driver's phone to a live passenger map and an admin dashboard.
 
 ---
 
-## 🧩 What Is In This Project?
+## 📌 Quick Overview (Architecture)
 
-This workspace contains **4 main parts**:
+The system consists of **4 main parts**:
 
-| Component           | Directory               | What It Does                                                                                          |
-| ------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Backend**         | `/backend`              | The brain/server. It receives location data from the driver and sends it to passengers and the admin. |
-| **Driver App**      | `/apps/driver-app`      | A mobile app for the bus driver that sends their phone's GPS location every 3 seconds.                |
-| **Passenger App**   | `/apps/passenger-app`   | A mobile/web app for commuters to view live buses on a map and check arrival times.                   |
-| **Admin Dashboard** | `/apps/admin-dashboard` | A web panel for managers to manage routes, bus stops, and monitor active buses.                       |
+1. **Backend (`/backend`)**: Node.js & Express server with Socket.io for live updates.
+2. **Admin Dashboard (`/apps/admin-dashboard`)**: React web app for managing routes, stops, and monitoring active buses.
+3. **Driver App (`/apps/driver-app`)**: Mobile app (Expo / React Native) that streams live GPS coordinates.
+4. **Passenger App (`/apps/passenger-app`)**: Mobile/Web app (Expo / React Native) for passengers to track buses and see estimated arrival times.
 
 ---
 
-## 🧰 Prerequisites (What You Need First)
+## 🛠️ Prerequisites (Install First)
 
-Before starting, make sure you have installed:
-
-1. **Node.js** (Version 18 or higher) – [Download here](https://nodejs.org/)
-2. **Expo Go App** on your mobile phone:
-
-- 🤖 [Get it on Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
-- 🍎 [Get it on Apple App Store](https://www.google.com/search?q=https://apps.apple.com/app/expo-go/id982107779)
-
-3. **Same Wi-Fi Network**: Make sure your laptop and your mobile phone are connected to the **exact same Wi-Fi network**.
+Make sure you have installed on your computer:
+1. **[Node.js](https://nodejs.org/)** (v18 or higher)
+2. **[Expo Go App](https://expo.dev/go)** on your mobile phone (available on Google Play Store and Apple App Store) if testing mobile apps on physical devices.
+3. **Wi-Fi Connection**: Make sure your phone and laptop are on the **same Wi-Fi network** if using physical mobile devices.
 
 ---
 
-## 🚀 How to Run the Project (Step-by-Step)
+## 🚀 Step-by-Step Run Guide (A to Z)
 
-To run the full system, you will need to open **4 separate terminal windows** (one for each part).
+To run the entire system simultaneously, open **4 separate terminal windows**.
+
+---
 
 ### Step 1: Start the Backend Server
 
-1. Open Terminal #1 and go to the backend folder:
+The backend must be running first so the apps and dashboard can connect to it.
 
-```bash
-cd backend
-
-```
-
-2. Install dependencies (only needed the first time):
-
-```bash
-npm install
-
-```
-
+1. Open **Terminal #1** and navigate to the backend folder:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies *(only required on first run)*:
+   ```bash
+   npm install
+   ```
 3. Start the server:
+   ```bash
+   node index.js
+   ```
+   *(Or `npx nodemon index.js` for development mode)*
 
-```bash
-npm run dev
-
-```
-
-> 🟢 Your backend is now running at `http://localhost:5000`.
-
----
-
-### Step 2: Start the Driver Mobile App
-
-1. Open Terminal #2 and go to the driver app folder:
-
-```bash
-cd apps/driver-app
-
-```
-
-2. Install dependencies (only needed the first time):
-
-```bash
-npm install
-
-```
-
-3. Start the app:
-
-```bash
-npx expo start -c
-
-```
-
-4. **Open on your phone:** Open the **Expo Go** app on your mobile phone and scan the **QR code** printed in your terminal.
-   _(Or press `w` in your terminal to test it in your PC web browser)._
+> 🟢 **Backend status:** Running at `http://localhost:5000`
 
 ---
 
-### Step 3: Start the Passenger Mobile App
+### Step 2: Start the Admin Dashboard
 
-1. Open Terminal #3 and go to the passenger app folder:
+1. Open **Terminal #2** and navigate to the admin dashboard folder:
+   ```bash
+   cd apps/admin-dashboard
+   ```
+2. Install dependencies *(only required on first run)*:
+   ```bash
+   npm install
+   ```
+3. Start the dashboard web application:
+   ```bash
+   npm start
+   ```
 
-```bash
-cd apps/passenger-app
-
-```
-
-2. Install dependencies (only needed the first time):
-
-```bash
-npm install
-
-```
-
-3. Start the app:
-
-```bash
-npx expo start -c
-
-```
-
-4. **Open on your phone:** Open **Expo Go** on your phone and scan the new QR code.
-   _(Or press `w` to view it in your browser)._
+> 🟢 **Admin Dashboard status:** Open your browser and go to `http://localhost:3000`
 
 ---
 
-### Step 4: Start the Admin Web Dashboard
+### Step 3: Start the Driver Mobile App
 
-1. Open Terminal #4 and go to the admin dashboard folder:
-
-```bash
-cd apps/admin-dashboard
-
-```
-
-2. Install dependencies (only needed the first time):
-
-```bash
-npm install
-
-```
-
-3. Start the web app:
-
-```bash
-npm start
-
-```
-
-4. Open your browser and go to `http://localhost:3000` (or `http://localhost:5173`).
+1. Open **Terminal #3** and navigate to the driver app folder:
+   ```bash
+   cd apps/driver-app
+   ```
+2. Install dependencies *(only required on first run)*:
+   ```bash
+   npm install
+   ```
+3. Start the Expo development server:
+   ```bash
+   npx expo start -c
+   ```
+4. **Launch the App:**
+   - **On Phone:** Open **Expo Go** app on your mobile phone and scan the QR code displayed in the terminal.
+   - **On Web Browser:** Press `w` in your terminal to test in your desktop web browser.
 
 ---
 
-## ⚠️ Important Setup for Mobile Phones
+### Step 4: Start the Passenger Mobile App
 
-When running the app on a physical phone, `localhost` refers to your phone, not your computer. You must connect the apps using your laptop's **IP Address**.
+1. Open **Terminal #4** and navigate to the passenger app folder:
+   ```bash
+   cd apps/passenger-app
+   ```
+2. Install dependencies *(only required on first run)*:
+   ```bash
+   npm install
+   ```
+3. Start the Expo development server:
+   ```bash
+   npx expo start -c
+   ```
+4. **Launch the App:**
+   - **On Phone:** Open **Expo Go** app on your mobile phone and scan the QR code displayed in the terminal.
+   - **On Web Browser:** Press `w` in your terminal to test in your desktop web browser.
 
-### How to find your Laptop's IP Address:
+---
 
-- **Windows**: Open Command Prompt and type `ipconfig`. Look for **IPv4 Address** (e.g., `192.168.1.15`).
-- **Mac**: Open Terminal and type `ipconfig getifaddr en0`.
+## 📱 Mobile IP Configuration (Crucial for Physical Devices)
 
-### Update Code to Connect:
+When running the mobile apps on a real phone via Expo Go, `localhost` points to your phone, **not your computer server**. You must update the backend server address with your computer's local IP address.
 
-In both `driver-app` and `passenger-app`, look for where the socket connects and replace `localhost` with your IP address:
+### 1. Find Your Computer's IP Address
+- **Windows:** Open Command Prompt (`cmd`) and type `ipconfig`. Find **IPv4 Address** (e.g., `192.168.1.15`).
+- **Mac / Linux:** Open Terminal and type `ipconfig getifaddr en0` or `ifconfig`.
 
+### 2. Update Socket URL in Apps
+Inside both `apps/driver-app` and `apps/passenger-app`, update the server IP setting:
 ```javascript
-// Replace 192.168.1.15 with YOUR computer's IP address
-const socket = io("http://192.168.1.15:5000");
+// Replace 192.168.1.15 with YOUR computer's actual local IP address
+const SOCKET_URL = "http://192.168.1.15:5000";
 ```
 
 ---
 
-## ❓ Common Troubleshooting
+## ❓ Troubleshooting & FAQs
 
-### 1. `npm error Missing script: "dev"`
-
-If running `npm run dev` in `apps/admin-dashboard` throws an error, use `npm start` instead!
-
-### 2. Expo Version Mismatch Error on Phone
-
-If your phone shows a version mismatch error when scanning the QR code, run this command inside the app folder:
-
-```bash
-npx expo install expo@54.0.0
-npx expo install --fix
-npx expo start -c
-
-```
+| Issue | Solution |
+| :--- | :--- |
+| **`Missing script: "dev"` in Admin Dashboard** | Run `npm start` instead of `npm run dev`. |
+| **Expo version mismatch error on phone** | Run `npx expo install --fix` and restart with `npx expo start -c`. |
+| **App won't connect to backend** | Verify both devices are on the same Wi-Fi network and check your computer's firewall settings for port `5000`. |
