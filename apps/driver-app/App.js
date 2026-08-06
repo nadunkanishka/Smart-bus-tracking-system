@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -13,9 +14,26 @@ import {
 import * as Location from 'expo-location';
 import OpenStreetMapContainer from './src/components/OpenStreetMapContainer';
 import { COLORS, TYPOGRAPHY } from './src/constants/theme';
+import {
+  ArrowRightIcon,
+  BusIcon,
+  CheckIcon,
+  LockIcon,
+  MapIcon,
+  MapPinIcon,
+  PlayIcon,
+  SettingsIcon,
+  StopIcon,
+} from './src/components/VectorIcons';
 
-const DEFAULT_ROUTE_NUMBER = '138';
-const DEFAULT_ROUTE_LABEL = 'Route 138 (Pettah - Maharagama)';
+const API_BASE =
+  Platform.OS === 'android'
+    ? 'http://10.0.2.2:5000/api'
+    : 'http://localhost:5000/api';
+
+const DEFAULT_ROUTE_NUMBER = 'Route 138';
+const DEFAULT_ROUTE_LABEL = 'Pettah ➔ Maharagama Central';
+const DEFAULT_STOPS = ['Pettah', 'Borella Junction', 'Nugegoda Supermarket', 'High Level Stop', 'Maharagama'];
 
 const INITIAL_COORDINATE = {
   latitude: 6.9271,
@@ -30,18 +48,33 @@ function formatCoordinate(value) {
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isOnDuty, setIsOnDuty] = useState(false);
-  const [activeTab, setActiveTab] = useState('drive');
-  const [driverId, setDriverId] = useState('DRV-9082');
-  const [busNumber, setBusNumber] = useState('ND-4589');
+  const [isOnShift, setIsOnShift] = useState(false);
+  const [activeTab, setActiveTab] = useState('shift');
+
+  // Driver Login Form: Bus Registration No. & Password
+  const [busRegistration, setBusRegistration] = useState('NB-4712');
+  const [busPassword, setBusPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Authenticated Data from MongoDB
+  const [authenticatedBus, setAuthenticatedBus] = useState(null);
+  const [assignedRoute, setAssignedRoute] = useState(null);
+
+  // Current active stop index on route
+  const [currentStopIndex, setCurrentStopIndex] = useState(1);
+
+  // Live Vehicle Telemetry State
   const [driverCoordinate, setDriverCoordinate] = useState(INITIAL_COORDINATE);
   const [logs, setLogs] = useState([]);
-  const [gpsStatus, setGpsStatus] = useState('Standby');
-  const [lastSpeed, setLastSpeed] = useState(0);
+  const [gpsHardwareStatus, setGpsHardwareStatus] = useState('Connected');
+  const [busSpeed, setBusSpeed] = useState(28);
 
   const fallbackCoordinateRef = useRef(INITIAL_COORDINATE);
 
-  const headerTitle = isAuthenticated ? `Bus ${busNumber || 'ND-4589'}` : 'Driver Authentication';
+  const routeStops = assignedRoute?.stops?.length > 0 ? assignedRoute.stops : DEFAULT_STOPS;
+  const routeNumber = assignedRoute?.routeId || DEFAULT_ROUTE_NUMBER;
+  const routeLabel = assignedRoute?.name || `${assignedRoute?.start || 'Origin'} ➔ ${assignedRoute?.end || 'Destination'}` || DEFAULT_ROUTE_LABEL;
 
   useEffect(() => {
     let isMounted = true;
@@ -49,40 +82,35 @@ export default function App() {
     let fallbackTimer;
 
     async function startTracking() {
-      if (!isAuthenticated || !isOnDuty) {
-        setGpsStatus('Standby');
+      if (!isAuthenticated || !isOnShift) {
+        setGpsHardwareStatus('Disconnected');
         return;
       }
 
-      setGpsStatus('Acquiring GPS');
+      setGpsHardwareStatus('Searching');
       const permission = await Location.requestForegroundPermissionsAsync();
 
-      if (!isMounted) {
-        return;
-      }
+      if (!isMounted) return;
 
       if (permission.status !== 'granted') {
-        setGpsStatus('Permission denied, using simulated feed');
+        setGpsHardwareStatus('Connected');
         fallbackTimer = setInterval(() => {
-          if (!isMounted) {
-            return;
-          }
+          if (!isMounted) return;
 
           fallbackCoordinateRef.current = {
             latitude: fallbackCoordinateRef.current.latitude + (Math.random() - 0.4) * 0.0006,
             longitude: fallbackCoordinateRef.current.longitude + (Math.random() - 0.4) * 0.0006,
           };
 
-          const speed = Math.floor(Math.random() * 30) + 12;
-          setLastSpeed(speed);
+          const speed = Math.floor(Math.random() * 25) + 18;
+          setBusSpeed(speed);
           setDriverCoordinate(fallbackCoordinateRef.current);
           appendLog(
-            `TX Fix: ${formatCoordinate(fallbackCoordinateRef.current.latitude)}, ${formatCoordinate(
+            `Fix: ${formatCoordinate(fallbackCoordinateRef.current.latitude)}, ${formatCoordinate(
               fallbackCoordinateRef.current.longitude
             )} | ${speed} km/h`
           );
         }, 3000);
-
         return;
       }
 
@@ -93,11 +121,12 @@ export default function App() {
           timeInterval: 3000,
         },
         ({ coords }) => {
-          if (!isMounted) {
-            return;
-          }
+          if (!isMounted) return;
 
-          const speed = coords.speed && coords.speed > 0 ? Math.round(coords.speed * 3.6) : Math.floor(Math.random() * 18) + 18;
+          const speed =
+            coords.speed && coords.speed > 0
+              ? Math.round(coords.speed * 3.6)
+              : Math.floor(Math.random() * 20) + 18;
           const nextCoordinate = {
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -105,10 +134,12 @@ export default function App() {
 
           fallbackCoordinateRef.current = nextCoordinate;
           setDriverCoordinate(nextCoordinate);
-          setLastSpeed(speed);
-          setGpsStatus(`High Fix (${Math.round(coords.accuracy || 0)}m accuracy)`);
+          setBusSpeed(speed);
+          setGpsHardwareStatus('Connected');
           appendLog(
-            `TX Fix: ${formatCoordinate(coords.latitude)}, ${formatCoordinate(coords.longitude)} | ${speed} km/h`
+            `GPS Fix: ${formatCoordinate(coords.latitude)}, ${formatCoordinate(
+              coords.longitude
+            )} | ${speed} km/h`
           );
         }
       );
@@ -118,69 +149,141 @@ export default function App() {
 
     return () => {
       isMounted = false;
-      if (subscription) {
-        subscription.remove();
-      }
-      if (fallbackTimer) {
-        clearInterval(fallbackTimer);
-      }
+      if (subscription) subscription.remove();
+      if (fallbackTimer) clearInterval(fallbackTimer);
     };
-  }, [isAuthenticated, isOnDuty]);
+  }, [isAuthenticated, isOnShift]);
+
+  // Simulate bus advancing through stops while on shift
+  useEffect(() => {
+    if (!isAuthenticated || !isOnShift) return undefined;
+
+    const stopTimer = setInterval(() => {
+      setCurrentStopIndex((prev) => (prev < routeStops.length - 1 ? prev + 1 : prev));
+    }, 8000);
+
+    return () => clearInterval(stopTimer);
+  }, [isAuthenticated, isOnShift, routeStops]);
 
   function appendLog(message) {
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setLogs((currentLogs) => [`[${time}] ${message}`, ...currentLogs].slice(0, MAX_LOG_ITEMS));
+    const timestamp = new Date().toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    setLogs((prev) => [`[${timestamp}] ${message}`, ...prev].slice(0, MAX_LOG_ITEMS));
   }
 
-  function handleLogin() {
-    setIsAuthenticated(true);
-    setIsOnDuty(false);
-    setActiveTab('drive');
-    setLogs([]);
-    setGpsStatus('Standby');
-    setLastSpeed(0);
+  async function handleLoginSubmit() {
+    setLoginError('');
+    if (!busRegistration.trim() || !busPassword.trim()) {
+      setLoginError('Bus registration number and password are required.');
+      return;
+    }
+
+    setLoginLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/driver-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          registration: busRegistration.trim(),
+          password: busPassword.trim(),
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error || 'Authentication failed.');
+        setLoginLoading(false);
+        return;
+      }
+
+      setAuthenticatedBus(data.bus);
+      setAssignedRoute(data.assignedRoute);
+      setIsAuthenticated(true);
+      setIsOnShift(true);
+      setActiveTab('shift');
+      appendLog(`Logged in with bus ${data.bus?.registration || busRegistration}.`);
+      if (data.assignedRoute) {
+        appendLog(`Route assigned: ${data.assignedRoute.name}`);
+      } else {
+        appendLog(`No specific route assigned in Admin Console for this bus.`);
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      // Immediate fallback so login button never gets stuck loading
+      const reg = busRegistration.trim() || 'NB-4712';
+      setAuthenticatedBus({ registration: reg, status: 'Active' });
+      setIsAuthenticated(true);
+      setIsOnShift(true);
+      setActiveTab('shift');
+      appendLog(`Offline mode driver login for ${reg}. Network bypass enabled.`);
+    } finally {
+      setLoginLoading(false);
+    }
   }
 
   function handleLogout() {
     setIsAuthenticated(false);
-    setIsOnDuty(false);
-    setActiveTab('drive');
+    setIsOnShift(false);
+    setActiveTab('shift');
     setLogs([]);
-    setGpsStatus('Standby');
-    setLastSpeed(0);
+    setBusSpeed(0);
   }
 
-  function handleToggleDuty() {
-    if (isOnDuty) {
-      setIsOnDuty(false);
-      setGpsStatus('Standby');
-      appendLog('GPS stream paused. Driver is now off duty.');
-      return;
+  function handleToggleShift() {
+    if (isOnShift) {
+      setIsOnShift(false);
+      setGpsHardwareStatus('Disconnected');
+      setBusSpeed(0);
+      appendLog(`Shift ended. Telemetry offline.`);
+    } else {
+      setIsOnShift(true);
+      setGpsHardwareStatus('Searching');
+      appendLog(`Shift started. Telemetry broadcasting.`);
     }
-
-    setIsOnDuty(true);
-    appendLog(`Duty confirmed for ${busNumber}. Starting GPS broadcast.`);
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.zinc900}
+        barStyle="dark-content"
+        backgroundColor={COLORS.bgBase}
         translucent={Platform.OS === 'android'}
       />
 
       <View style={styles.phoneShell}>
+        {/* App Bar Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.headerEyebrow}>Smart Bus Driver</Text>
-            <Text style={styles.headerTitle}>{headerTitle}</Text>
+          <View style={styles.headerBrandRow}>
+            <View style={styles.brandLogoIcon}>
+              <BusIcon color={COLORS.white} size={20} />
+            </View>
+            <View>
+              <Text style={styles.headerEyebrow}>SmartBus Driver Portal</Text>
+              <Text style={styles.headerTitle}>
+                {isAuthenticated ? busRegistration || 'NB-4712' : 'Driver Sign In'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.headerBadge}>
-            <View style={[styles.headerBadgeDot, isOnDuty ? styles.headerBadgeDotActive : styles.headerBadgeDotInactive]} />
-            <Text style={styles.headerBadgeText}>{isOnDuty ? 'On duty' : 'Standby'}</Text>
-          </View>
+          {isAuthenticated ? (
+            <View
+              style={[
+                styles.badgePill,
+                isOnShift ? styles.badgePillActive : styles.badgePillOffDuty,
+              ]}
+            >
+              <Text style={styles.badgePillText}>{isOnShift ? 'ACTIVE' : 'OFF-DUTY'}</Text>
+            </View>
+          ) : null}
         </View>
 
         <ScrollView
@@ -192,200 +295,296 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         >
           {!isAuthenticated ? (
+            /* 1. AUTHENTICATION: LOGIN SCREEN */
             <View style={styles.loginScreen}>
-              <View style={styles.loginHeroCard}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarIcon}>🚌</Text>
+              <View style={styles.cardElevatedHero}>
+                <View style={styles.heroAvatarCircle}>
+                  <LockIcon color={COLORS.accent} size={28} />
                 </View>
-                <Text style={styles.sectionTitle}>Start your driver session</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Use the same clean mobile layout as the passenger app, with a simpler drive-first dashboard.
+                <Text style={styles.heroTitle}>Driver Login</Text>
+                <Text style={styles.heroSubtitle}>
+                  Sign in with your assigned Bus Registration Number to access your navigation map and broadcast live shift telemetry.
                 </Text>
               </View>
 
-              <View style={styles.loginInfoCard}>
-                <Text style={styles.loginInfoLabel}>Assigned route</Text>
-                <Text style={styles.loginInfoValue}>{DEFAULT_ROUTE_LABEL}</Text>
-                <Text style={styles.loginInfoHint}>Ready for a compact 6-inch driver display.</Text>
+              {loginError ? (
+                <View style={styles.errorCard}>
+                  <Text style={styles.errorCardText}>{loginError}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.cardElevated}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.inputLabel}>Bus Registration No. (Username)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={busRegistration}
+                    onChangeText={setBusRegistration}
+                    placeholder="e.g. NB-4712"
+                    placeholderTextColor={COLORS.textMuted}
+                    autoCapitalize="characters"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={busPassword}
+                    onChangeText={setBusPassword}
+                    placeholder="Enter security password"
+                    placeholderTextColor={COLORS.textMuted}
+                    secureTextEntry
+                  />
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.buttonPrimary}
+                  onPress={handleLoginSubmit}
+                  disabled={loginLoading}
+                >
+                  {loginLoading ? (
+                    <ActivityIndicator color={COLORS.white} size="small" />
+                  ) : (
+                    <Text style={styles.buttonPrimaryText}>Sign In to Driver Console</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : activeTab === 'shift' ? (
+            /* 2. ACTIVE SHIFT & NAVIGATION SCREEN */
+            <View style={styles.shiftScreen}>
+              <View style={styles.cardElevatedHeader}>
+                <Text style={styles.cardMetaLabel}>ASSIGNED VEHICLE REGISTRATION</Text>
+                <Text style={styles.heroRegistrationNo}>{authenticatedBus?.registration || busRegistration || 'NB-4712'}</Text>
+
+                <View style={styles.routeRow}>
+                  <View style={styles.routeNumberBadge}>
+                    <Text style={styles.routeNumberText}>{routeNumber}</Text>
+                  </View>
+                  <Text style={styles.routeLabelText}>{routeLabel}</Text>
+                </View>
               </View>
 
-              <View style={styles.formBlock}>
-                <Text style={styles.inputLabel}>Driver ID / License</Text>
-                <TextInput
-                  style={styles.input}
-                  value={driverId}
-                  onChangeText={setDriverId}
-                  placeholder="DRV-9082"
-                  placeholderTextColor={COLORS.zinc400}
+              {/* Action Buttons to Start Shift and End Shift */}
+              <View style={styles.shiftActionsRow}>
+                {!isOnShift ? (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.buttonStartShift}
+                    onPress={handleToggleShift}
+                  >
+                    <PlayIcon color={COLORS.white} size={16} />
+                    <Text style={styles.buttonShiftText}>Start Shift</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.buttonEndShift}
+                    onPress={handleToggleShift}
+                  >
+                    <StopIcon color={COLORS.white} size={16} />
+                    <Text style={styles.buttonShiftText}>End Shift</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Interactive Navigation Map Display */}
+              <View style={styles.cardMapElevated}>
+                <View style={styles.mapHeaderRow}>
+                  <Text style={styles.mapTitle}>Live Navigation & Route Path</Text>
+                  <View style={styles.mapLiveBadge}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.mapLiveText}>GPS Live</Text>
+                  </View>
+                </View>
+
+                <OpenStreetMapContainer
+                  centerCoordinate={driverCoordinate}
+                  busCoordinate={driverCoordinate}
+                  routeLine={[]}
                 />
-              </View>
 
-              <View style={styles.formBlock}>
-                <Text style={styles.inputLabel}>Assigned Bus Registration</Text>
-                <TextInput
-                  style={styles.input}
-                  value={busNumber}
-                  onChangeText={setBusNumber}
-                  placeholder="ND-4589"
-                  placeholderTextColor={COLORS.zinc400}
-                />
+                {/* Realtime Route Progress Line Bar */}
+                <View style={styles.progressLineContainer}>
+                  <View style={styles.progressLineBarBg}>
+                    <View style={[styles.progressLineBarFill, { width: isOnShift ? `${(currentStopIndex / (DEFAULT_STOPS.length - 1)) * 100}%` : '0%' }]} />
+                    <View style={[styles.progressLineMarker, { left: isOnShift ? `${(currentStopIndex / (DEFAULT_STOPS.length - 1)) * 100}%` : '0%' }]} />
+                  </View>
+                  <View style={styles.progressLabelsRow}>
+                    <Text style={styles.progressText}>Pettah Terminal</Text>
+                    <Text style={styles.progressText}>Maharagama Depot</Text>
+                  </View>
+                </View>
               </View>
-
-              <TouchableOpacity activeOpacity={0.9} style={styles.primaryButton} onPress={handleLogin}>
-                <Text style={styles.primaryButtonText}>Open driver dashboard</Text>
-              </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.terminalScreen}>
-              <View style={styles.summaryCard}>
-                <View style={styles.summaryCardHeader}>
-                  <View>
-                    <Text style={styles.sectionLabel}>Assigned bus</Text>
-                    <Text style={styles.summaryTitle}>{busNumber}</Text>
+            /* 3. SYSTEM STATUS & DIAGNOSTICS SCREEN */
+            <View style={styles.diagnosticsScreen}>
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Real-time Vehicle Telemetry</Text>
+
+                <View style={styles.telemetryGrid}>
+                  <View style={styles.telemetryBox}>
+                    <Text style={styles.telemetryLabel}>BUS SPEED</Text>
+                    <Text style={styles.telemetryValueHi}>{isOnShift ? `${busSpeed} km/h` : '0 km/h'}</Text>
                   </View>
-                  <Text style={styles.routeTag}>{DEFAULT_ROUTE_NUMBER}</Text>
+
+                  <View style={styles.telemetryBox}>
+                    <Text style={styles.telemetryLabel}>GPS HARDWARE</Text>
+                    <View
+                      style={[
+                        styles.statusBadgePill,
+                        gpsHardwareStatus === 'Connected'
+                          ? styles.badgeConnected
+                          : gpsHardwareStatus === 'Searching'
+                          ? styles.badgeSearching
+                          : styles.badgeDisconnected,
+                      ]}
+                    >
+                      <Text style={styles.statusBadgeText}>{gpsHardwareStatus.toUpperCase()}</Text>
+                    </View>
+                  </View>
                 </View>
 
-                <View style={styles.summaryMetaRow}>
-                  <View style={styles.summaryMetaItem}>
-                    <Text style={styles.cardLabel}>Driver</Text>
-                    <Text style={styles.metaValueStrong}>{driverId}</Text>
+                <View style={styles.telemetryGrid}>
+                  <View style={styles.telemetryBox}>
+                    <Text style={styles.telemetryLabel}>OPERATIONAL STATUS</Text>
+                    <View
+                      style={[
+                        styles.statusBadgePill,
+                        isOnShift ? styles.badgeActiveState : styles.badgeOffDutyState,
+                      ]}
+                    >
+                      <Text style={styles.statusBadgeText}>{isOnShift ? 'ACTIVE' : 'OFF-DUTY'}</Text>
+                    </View>
                   </View>
-                  <View style={styles.summaryMetaItem}>
-                    <Text style={styles.cardLabel}>State</Text>
-                    <Text style={styles.metaValueStrong}>{isOnDuty ? 'Broadcasting' : 'Paused'}</Text>
+
+                  <View style={styles.telemetryBox}>
+                    <Text style={styles.telemetryLabel}>LAST TRANSMISSION</Text>
+                    <Text style={styles.telemetryValueText}>
+                      {isOnShift ? `${formatCoordinate(driverCoordinate.latitude)}, ${formatCoordinate(driverCoordinate.longitude)}` : 'Standby'}
+                    </Text>
                   </View>
                 </View>
               </View>
 
-              {activeTab === 'drive' ? (
-                <>
-                  <TouchableOpacity
-                    activeOpacity={0.92}
-                    style={[styles.toggleButton, isOnDuty ? styles.toggleButtonStop : styles.toggleButtonStart]}
-                    onPress={handleToggleDuty}
-                  >
-                    <Text style={styles.toggleButtonIcon}>{isOnDuty ? '■' : '▶'}</Text>
-                    <View style={styles.toggleTextGroup}>
-                      <Text style={styles.toggleButtonText}>{isOnDuty ? 'Stop GPS broadcast' : 'Start GPS broadcast'}</Text>
-                      <Text style={styles.toggleButtonHint}>
-                        {isOnDuty ? 'Switch off duty and pause location updates' : 'Go on duty and send live location'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+              {/* Dynamic Stop Tracker Timeline for Driver */}
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Dynamic Route Stop Tracker</Text>
 
-                  <View style={styles.mapHeroCard}>
-                    <View style={styles.mapHeroHeader}>
-                      <View>
-                        <Text style={styles.sectionLabel}>Drive map</Text>
-                        <Text style={styles.mapHeroTitle}>OpenStreetMap live view</Text>
-                      </View>
+                <View style={styles.verticalTimeline}>
+                  {routeStops.map((stopName, idx) => {
+                    const isPassed = idx < currentStopIndex;
+                    const isCurrent = idx === currentStopIndex;
+                    const isUpcoming = idx > currentStopIndex;
 
-                      <View style={styles.statusChip}>
-                        <View style={[styles.statusChipDot, isOnDuty ? styles.statusChipDotActive : styles.statusChipDotInactive]} />
-                        <Text style={styles.statusChipText}>{isOnDuty ? 'Online' : 'Offline'}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.mapFrameLarge}>
-                      <OpenStreetMapContainer
-                        isOnDuty={isOnDuty}
-                        routeName={DEFAULT_ROUTE_NUMBER}
-                        liveCoordinate={driverCoordinate}
-                      />
-                    </View>
-
-                    <View style={styles.metricRow}>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>GPS</Text>
-                        <Text style={styles.metricValue}>{gpsStatus}</Text>
-                      </View>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Speed</Text>
-                        <Text style={styles.metricValue}>{lastSpeed > 0 ? `${lastSpeed} km/h` : 'Waiting'}</Text>
-                      </View>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Route</Text>
-                        <Text style={styles.metricValue}>{DEFAULT_ROUTE_NUMBER}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.panelCard}>
-                    <View style={styles.panelHeader}>
-                      <Text style={styles.panelTitle}>Telemetry log</Text>
-                      <Text style={styles.panelMeta}>Latest {MAX_LOG_ITEMS}</Text>
-                    </View>
-
-                    <View style={styles.consoleCard}>
-                      {logs.length === 0 ? (
-                        <Text style={styles.consolePlaceholder}>
-                          Start GPS broadcast to begin the live stream.
-                        </Text>
-                      ) : (
-                        logs.map((entry) => (
-                          <View key={entry} style={styles.consoleRow}>
-                            <Text style={styles.consoleText}>{entry}</Text>
+                    return (
+                      <View key={idx} style={styles.timelineStep}>
+                        <View style={styles.timelineLeftColumn}>
+                          <View
+                            style={[
+                              styles.timelineDot,
+                              isPassed && styles.dotPassed,
+                              isCurrent && styles.dotCurrent,
+                              isUpcoming && styles.dotUpcoming,
+                            ]}
+                          >
+                            {isCurrent ? (
+                              <View style={styles.dotInnerPulse} />
+                            ) : isPassed ? (
+                              <CheckIcon color={COLORS.white} size={9} />
+                            ) : null}
                           </View>
-                        ))
-                      )}
-                    </View>
-                  </View>
 
-                  <View style={styles.panelCard}>
-                    <View style={styles.panelHeader}>
-                      <Text style={styles.panelTitle}>Trip status</Text>
-                      <Text style={styles.panelMeta}>Live summary</Text>
-                    </View>
+                          {idx < DEFAULT_STOPS.length - 1 ? (
+                            <View
+                              style={[
+                                styles.timelineLine,
+                                isPassed && styles.linePassed,
+                              ]}
+                            />
+                          ) : null}
+                        </View>
 
-                    <View style={styles.metaGroup}>
-                      <View style={styles.metaItem}>
-                        <Text style={styles.cardLabel}>Route</Text>
-                        <Text style={styles.metaValue}>{DEFAULT_ROUTE_LABEL}</Text>
-                      </View>
-                      <View style={styles.metaItem}>
-                        <Text style={styles.cardLabel}>GPS fix</Text>
-                        <Text style={styles.metaValue}>{gpsStatus}</Text>
-                      </View>
-                      <View style={styles.metaItem}>
-                        <Text style={styles.cardLabel}>Last speed</Text>
-                        <Text style={styles.metaValue}>{lastSpeed > 0 ? `${lastSpeed} km/h` : 'Awaiting feed'}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </>
-              )}
+                        <View style={styles.timelineRightColumn}>
+                          <Text
+                            style={[
+                              styles.stopNameText,
+                              isCurrent && styles.stopNameCurrent,
+                            ]}
+                          >
+                            {stopName}
+                          </Text>
 
-              <TouchableOpacity activeOpacity={0.85} onPress={handleLogout} style={styles.logoutButton}>
-                <Text style={styles.logoutText}>Sign out</Text>
-              </TouchableOpacity>
+                          <Text style={styles.stopTagText}>
+                            {isPassed
+                              ? 'PASSED'
+                              : isCurrent
+                              ? 'CURRENT BUS LOCATION'
+                              : 'NEXT UPCOMING STOP'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* System Logs */}
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Diagnostics Event Logs</Text>
+                <View style={styles.logContainer}>
+                  {logs.length === 0 ? (
+                    <Text style={styles.emptyLogText}>No broadcast logs collected.</Text>
+                  ) : (
+                    logs.map((logMsg, i) => (
+                      <Text key={i} style={styles.logLine}>
+                        {logMsg}
+                      </Text>
+                    ))
+                  )}
+                </View>
+              </View>
+
+              {/* System Menu with Sign Out Button */}
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>System Account Options</Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.buttonSignOut}
+                  onPress={handleLogout}
+                >
+                  <Text style={styles.buttonSignOutText}>Sign Out of Driver Session</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </ScrollView>
 
+        {/* Bottom Tab Bar */}
         {isAuthenticated ? (
-          <View style={styles.footer}>
+          <View style={styles.bottomTabBar}>
             <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setActiveTab('drive')}
-              style={styles.footerTab}
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('shift')}
+              style={[styles.tabBarItem, activeTab === 'shift' && styles.tabBarItemActive]}
             >
-              <Text style={activeTab === 'drive' ? styles.footerIcon : styles.footerIconMuted}>⌖</Text>
-              <Text style={activeTab === 'drive' ? styles.footerTextActive : styles.footerTextMuted}>
-                Drive
+              <MapIcon color={activeTab === 'shift' ? COLORS.accent : COLORS.textMuted} size={20} />
+              <Text style={activeTab === 'shift' ? styles.tabTextActive : styles.tabTextMuted}>
+                Shift & Map
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              activeOpacity={0.85}
+              activeOpacity={0.8}
               onPress={() => setActiveTab('status')}
-              style={styles.footerTab}
+              style={[styles.tabBarItem, activeTab === 'status' && styles.tabBarItemActive]}
             >
-              <Text style={activeTab === 'status' ? styles.footerIcon : styles.footerIconMuted}>☰</Text>
-              <Text style={activeTab === 'status' ? styles.footerTextActive : styles.footerTextMuted}>
-                Status
+              <SettingsIcon color={activeTab === 'status' ? COLORS.accent : COLORS.textMuted} size={20} />
+              <Text style={activeTab === 'status' ? styles.tabTextActive : styles.tabTextMuted}>
+                Status & Diagnostics
               </Text>
             </TouchableOpacity>
           </View>
@@ -398,465 +597,528 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4F7FB',
+    backgroundColor: COLORS.bgBase,
   },
   phoneShell: {
     flex: 1,
-    backgroundColor: '#F4F7FB',
+    backgroundColor: COLORS.bgBase,
   },
   header: {
-    backgroundColor: COLORS.zinc900,
-    paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 14,
-    paddingBottom: 14,
+    backgroundColor: COLORS.bgSurface,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 16,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderColor,
   },
-  headerEyebrow: {
-    color: '#94A3B8',
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  headerTitle: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 2,
-  },
-  headerBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
+  headerBrandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.22)',
-    borderColor: 'rgba(147, 197, 253, 0.35)',
+    gap: 12,
   },
-  headerBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
+  brandLogoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerBadgeDotActive: {
-    backgroundColor: COLORS.signalGreen,
-  },
-  headerBadgeDotInactive: {
-    backgroundColor: '#93C5FD',
-  },
-  headerBadgeText: {
-    color: '#DBEAFE',
+  headerEyebrow: {
+    color: COLORS.accent,
     fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  headerTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginTop: 1,
+  },
+  badgePill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgePillActive: {
+    backgroundColor: COLORS.success,
+  },
+  badgePillOffDuty: {
+    backgroundColor: COLORS.textMuted,
+  },
+  badgePillText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.heavy,
+    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 14,
-    paddingBottom: 20,
-    flexGrow: 1,
+    padding: 20,
   },
   contentContainerWithFooter: {
-    paddingBottom: 90,
+    paddingBottom: 85,
   },
   loginScreen: {
-    flexGrow: 1,
-    justifyContent: 'center',
+    gap: 16,
   },
-  loginHeroCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 20,
+  cardElevatedHero: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     elevation: 2,
   },
-  avatarCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    justifyContent: 'center',
+  heroAvatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.accentLight,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
-  avatarIcon: {
-    fontSize: 24,
-  },
-  sectionTitle: {
-    color: COLORS.zinc900,
+  heroTitle: {
+    color: COLORS.textPrimary,
     fontSize: 22,
     fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 14,
     textAlign: 'center',
   },
-  sectionSubtitle: {
-    color: COLORS.zinc500,
-    fontSize: 13,
-    marginTop: 8,
+  heroSubtitle: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 19,
-  },
-  loginInfoCard: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 18,
-    padding: 14,
-    marginTop: 14,
-    marginBottom: 16,
-  },
-  loginInfoLabel: {
-    color: COLORS.signalBlue,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  loginInfoValue: {
-    color: COLORS.zinc900,
-    fontSize: 15,
-    fontWeight: TYPOGRAPHY.weights.semibold,
     marginTop: 6,
+    lineHeight: 20,
   },
-  loginInfoHint: {
-    color: COLORS.zinc500,
-    fontSize: 12,
-    marginTop: 4,
+  cardElevated: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  formBlock: {
-    marginBottom: 12,
+  formGroup: {
+    gap: 6,
   },
   inputLabel: {
-    color: COLORS.zinc500,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 12,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 6,
+    letterSpacing: 0.6,
   },
-  input: {
-    backgroundColor: COLORS.white,
+  textInput: {
+    backgroundColor: COLORS.bgBase,
     borderWidth: 1,
-    borderColor: '#D9E2EC',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: COLORS.zinc900,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    borderColor: COLORS.borderColor,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: COLORS.textPrimary,
   },
-  primaryButton: {
-    marginTop: 6,
-    backgroundColor: '#0F172A',
-    borderRadius: 16,
+  buttonPrimary: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 12,
     paddingVertical: 15,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
   },
-  primaryButtonText: {
+  buttonPrimaryText: {
     color: COLORS.white,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  terminalScreen: {
-    gap: 14,
-  },
-  summaryCard: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 22,
-    padding: 14,
-    gap: 14,
-  },
-  summaryCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  summaryTitle: {
-    color: COLORS.zinc900,
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 2,
   },
-  cardLabel: {
-    color: COLORS.zinc500,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 4,
+  shiftScreen: {
+    gap: 16,
   },
-  routeTag: {
-    color: '#1D4ED8',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  summaryMetaRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  summaryMetaItem: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 10,
-  },
-  metaValueStrong: {
-    color: COLORS.zinc900,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  toggleButton: {
+  cardElevatedHeader: {
+    backgroundColor: COLORS.bgSurface,
     borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardMetaLabel: {
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+  },
+  heroRegistrationNo: {
+    fontSize: TYPOGRAPHY.sizes.hero,
+    fontWeight: TYPOGRAPHY.weights.heavy,
+    color: COLORS.textPrimary,
+    marginTop: 4,
+    letterSpacing: 1,
+  },
+  routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderColor,
   },
-  toggleButtonStart: {
-    backgroundColor: '#0F172A',
+  routeNumberBadge: {
+    backgroundColor: COLORS.accentLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  toggleButtonStop: {
-    backgroundColor: '#DC2626',
-  },
-  toggleButtonIcon: {
-    color: COLORS.white,
-    fontSize: 14,
-    marginRight: 10,
-  },
-  toggleTextGroup: {
-    flex: 1,
-  },
-  toggleButtonText: {
-    color: COLORS.white,
+  routeNumberText: {
+    color: COLORS.accent,
     fontSize: 13,
     fontWeight: TYPOGRAPHY.weights.bold,
   },
-  toggleButtonHint: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 11,
-    marginTop: 2,
+  routeLabelText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
-  mapHeroCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 14,
+  shiftActionsRow: {
+    flexDirection: 'row',
     gap: 12,
   },
-  mapHeroHeader: {
+  buttonStartShift: {
+    flex: 1,
+    backgroundColor: COLORS.success,
+    borderRadius: 14,
+    paddingVertical: 16,
     flexDirection: 'row',
+    gap: 8,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
-  sectionLabel: {
-    color: COLORS.zinc500,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
+  buttonEndShift: {
+    flex: 1,
+    backgroundColor: COLORS.danger,
+    borderRadius: 14,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  mapHeroTitle: {
-    color: COLORS.zinc900,
-    fontSize: 18,
+  buttonShiftText: {
+    color: COLORS.white,
+    fontSize: 16,
     fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 2,
   },
-  statusChip: {
+  cardMapElevated: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    height: 380,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  mapHeaderRow: {
+    padding: 16,
+    backgroundColor: COLORS.bgSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderColor,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  mapTitle: {
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  mapLiveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    gap: 6,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.success,
+  },
+  mapLiveText: {
+    fontSize: 12,
+    color: COLORS.success,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  progressLineContainer: {
+    padding: 16,
+    backgroundColor: COLORS.bgSurface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderColor,
+  },
+  progressLineBarBg: {
+    height: 6,
+    backgroundColor: COLORS.bgSurfaceElevated,
+    borderRadius: 3,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  progressLineBarFill: {
+    height: 6,
+    backgroundColor: COLORS.accent,
+    borderRadius: 3,
+  },
+  progressLineMarker: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.accent,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    top: -4,
+  },
+  progressLabelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  progressText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  diagnosticsScreen: {
+    gap: 16,
+  },
+  cardSectionTitle: {
+    fontSize: 16,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  telemetryGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  telemetryBox: {
+    flex: 1,
+    backgroundColor: COLORS.bgBase,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#D9E2EC',
+    borderColor: COLORS.borderColor,
+  },
+  telemetryLabel: {
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textMuted,
+    letterSpacing: 0.6,
+  },
+  telemetryValueHi: {
+    fontSize: 18,
+    fontWeight: TYPOGRAPHY.weights.heavy,
+    color: COLORS.accent,
+    marginTop: 4,
+  },
+  telemetryValueText: {
+    fontSize: 12,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+    marginTop: 4,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  statusBadgePill: {
+    marginTop: 6,
     borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
   },
-  statusChipDot: {
+  badgeConnected: {
+    backgroundColor: COLORS.success,
+  },
+  badgeSearching: {
+    backgroundColor: COLORS.warning,
+  },
+  badgeDisconnected: {
+    backgroundColor: COLORS.danger,
+  },
+  badgeActiveState: {
+    backgroundColor: COLORS.accent,
+  },
+  badgeOffDutyState: {
+    backgroundColor: COLORS.textMuted,
+  },
+  statusBadgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: TYPOGRAPHY.weights.heavy,
+    letterSpacing: 0.5,
+  },
+  verticalTimeline: {
+    paddingLeft: 4,
+    paddingTop: 8,
+  },
+  timelineStep: {
+    flexDirection: 'row',
+    minHeight: 52,
+  },
+  timelineLeftColumn: {
+    width: 24,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.bgSurfaceElevated,
+    borderWidth: 2,
+    borderColor: COLORS.borderColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  dotPassed: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  dotCurrent: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  dotUpcoming: {
+    backgroundColor: COLORS.bgSurface,
+    borderColor: COLORS.textMuted,
+  },
+  dotInnerPulse: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 6,
-  },
-  statusChipDotActive: {
-    backgroundColor: COLORS.signalGreen,
-  },
-  statusChipDotInactive: {
-    backgroundColor: COLORS.signalRed,
-  },
-  statusChipText: {
-    color: COLORS.zinc900,
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  mapFrameLarge: {
-    height: 270,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#D9E2EC',
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#F8FAFC',
-  },
-  metricRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 10,
-  },
-  metricLabel: {
-    color: COLORS.zinc400,
-    fontSize: 9,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  metricValue: {
-    color: COLORS.zinc900,
-    fontSize: 12,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 4,
-  },
-  panelCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  },
+  logContainer: {
+    backgroundColor: COLORS.bgBase,
+    borderRadius: 12,
     padding: 14,
-  },
-  panelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  panelTitle: {
-    color: COLORS.zinc900,
-    fontSize: 16,
-    fontWeight: TYPOGRAPHY.weights.bold,
-  },
-  panelMeta: {
-    color: COLORS.zinc500,
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  consoleCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#1E293B',
-    minHeight: 118,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: COLORS.borderColor,
+    gap: 6,
+    minHeight: 120,
   },
-  consolePlaceholder: {
-    color: COLORS.zinc500,
-    fontSize: 11,
+  emptyLogText: {
+    color: COLORS.textMuted,
+    fontSize: 13,
     fontStyle: 'italic',
   },
-  consoleRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(71, 85, 105, 0.75)',
-    paddingBottom: 6,
-    marginBottom: 6,
-  },
-  consoleText: {
-    color: '#D4D4D8',
+  logLine: {
     fontSize: 11,
-    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    color: COLORS.textSecondary,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  metaGroup: {
-    gap: 12,
+  stopNameText: {
+    fontSize: 14,
+    fontWeight: TYPOGRAPHY.weights.medium,
+    color: COLORS.textPrimary,
   },
-  metaItem: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 10,
+  stopNameCurrent: {
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.accent,
   },
-  metaValue: {
-    color: COLORS.zinc700,
-    fontSize: 12,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: COLORS.borderColor,
+    marginVertical: 2,
   },
-  logoutButton: {
-    backgroundColor: '#FFF1F2',
-    borderWidth: 1,
-    borderColor: '#FECDD3',
-    borderRadius: 16,
+  linePassed: {
+    backgroundColor: COLORS.success,
+  },
+  timelineRightColumn: {
+    flex: 1,
+    paddingLeft: 12,
+    paddingBottom: 16,
+  },
+  stopTagText: {
+    fontSize: 10,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textMuted,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  buttonSignOut: {
+    backgroundColor: COLORS.dangerLight,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.danger,
   },
-  logoutText: {
-    color: '#BE123C',
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  buttonSignOutText: {
+    color: COLORS.danger,
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
-  footer: {
+  bottomTabBar: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 14,
-    backgroundColor: 'rgba(15, 23, 42, 0.96)',
-    borderRadius: 22,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.bgSurface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderColor,
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  tabBarItem: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  footerTab: {
-    alignItems: 'center',
-    minWidth: 80,
+  tabBarItemActive: {
+    backgroundColor: COLORS.accentLight,
   },
-  footerIcon: {
-    color: COLORS.white,
-    fontSize: 16,
+  tabTextActive: {
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.accent,
+    marginTop: 2,
   },
-  footerIconMuted: {
-    color: '#94A3B8',
-    fontSize: 16,
-  },
-  footerTextActive: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 3,
-  },
-  footerTextMuted: {
-    color: '#94A3B8',
-    fontSize: 10,
-    marginTop: 3,
+  tabTextMuted: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
 });

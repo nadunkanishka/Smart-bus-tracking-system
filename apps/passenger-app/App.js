@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -10,212 +11,183 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
 import OpenStreetMapContainer from './src/components/OpenStreetMapContainer';
 import { COLORS, TYPOGRAPHY } from './src/constants/theme';
+import {
+  ArrowRightIcon,
+  BusIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  FlagIcon,
+  LockIcon,
+  MapIcon,
+  MapPinIcon,
+  UserIcon,
+} from './src/components/VectorIcons';
 
-const ROUTE_DATABASE = {
-  '138': {
+const ROUTE_DATABASE = [
+  {
+    id: '138',
     name: 'Route 138: Pettah ➔ Maharagama',
     shortName: 'Route 138',
-    stops: ['Borella Junction', 'Nugegoda Supermarket', 'High Level Road Stop', 'Maharagama Depot'],
+    startTerminal: 'Pettah Main Stand',
+    endTerminal: 'Maharagama Depot',
+    stops: ['Pettah', 'Borella Junction', 'Nugegoda Supermarket', 'High Level Stop', 'Maharagama'],
   },
-  '100': {
+  {
+    id: '100',
     name: 'Route 100: Panadura ➔ Colombo Fort',
     shortName: 'Route 100',
-    stops: ['Panadura Stand', 'Moratuwa Junction', 'Ratmalana Stop', 'Kollupitiya', 'Colombo Fort'],
+    startTerminal: 'Panadura Bus Stand',
+    endTerminal: 'Colombo Fort Station',
+    stops: ['Panadura', 'Moratuwa Town', 'Ratmalana Stop', 'Kollupitiya', 'Colombo Fort'],
   },
-  '177': {
+  {
+    id: '177',
     name: 'Route 177: Kaduwela ➔ Kollupitiya',
     shortName: 'Route 177',
-    stops: ['Kaduwela Clock Tower', 'Malabe Junction', 'Battaramulla', 'Rajagiriya', 'Kollupitiya'],
-  },
-};
-
-const INITIAL_BUSES = [
-  {
-    id: 'ND-4589',
-    latitude: 6.915,
-    longitude: 79.875,
-    speed: 28,
-    eta: 3,
-    status: 'active',
-  },
-  {
-    id: 'NB-8821',
-    latitude: 6.901,
-    longitude: 79.89,
-    speed: 14,
-    eta: 9,
-    status: 'warning',
+    startTerminal: 'Kaduwela Clock Tower',
+    endTerminal: 'Kollupitiya Station',
+    stops: ['Kaduwela', 'Malabe Junction', 'Battaramulla', 'Rajagiriya', 'Kollupitiya'],
   },
 ];
 
-const FALLBACK_PASSENGER_COORDINATE = {
+const INITIAL_BUS_LOCATION = {
+  id: 'NB-4712',
+  latitude: 6.915,
+  longitude: 79.875,
+  speed: 28,
+  etaMinutes: 4,
+};
+
+const PASSENGER_COORDINATE = {
   latitude: 6.89,
   longitude: 79.875,
 };
 
-function findMatchingRouteKey(query) {
-  const normalized = query.trim().toLowerCase();
-
-  if (!normalized) {
-    return '138';
-  }
-
-  return (
-    Object.keys(ROUTE_DATABASE).find(
-      (key) =>
-        key.includes(normalized) ||
-        ROUTE_DATABASE[key].name.toLowerCase().includes(normalized)
-    ) || '138'
-  );
-}
-
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passengerId, setPassengerId] = useState('PAS-2048');
-  const [defaultStop, setDefaultStop] = useState('Borella Junction');
-  const [routeSearch, setRouteSearch] = useState('138');
-  const [selectedStop, setSelectedStop] = useState('Borella Junction');
-  const [activeTab, setActiveTab] = useState('map');
-  const [isStopDropdownOpen, setIsStopDropdownOpen] = useState(false);
-  const [passengerCoordinate, setPassengerCoordinate] = useState(FALLBACK_PASSENGER_COORDINATE);
-  const [activeBuses, setActiveBuses] = useState(INITIAL_BUSES);
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
 
-  const fallbackCoordinateRef = useRef(FALLBACK_PASSENGER_COORDINATE);
-  const matchedRouteKey = useMemo(() => findMatchingRouteKey(routeSearch), [routeSearch]);
-  const matchedRoute = ROUTE_DATABASE[matchedRouteKey];
-  const sortedBuses = useMemo(
-    () => [...activeBuses].sort((firstBus, secondBus) => firstBus.eta - secondBus.eta),
-    [activeBuses]
-  );
-  const primaryBus = sortedBuses[0];
-  const selectedStopIndex = matchedRoute.stops.indexOf(selectedStop);
-  const upcomingStops = useMemo(() => {
-    if (selectedStopIndex < 0) {
-      return matchedRoute.stops;
-    }
+  // Registration Form Fields
+  const [regFullName, setRegFullName] = useState('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regPhone, setRegPhone] = useState('');
 
-    return matchedRoute.stops.slice(selectedStopIndex);
-  }, [matchedRoute, selectedStopIndex]);
-  const headerTitle = isAuthenticated ? 'Passenger Tracker' : 'Passenger Sign-In';
+  // Login Form Fields
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
 
+  const [userProfile, setUserProfile] = useState(null);
+
+  // Core Flow States
+  const [activeTab, setActiveTab] = useState('tracking'); // 'tracking', 'routes', 'profile'
+  const [routeSearchQuery, setRouteSearchQuery] = useState('');
+  const [selectedRoute, setSelectedRoute] = useState(ROUTE_DATABASE[0]);
+  const [boardingStop, setBoardingStop] = useState(ROUTE_DATABASE[0].stops[1]);
+  const [destinationStop, setDestinationStop] = useState(ROUTE_DATABASE[0].stops[4]);
+
+  const [isBoardingDropdownOpen, setIsBoardingDropdownOpen] = useState(false);
+  const [isDestinationDropdownOpen, setIsDestinationDropdownOpen] = useState(false);
+
+  const [liveBus, setLiveBus] = useState(INITIAL_BUS_LOCATION);
+
+  // Filter routes based on query
+  const filteredRoutes = useMemo(() => {
+    if (!routeSearchQuery.trim()) return ROUTE_DATABASE;
+    const query = routeSearchQuery.toLowerCase();
+    return ROUTE_DATABASE.filter(
+      (r) => r.id.includes(query) || r.name.toLowerCase().includes(query)
+    );
+  }, [routeSearchQuery]);
+
+  // Live Bus Position Simulation
   useEffect(() => {
-    if (!matchedRoute.stops.includes(selectedStop)) {
-      setSelectedStop(defaultStop && matchedRoute.stops.includes(defaultStop) ? defaultStop : matchedRoute.stops[0]);
-    }
-  }, [matchedRoute, selectedStop, defaultStop]);
+    if (!isAuthenticated) return undefined;
 
-  useEffect(() => {
-    setIsStopDropdownOpen(false);
-  }, [matchedRouteKey]);
-
-  useEffect(() => {
-    let subscription;
-    let fallbackTimer;
-
-    async function watchPassengerLocation() {
-      if (!isAuthenticated) {
-        return;
-      }
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        fallbackTimer = setInterval(() => {
-          fallbackCoordinateRef.current = {
-            latitude: fallbackCoordinateRef.current.latitude + (Math.random() - 0.45) * 0.0002,
-            longitude: fallbackCoordinateRef.current.longitude + (Math.random() - 0.45) * 0.0002,
-          };
-          setPassengerCoordinate(fallbackCoordinateRef.current);
-        }, 5000);
-        return;
-      }
-
-      subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 10,
-          timeInterval: 5000,
-        },
-        ({ coords }) => {
-          setPassengerCoordinate({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-          });
-        }
-      );
-    }
-
-    watchPassengerLocation();
-
-    return () => {
-      if (subscription) {
-        subscription.remove();
-      }
-      if (fallbackTimer) {
-        clearInterval(fallbackTimer);
-      }
-    };
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return undefined;
-    }
-
-    const timer = setInterval(() => {
-      setActiveBuses((currentBuses) =>
-        currentBuses.map((bus) => ({
-          ...bus,
-          latitude: bus.latitude + (Math.random() - 0.2) * 0.0004,
-          longitude: bus.longitude + (Math.random() - 0.2) * 0.0004,
-          speed: Math.max(10, bus.speed + Math.floor((Math.random() - 0.5) * 8)),
-          eta: Math.max(1, bus.eta - (Math.random() > 0.7 ? 1 : 0)),
-          status: bus.speed > 18 ? 'active' : 'warning',
-        }))
-      );
+    const interval = setInterval(() => {
+      setLiveBus((prev) => ({
+        ...prev,
+        latitude: prev.latitude + (Math.random() - 0.2) * 0.0004,
+        longitude: prev.longitude + (Math.random() - 0.2) * 0.0004,
+        speed: Math.max(12, prev.speed + Math.floor((Math.random() - 0.5) * 6)),
+        etaMinutes: Math.max(1, prev.etaMinutes - (Math.random() > 0.75 ? 1 : 0)),
+      }));
     }, 3000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
   }, [isAuthenticated]);
 
-  function handleLogin() {
-    const startingStop = defaultStop.trim() || 'Borella Junction';
-    setDefaultStop(startingStop);
-    setSelectedStop(startingStop);
-    setRouteSearch('138');
-    setActiveTab('map');
-    setIsStopDropdownOpen(false);
+  function handleRegisterSubmit() {
+    setUserProfile({
+      name: regFullName.trim() || 'Kasun Perera',
+      username: regUsername.trim() || 'kasun_p',
+      phone: regPhone.trim() || '+94 77 123 4567',
+    });
     setIsAuthenticated(true);
+    setActiveTab('tracking');
+  }
+
+  function handleLoginSubmit() {
+    setUserProfile({
+      name: loginUsername.trim() || 'Kasun Perera',
+      username: loginUsername.trim() || 'kasun_p',
+      phone: '+94 77 123 4567',
+    });
+    setIsAuthenticated(true);
+    setActiveTab('tracking');
   }
 
   function handleLogout() {
     setIsAuthenticated(false);
-    setActiveTab('map');
-    setIsStopDropdownOpen(false);
+    setUserProfile(null);
+    setActiveTab('tracking');
   }
+
+  function handleSelectRoute(route) {
+    setSelectedRoute(route);
+    setBoardingStop(route.stops[0]);
+    setDestinationStop(route.stops[route.stops.length - 1]);
+    setActiveTab('tracking');
+  }
+
+  // Calculate passed, upcoming, and target stop indexes
+  const boardingIndex = selectedRoute.stops.indexOf(boardingStop);
+  const destinationIndex = selectedRoute.stops.indexOf(destinationStop);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={COLORS.zinc900}
+        barStyle="dark-content"
+        backgroundColor={COLORS.bgBase}
         translucent={Platform.OS === 'android'}
       />
 
       <View style={styles.phoneShell}>
+        {/* App Bar Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.headerEyebrow}>Smart Bus Passenger</Text>
-            <Text style={styles.headerTitle}>{headerTitle}</Text>
+          <View style={styles.headerBrandRow}>
+            <View style={styles.brandLogoIcon}>
+              <UserIcon color={COLORS.white} size={20} />
+            </View>
+            <View>
+              <Text style={styles.headerEyebrow}>SmartBus Passenger</Text>
+              <Text style={styles.headerTitle}>
+                {isAuthenticated
+                  ? `Hi, ${userProfile?.name || 'Kasun'}`
+                  : authMode === 'register'
+                  ? 'Registration'
+                  : 'Passenger Sign In'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.headerBadge}>
-            <View style={styles.headerBadgeDot} />
-            <Text style={styles.headerBadgeText}>Live map</Text>
-          </View>
+          {isAuthenticated ? (
+            <View style={styles.badgePillActive}>
+              <Text style={styles.badgePillText}>CONNECTED</Text>
+            </View>
+          ) : null}
         </View>
 
         <ScrollView
@@ -227,296 +199,439 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         >
           {!isAuthenticated ? (
-            <View style={styles.loginScreen}>
-              <View style={styles.loginHeroCard}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarIcon}>🧍</Text>
+            /* 1. AUTHENTICATION: REGISTRATION & LOGIN SCREENS */
+            <View style={styles.authScreen}>
+              <View style={styles.cardElevatedHero}>
+                <View style={styles.heroAvatarCircle}>
+                  <BusIcon color={COLORS.accent} size={28} />
                 </View>
-
-                <Text style={styles.sectionTitle}>Track your bus in real time</Text>
-                <Text style={styles.sectionSubtitle}>
-                  Save your stop, keep the map front and center, and watch the nearest bus move live.
+                <Text style={styles.heroTitle}>
+                  {authMode === 'register' ? 'Passenger Registration' : 'Welcome Back'}
                 </Text>
+                <Text style={styles.heroSubtitle}>
+                  {authMode === 'register'
+                    ? 'Create your account to view live bus movements along your route and check arrival timelines.'
+                    : 'Sign in to access your saved bus routes, boarding stops, and real-time tracking.'}
+                </Text>
+
+                {/* Tab Switcher */}
+                <View style={styles.tabSwitcher}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.tabSwitchBtn, authMode === 'login' && styles.tabSwitchBtnActive]}
+                    onPress={() => setAuthMode('login')}
+                  >
+                    <Text style={authMode === 'login' ? styles.tabSwitchTextActive : styles.tabSwitchText}>
+                      Sign In
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={[styles.tabSwitchBtn, authMode === 'register' && styles.tabSwitchBtnActive]}
+                    onPress={() => setAuthMode('register')}
+                  >
+                    <Text style={authMode === 'register' ? styles.tabSwitchTextActive : styles.tabSwitchText}>
+                      Register
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              <View style={styles.loginInfoCard}>
-                <Text style={styles.loginInfoLabel}>Optimized for mobile</Text>
-                <Text style={styles.loginInfoValue}>Compact layout for a 6-inch screen</Text>
-                <Text style={styles.loginInfoHint}>The map stays as the main focus after sign-in.</Text>
-              </View>
-
-              <View style={styles.formBlock}>
-                <Text style={styles.inputLabel}>Passenger ID / Mobile</Text>
-                <TextInput
-                  style={styles.input}
-                  value={passengerId}
-                  onChangeText={setPassengerId}
-                  placeholder="PAS-2048"
-                  placeholderTextColor={COLORS.zinc400}
-                />
-              </View>
-
-              <View style={styles.formBlock}>
-                <Text style={styles.inputLabel}>Default Bus Stop</Text>
-                <TextInput
-                  style={styles.input}
-                  value={defaultStop}
-                  onChangeText={setDefaultStop}
-                  placeholder="Borella Junction"
-                  placeholderTextColor={COLORS.zinc400}
-                />
-              </View>
-
-              <TouchableOpacity activeOpacity={0.9} style={styles.primaryButton} onPress={handleLogin}>
-                <Text style={styles.primaryButtonText}>Open live tracker</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.dashboardScreen}>
-              {activeTab === 'map' ? (
-                <>
-                  <View style={styles.controlsCard}>
-                    <View style={styles.controlBlock}>
-                      <Text style={styles.sectionLabel}>Search route</Text>
-                      <View style={styles.searchInputShell}>
-                        <Text style={styles.searchIcon}>⌕</Text>
-                        <TextInput
-                          style={styles.searchInput}
-                          value={routeSearch}
-                          onChangeText={setRouteSearch}
-                          placeholder="138 or destination"
-                          placeholderTextColor={COLORS.zinc400}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.controlBlock}>
-                      <View style={styles.stopHeaderRow}>
-                        <Text style={styles.sectionLabel}>Target stop</Text>
-                        <Text style={styles.tagPill}>Saved</Text>
-                      </View>
-
-                      <View style={styles.stopCard}>
-                        <TouchableOpacity
-                          activeOpacity={0.85}
-                          onPress={() => setIsStopDropdownOpen((currentValue) => !currentValue)}
-                          style={styles.dropdownTrigger}
-                        >
-                          <View style={styles.dropdownLabelGroup}>
-                            <Text style={styles.dropdownValue}>{selectedStop}</Text>
-                            <Text style={styles.dropdownHint}>{matchedRoute.shortName} stop selection</Text>
-                          </View>
-                          <Text style={styles.dropdownCaret}>{isStopDropdownOpen ? '▴' : '▾'}</Text>
-                        </TouchableOpacity>
-
-                        {isStopDropdownOpen ? (
-                          <View style={styles.dropdownMenu}>
-                            {matchedRoute.stops.map((stop) => {
-                              const isSelected = stop === selectedStop;
-
-                              return (
-                                <TouchableOpacity
-                                  key={stop}
-                                  activeOpacity={0.85}
-                                  onPress={() => {
-                                    setSelectedStop(stop);
-                                    setIsStopDropdownOpen(false);
-                                  }}
-                                  style={[styles.stopOption, isSelected && styles.stopOptionSelected]}
-                                >
-                                  <Text
-                                    style={[styles.stopOptionText, isSelected && styles.stopOptionTextSelected]}
-                                  >
-                                    {stop}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
+              {authMode === 'register' ? (
+                /* Registration Screen */
+                <View style={styles.cardElevated}>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.inputLabel}>Full Name</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={regFullName}
+                      onChangeText={setRegFullName}
+                      placeholder="e.g. Kasun Perera"
+                      placeholderTextColor={COLORS.textMuted}
+                    />
                   </View>
 
-                  <View style={styles.mapHeroCard}>
-                    <View style={styles.mapHeroHeader}>
-                      <View>
-                        <Text style={styles.sectionLabel}>Live route map</Text>
-                        <Text style={styles.mapHeroTitle}>{matchedRoute.shortName}</Text>
-                      </View>
-
-                      <View style={styles.etaPill}>
-                        <Text style={styles.etaPillLabel}>Nearest bus</Text>
-                        <Text style={styles.etaPillValue}>{primaryBus?.eta || 4} min</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.mapFrameLarge}>
-                      <OpenStreetMapContainer
-                        busLocationName={selectedStop}
-                        etaMins={primaryBus?.eta || 4}
-                        busCoordinate={
-                          primaryBus
-                            ? { latitude: primaryBus.latitude, longitude: primaryBus.longitude }
-                            : undefined
-                        }
-                        passengerCoordinate={passengerCoordinate}
-                      />
-                    </View>
-
-                    <View style={styles.metricRow}>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Target</Text>
-                        <Text style={styles.metricValue}>{selectedStop}</Text>
-                      </View>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Live buses</Text>
-                        <Text style={styles.metricValue}>{sortedBuses.length}</Text>
-                      </View>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Stops left</Text>
-                        <Text style={styles.metricValue}>{Math.max(upcomingStops.length - 1, 0)}</Text>
-                      </View>
-                    </View>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.inputLabel}>Username</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={regUsername}
+                      onChangeText={setRegUsername}
+                      placeholder="e.g. kasun_p"
+                      placeholderTextColor={COLORS.textMuted}
+                      autoCapitalize="none"
+                    />
                   </View>
-                </>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.inputLabel}>Phone Number</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={regPhone}
+                      onChangeText={setRegPhone}
+                      placeholder="+94 77 123 4567"
+                      placeholderTextColor={COLORS.textMuted}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={regPassword}
+                      onChangeText={setRegPassword}
+                      placeholder="Create a password"
+                      placeholderTextColor={COLORS.textMuted}
+                      secureTextEntry
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.buttonPrimary}
+                    onPress={handleRegisterSubmit}
+                  >
+                    <Text style={styles.buttonPrimaryText}>Create Account & Open App</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
-                <View style={styles.routeOnlyCard}>
-                  <Text style={styles.sectionLabel}>Route</Text>
-                  <Text style={styles.routeOnlyTitle}>{matchedRoute.name}</Text>
+                /* Login Screen */
+                <View style={styles.cardElevated}>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.inputLabel}>Username</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={loginUsername}
+                      onChangeText={setLoginUsername}
+                      placeholder="Enter your username"
+                      placeholderTextColor={COLORS.textMuted}
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <TextInput
+                      style={styles.textInput}
+                      value={loginPassword}
+                      onChangeText={setLoginPassword}
+                      placeholder="Enter password"
+                      placeholderTextColor={COLORS.textMuted}
+                      secureTextEntry
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    style={styles.buttonPrimary}
+                    onPress={handleLoginSubmit}
+                  >
+                    <Text style={styles.buttonPrimaryText}>Sign In to Passenger App</Text>
+                  </TouchableOpacity>
                 </View>
               )}
+            </View>
+          ) : activeTab === 'tracking' ? (
+            /* 2. LIVE TRACKING & DYNAMIC TIMELINE SCREEN */
+            <View style={styles.trackingScreen}>
+              {/* Route & Stop Selection Bar */}
+              <View style={styles.cardElevated}>
+                <View style={styles.routeHeaderRow}>
+                  <View style={styles.routeBadge}>
+                    <Text style={styles.routeBadgeText}>{selectedRoute.shortName}</Text>
+                  </View>
+                  <Text style={styles.routeFullTitle}>{selectedRoute.name}</Text>
+                </View>
 
-              {activeTab === 'map' ? (
-                <View style={styles.panelCard}>
-                  <View style={styles.panelHeader}>
-                    <Text style={styles.panelTitle}>Nearby buses</Text>
-                    <Text style={styles.panelMeta}>{matchedRoute.shortName}</Text>
+                {/* Stop Selection Pickers */}
+                <View style={styles.pickersGrid}>
+                  <View style={styles.pickerBox}>
+                    <Text style={styles.pickerLabel}>PREFERRED BOARDING STOP</Text>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.pickerButton}
+                      onPress={() => {
+                        setIsBoardingDropdownOpen(!isBoardingDropdownOpen);
+                        setIsDestinationDropdownOpen(false);
+                      }}
+                    >
+                      <View style={styles.pickerIconRow}>
+                        <MapPinIcon color={COLORS.accent} size={16} />
+                        <Text style={styles.pickerButtonText}>{boardingStop}</Text>
+                      </View>
+                      <ChevronDownIcon color={COLORS.textMuted} size={16} />
+                    </TouchableOpacity>
+
+                    {isBoardingDropdownOpen ? (
+                      <View style={styles.dropdownMenu}>
+                        {selectedRoute.stops.map((stop, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setBoardingStop(stop);
+                              setIsBoardingDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={styles.dropdownItemText}>{stop}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ) : null}
                   </View>
 
-                  <View style={styles.busCardList}>
-                    {sortedBuses.map((bus) => {
-                      const isFast = bus.status === 'active';
+                  <View style={styles.pickerBox}>
+                    <Text style={styles.pickerLabel}>DESTINATION STOP</Text>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={styles.pickerButton}
+                      onPress={() => {
+                        setIsDestinationDropdownOpen(!isDestinationDropdownOpen);
+                        setIsBoardingDropdownOpen(false);
+                      }}
+                    >
+                      <View style={styles.pickerIconRow}>
+                        <FlagIcon color={COLORS.accent} size={16} />
+                        <Text style={styles.pickerButtonText}>{destinationStop}</Text>
+                      </View>
+                      <ChevronDownIcon color={COLORS.textMuted} size={16} />
+                    </TouchableOpacity>
 
-                      return (
-                        <View key={bus.id} style={styles.busCard}>
-                          <View style={styles.busCardLeft}>
-                            <View style={styles.busCardTopRow}>
-                              <Text style={styles.vehicleIdBadge}>{bus.id}</Text>
-                              <View
-                                style={[
-                                  styles.statusPill,
-                                  isFast ? styles.statusPillGood : styles.statusPillWarn,
-                                ]}
-                              >
-                                <View
-                                  style={[
-                                    styles.statusPillDot,
-                                    isFast ? styles.statusPillDotGood : styles.statusPillDotWarn,
-                                  ]}
-                                />
-                                <Text
-                                  style={[
-                                    styles.statusPillText,
-                                    isFast ? styles.statusPillTextGood : styles.statusPillTextWarn,
-                                  ]}
-                                >
-                                  {isFast ? 'Moving well' : 'Slow traffic'}
-                                </Text>
-                              </View>
-                            </View>
-                            <Text style={styles.busSpeedText}>Speed {bus.speed} km/h</Text>
-                          </View>
-
-                          <View style={styles.etaBlock}>
-                            <Text style={styles.etaValue}>{bus.eta}</Text>
-                            <Text style={styles.etaLabel}>Min ETA</Text>
-                          </View>
-                        </View>
-                      );
-                    })}
+                    {isDestinationDropdownOpen ? (
+                      <View style={styles.dropdownMenu}>
+                        {selectedRoute.stops.map((stop, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setDestinationStop(stop);
+                              setIsDestinationDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={styles.dropdownItemText}>{stop}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ) : null}
                   </View>
                 </View>
-              ) : (
-                <View style={styles.panelCard}>
-                  <View style={styles.panelHeader}>
-                    <Text style={styles.panelTitle}>Upcoming stops</Text>
-                    <Text style={styles.panelMeta}>{matchedRoute.shortName}</Text>
-                  </View>
+              </View>
 
-                  {upcomingStops.map((stop, index) => {
-                    const isCurrentStop = index === 0;
-                    const isLastStop = index === upcomingStops.length - 1;
+              {/* Interactive Map */}
+              <View style={styles.cardMapElevated}>
+                <View style={styles.mapHeaderRow}>
+                  <Text style={styles.mapTitle}>Live Bus Location & Route</Text>
+                  <View style={styles.etaPill}>
+                    <Text style={styles.etaPillText}>Arriving in {liveBus.etaMinutes} min</Text>
+                  </View>
+                </View>
+
+                <OpenStreetMapContainer
+                  centerCoordinate={PASSENGER_COORDINATE}
+                  busCoordinate={{ latitude: liveBus.latitude, longitude: liveBus.longitude }}
+                  routeLine={[]}
+                />
+
+                <View style={styles.mapOverlayInfo}>
+                  <Text style={styles.mapOverlayText}>Bus {liveBus.id} Approaching</Text>
+                  <Text style={styles.mapOverlaySpeed}>{liveBus.speed} km/h</Text>
+                </View>
+              </View>
+
+              {/* Dynamic Stop Tracker: Vertical Timeline */}
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Dynamic Stop Tracker Timeline</Text>
+
+                <View style={styles.verticalTimeline}>
+                  {selectedRoute.stops.map((stopName, idx) => {
+                    const isPassed = idx < boardingIndex;
+                    const isBoarding = idx === boardingIndex;
+                    const isDestination = idx === destinationIndex;
+                    const isUpcoming = idx > boardingIndex && idx < destinationIndex;
 
                     return (
-                      <View key={stop} style={styles.timelineRow}>
-                        <View style={styles.timelineMarkerColumn}>
-                          <View style={[styles.timelineDot, isCurrentStop && styles.timelineDotCurrent]} />
-                          {!isLastStop ? <View style={styles.timelineLine} /> : null}
-                        </View>
-
-                        <View style={styles.timelineContent}>
-                          <Text
+                      <View key={idx} style={styles.timelineStep}>
+                        <View style={styles.timelineLeftColumn}>
+                          <View
                             style={[
-                              styles.timelineStopName,
-                              isCurrentStop && styles.timelineStopNameCurrent,
+                              styles.timelineDot,
+                              isPassed && styles.dotPassed,
+                              isBoarding && styles.dotBoarding,
+                              isDestination && styles.dotDestination,
+                              isUpcoming && styles.dotUpcoming,
                             ]}
                           >
-                            {stop}
+                            {isBoarding ? (
+                              <View style={styles.dotInnerPulse} />
+                            ) : isPassed ? (
+                              <CheckIcon color={COLORS.white} size={9} />
+                            ) : null}
+                          </View>
+
+                          {idx < selectedRoute.stops.length - 1 ? (
+                            <View
+                              style={[
+                                styles.timelineLine,
+                                isPassed && styles.linePassed,
+                              ]}
+                            />
+                          ) : null}
+                        </View>
+
+                        <View style={styles.timelineRightColumn}>
+                          <Text
+                            style={[
+                              styles.stopNameText,
+                              isBoarding && styles.stopNameBoarding,
+                              isDestination && styles.stopNameDestination,
+                            ]}
+                          >
+                            {stopName}
                           </Text>
-                          <Text style={styles.timelineStopMeta}>
-                            {isCurrentStop ? 'You are here now' : `Upcoming stop ${index}`}
+
+                          <Text style={styles.stopTagText}>
+                            {isPassed
+                              ? 'PASSED'
+                              : isBoarding
+                              ? 'YOUR BOARDING STOP'
+                              : isDestination
+                              ? 'TARGET DESTINATION'
+                              : 'UPCOMING STOP'}
                           </Text>
                         </View>
                       </View>
                     );
                   })}
                 </View>
-              )}
+              </View>
+            </View>
+          ) : activeTab === 'routes' ? (
+            /* 3. ROUTE & STOP SELECTION BROWSER SCREEN */
+            <View style={styles.routesScreen}>
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Search & Select Bus Route</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={routeSearchQuery}
+                  onChangeText={setRouteSearchQuery}
+                  placeholder="Search by route no. (138, 100, 177) or name"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
 
-              {activeTab === 'map' ? (
-                <>
-                  <View style={styles.accountCard}>
-                    <View style={styles.accountBlock}>
-                      <Text style={styles.inputLabel}>Matched route</Text>
-                      <Text style={styles.accountValue}>{matchedRoute.name}</Text>
+              <View style={styles.routesList}>
+                {filteredRoutes.map((route) => (
+                  <TouchableOpacity
+                    key={route.id}
+                    activeOpacity={0.8}
+                    style={styles.cardElevatedRoute}
+                    onPress={() => handleSelectRoute(route)}
+                  >
+                    <View style={styles.routeListHeader}>
+                      <View style={styles.routeBadge}>
+                        <Text style={styles.routeBadgeText}>{route.shortName}</Text>
+                      </View>
+                      <View style={styles.actionIconRow}>
+                        <Text style={styles.selectRouteAction}>Track Route</Text>
+                        <ArrowRightIcon color={COLORS.accent} size={14} />
+                      </View>
                     </View>
-                    <View style={styles.accountBlock}>
-                      <Text style={styles.inputLabel}>Passenger</Text>
-                      <Text style={styles.accountValue}>{passengerId}</Text>
-                    </View>
-                  </View>
 
-                  <TouchableOpacity activeOpacity={0.85} onPress={handleLogout} style={styles.logoutButton}>
-                    <Text style={styles.logoutText}>Sign out</Text>
+                    <Text style={styles.routeNameTitle}>{route.name}</Text>
+
+                    <View style={styles.terminalsRow}>
+                      <Text style={styles.terminalText}>Start: {route.startTerminal}</Text>
+                      <Text style={styles.terminalText}>End: {route.endTerminal}</Text>
+                    </View>
                   </TouchableOpacity>
-                </>
-              ) : null}
+                ))}
+              </View>
+            </View>
+          ) : (
+            /* 4. USER PROFILE & SETTINGS SCREEN */
+            <View style={styles.profileScreen}>
+              <View style={styles.cardElevated}>
+                <View style={styles.profileAvatarHeader}>
+                  <View style={styles.profileAvatarCircle}>
+                    <Text style={styles.profileAvatarText}>
+                      {(userProfile?.name || 'Kasun Perera').charAt(0)}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={styles.profileNameText}>{userProfile?.name || 'Kasun Perera'}</Text>
+                    <Text style={styles.profileUsernameText}>@{userProfile?.username || 'kasun_p'}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Personal Details</Text>
+
+                <View style={styles.profileDetailRow}>
+                  <Text style={styles.detailLabel}>Full Name</Text>
+                  <Text style={styles.detailValue}>{userProfile?.name || 'Kasun Perera'}</Text>
+                </View>
+
+                <View style={styles.profileDetailRow}>
+                  <Text style={styles.detailLabel}>Username</Text>
+                  <Text style={styles.detailValue}>{userProfile?.username || 'kasun_p'}</Text>
+                </View>
+
+                <View style={styles.profileDetailRow}>
+                  <Text style={styles.detailLabel}>Phone Number</Text>
+                  <Text style={styles.detailValue}>{userProfile?.phone || '+94 77 123 4567'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardElevated}>
+                <Text style={styles.cardSectionTitle}>Account Options</Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.buttonSignOut}
+                  onPress={handleLogout}
+                >
+                  <Text style={styles.buttonSignOutText}>Sign Out of Account</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </ScrollView>
 
+        {/* Bottom Tab Bar */}
         {isAuthenticated ? (
-          <View style={styles.footer}>
+          <View style={styles.bottomTabBar}>
             <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setActiveTab('map')}
-              style={styles.footerTab}
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('tracking')}
+              style={[styles.tabBarItem, activeTab === 'tracking' && styles.tabBarItemActive]}
             >
-              <Text style={activeTab === 'map' ? styles.footerIcon : styles.footerIconMuted}>⌖</Text>
-              <Text style={activeTab === 'map' ? styles.footerTextActive : styles.footerTextMuted}>
-                Map
+              <MapPinIcon color={activeTab === 'tracking' ? COLORS.accent : COLORS.textMuted} size={20} />
+              <Text style={activeTab === 'tracking' ? styles.tabTextActive : styles.tabTextMuted}>
+                Live Tracker
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setActiveTab('stops')}
-              style={styles.footerTab}
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('routes')}
+              style={[styles.tabBarItem, activeTab === 'routes' && styles.tabBarItemActive]}
             >
-              <Text style={activeTab === 'stops' ? styles.footerIcon : styles.footerIconMuted}>☰</Text>
-              <Text style={activeTab === 'stops' ? styles.footerTextActive : styles.footerTextMuted}>
-                Stops
+              <BusIcon color={activeTab === 'routes' ? COLORS.accent : COLORS.textMuted} size={20} />
+              <Text style={activeTab === 'routes' ? styles.tabTextActive : styles.tabTextMuted}>
+                Routes
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('profile')}
+              style={[styles.tabBarItem, activeTab === 'profile' && styles.tabBarItemActive]}
+            >
+              <UserIcon color={activeTab === 'profile' ? COLORS.accent : COLORS.textMuted} size={20} />
+              <Text style={activeTab === 'profile' ? styles.tabTextActive : styles.tabTextMuted}>
+                My Profile
               </Text>
             </TouchableOpacity>
           </View>
@@ -529,583 +644,549 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4F7FB',
+    backgroundColor: COLORS.bgBase,
   },
   phoneShell: {
     flex: 1,
-    backgroundColor: '#F4F7FB',
+    backgroundColor: COLORS.bgBase,
   },
   header: {
-    backgroundColor: COLORS.zinc900,
-    paddingHorizontal: 18,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 14,
-    paddingBottom: 14,
+    backgroundColor: COLORS.bgSurface,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 16,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderColor,
   },
-  headerEyebrow: {
-    color: '#94A3B8',
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  headerTitle: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 2,
-  },
-  headerBadge: {
+  headerBrandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(59, 130, 246, 0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(147, 197, 253, 0.35)',
+    gap: 12,
   },
-  headerBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#93C5FD',
-    marginRight: 6,
+  brandLogoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerBadgeText: {
-    color: '#DBEAFE',
+  headerEyebrow: {
+    color: COLORS.accent,
     fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  headerTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    marginTop: 1,
+  },
+  badgePillActive: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: COLORS.success,
+  },
+  badgePillText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.heavy,
+    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 14,
-    paddingBottom: 20,
-    flexGrow: 1,
+    padding: 20,
   },
   contentContainerWithFooter: {
-    paddingBottom: 90,
+    paddingBottom: 85,
   },
-  loginScreen: {
-    flexGrow: 1,
-    justifyContent: 'center',
+  authScreen: {
+    gap: 16,
   },
-  loginHeroCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 20,
+  cardElevatedHero: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     elevation: 2,
   },
-  avatarCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    justifyContent: 'center',
+  heroAvatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.accentLight,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
   },
-  avatarIcon: {
-    fontSize: 24,
-  },
-  sectionTitle: {
-    color: COLORS.zinc900,
+  heroTitle: {
+    color: COLORS.textPrimary,
     fontSize: 22,
     fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 14,
     textAlign: 'center',
   },
-  sectionSubtitle: {
-    color: COLORS.zinc500,
-    fontSize: 13,
-    marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  loginInfoCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 18,
-    padding: 14,
-    marginTop: 14,
-    marginBottom: 16,
-  },
-  loginInfoLabel: {
-    color: COLORS.signalBlue,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  loginInfoValue: {
-    color: COLORS.zinc900,
-    fontSize: 15,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 6,
-  },
-  loginInfoHint: {
-    color: COLORS.zinc500,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  formBlock: {
-    marginBottom: 12,
-  },
-  inputLabel: {
-    color: COLORS.zinc500,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#EEF2F7',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: COLORS.zinc900,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  primaryButton: {
-    marginTop: 6,
-    backgroundColor: '#0F172A',
-    borderRadius: 16,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  dashboardScreen: {
-    gap: 14,
-  },
-  controlsCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 22,
-    padding: 14,
-    gap: 14,
-  },
-  controlBlock: {
-    gap: 6,
-  },
-  sectionLabel: {
-    color: COLORS.zinc500,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-  },
-  searchInputShell: {
-    backgroundColor: '#EEF2F7',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  searchIcon: {
-    color: COLORS.zinc400,
-    fontSize: 16,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.zinc900,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    paddingVertical: 12,
-  },
-  stopHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  tagPill: {
-    color: '#1D4ED8',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  stopCard: {
-    gap: 6,
-  },
-  dropdownTrigger: {
-    minHeight: 52,
-    borderRadius: 16,
-    backgroundColor: '#EEF2F7',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dropdownLabelGroup: {
-    flex: 1,
-    marginRight: 12,
-  },
-  dropdownValue: {
-    color: COLORS.zinc900,
-    fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  dropdownHint: {
-    color: COLORS.zinc400,
-    fontSize: 10,
-    marginTop: 3,
-  },
-  dropdownCaret: {
-    color: COLORS.zinc500,
+  heroSubtitle: {
+    color: COLORS.textSecondary,
     fontSize: 14,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 20,
   },
-  dropdownMenu: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 2,
+  tabSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.bgBase,
+    borderRadius: 12,
+    padding: 4,
+    marginTop: 18,
+    width: '100%',
   },
-  stopOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  tabSwitchBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
   },
-  stopOptionSelected: {
-    backgroundColor: '#EFF6FF',
-  },
-  stopOptionText: {
-    color: COLORS.zinc600,
-    fontSize: 12,
-    fontWeight: TYPOGRAPHY.weights.medium,
-  },
-  stopOptionTextSelected: {
-    color: '#1D4ED8',
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  mapHeroCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 14,
-    gap: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 18,
+  tabSwitchBtnActive: {
+    backgroundColor: COLORS.bgSurface,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
     elevation: 1,
   },
-  mapHeroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mapHeroTitle: {
-    color: COLORS.zinc900,
-    fontSize: 18,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 2,
-  },
-  etaPill: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'flex-end',
-  },
-  etaPillLabel: {
-    color: '#1D4ED8',
-    fontSize: 9,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  etaPillValue: {
-    color: '#1E3A8A',
-    fontSize: 16,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 1,
-  },
-  mapFrameLarge: {
-    height: 320,
-    borderRadius: 22,
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#F8FAFC',
-  },
-  metricRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 10,
-  },
-  routeOnlyCard: {
-    paddingVertical: 6,
-  },
-  routeOnlyTitle: {
-    color: COLORS.zinc900,
-    fontSize: 20,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 4,
-  },
-  metricLabel: {
-    color: COLORS.zinc400,
-    fontSize: 9,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  metricValue: {
-    color: COLORS.zinc900,
-    fontSize: 12,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 4,
-  },
-  panelCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 22,
-    padding: 14,
-  },
-  panelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  panelTitle: {
-    color: COLORS.zinc900,
-    fontSize: 16,
-    fontWeight: TYPOGRAPHY.weights.bold,
-  },
-  panelMeta: {
-    color: COLORS.zinc500,
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  busCardList: {
-    gap: 10,
-  },
-  busCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 18,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  busCardLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  busCardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: 5,
-  },
-  vehicleIdBadge: {
-    color: COLORS.white,
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    fontSize: 11,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginRight: 8,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  statusPillGood: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-  },
-  statusPillWarn: {
-    backgroundColor: '#FFF1F2',
-    borderColor: '#FECDD3',
-  },
-  statusPillDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  statusPillDotGood: {
-    backgroundColor: COLORS.signalGreen,
-  },
-  statusPillDotWarn: {
-    backgroundColor: '#F43F5E',
-  },
-  statusPillText: {
-    fontSize: 10,
+  tabSwitchText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
     fontWeight: TYPOGRAPHY.weights.medium,
   },
-  statusPillTextGood: {
-    color: '#047857',
-  },
-  statusPillTextWarn: {
-    color: '#BE123C',
-  },
-  busSpeedText: {
-    color: COLORS.zinc500,
-    fontSize: 11,
-  },
-  etaBlock: {
-    alignItems: 'flex-end',
-  },
-  etaValue: {
-    color: COLORS.zinc900,
-    fontSize: 28,
+  tabSwitchTextActive: {
+    fontSize: 13,
+    color: COLORS.accent,
     fontWeight: TYPOGRAPHY.weights.bold,
-    lineHeight: 30,
   },
-  etaLabel: {
-    color: COLORS.zinc400,
-    fontSize: 9,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  cardElevated: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  formGroup: {
+    gap: 6,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.6,
   },
-  timelineRow: {
+  textInput: {
+    backgroundColor: COLORS.bgBase,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+  },
+  buttonPrimary: {
+    backgroundColor: COLORS.accent,
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  buttonPrimaryText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  trackingScreen: {
+    gap: 16,
+  },
+  routeHeaderRow: {
     flexDirection: 'row',
-    minHeight: 56,
+    alignItems: 'center',
+    gap: 10,
   },
-  timelineMarkerColumn: {
+  routeBadge: {
+    backgroundColor: COLORS.accentLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  routeBadgeText: {
+    color: COLORS.accent,
+    fontSize: 13,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  routeFullTitle: {
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  pickersGrid: {
+    gap: 12,
+    marginTop: 4,
+  },
+  pickerBox: {
+    gap: 4,
+  },
+  pickerLabel: {
+    fontSize: 10,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textMuted,
+    letterSpacing: 0.6,
+  },
+  pickerButton: {
+    backgroundColor: COLORS.bgBase,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pickerButtonText: {
+    fontSize: 13,
+    color: COLORS.textPrimary,
+    fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  dropdownMenu: {
+    backgroundColor: COLORS.bgSurface,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    borderRadius: 10,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderColor,
+  },
+  dropdownItemText: {
+    fontSize: 13,
+    color: COLORS.textPrimary,
+  },
+  cardMapElevated: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    height: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  mapHeaderRow: {
+    padding: 16,
+    backgroundColor: COLORS.bgSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderColor,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  mapTitle: {
+    fontSize: 14,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  etaPill: {
+    backgroundColor: COLORS.accentLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  etaPillText: {
+    color: COLORS.accent,
+    fontSize: 12,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  mapOverlayInfo: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    backgroundColor: 'rgba(28, 28, 30, 0.88)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  mapOverlayText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  mapOverlaySpeed: {
+    color: '#38BDF8',
+    fontSize: 13,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  cardSectionTitle: {
+    fontSize: 16,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  verticalTimeline: {
+    paddingLeft: 4,
+    paddingTop: 8,
+  },
+  timelineStep: {
+    flexDirection: 'row',
+    minHeight: 52,
+  },
+  timelineLeftColumn: {
     width: 24,
     alignItems: 'center',
   },
   timelineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#CBD5E1',
-    marginTop: 5,
-    zIndex: 1,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: COLORS.bgSurfaceElevated,
+    borderWidth: 2,
+    borderColor: COLORS.borderColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
-  timelineDotCurrent: {
-    backgroundColor: COLORS.signalBlue,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  dotPassed: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  dotBoarding: {
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  dotDestination: {
+    backgroundColor: COLORS.warning,
+    borderColor: COLORS.warning,
+  },
+  dotUpcoming: {
+    backgroundColor: COLORS.bgSurface,
+    borderColor: COLORS.textMuted,
+  },
+  dotInnerPulse: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.white,
   },
   timelineLine: {
     width: 2,
     flex: 1,
-    backgroundColor: '#D9E2EC',
-    marginVertical: 4,
+    backgroundColor: COLORS.borderColor,
+    marginVertical: 2,
   },
-  timelineContent: {
+  linePassed: {
+    backgroundColor: COLORS.success,
+  },
+  timelineRightColumn: {
     flex: 1,
-    paddingLeft: 8,
-    paddingBottom: 14,
+    paddingLeft: 12,
+    paddingBottom: 16,
   },
-  timelineStopName: {
-    color: COLORS.zinc700,
-    fontSize: 13,
+  stopNameText: {
+    fontSize: 14,
     fontWeight: TYPOGRAPHY.weights.medium,
+    color: COLORS.textPrimary,
   },
-  timelineStopNameCurrent: {
-    color: COLORS.zinc900,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  stopNameBoarding: {
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.accent,
   },
-  timelineStopMeta: {
-    color: COLORS.zinc400,
-    fontSize: 11,
-    marginTop: 4,
+  stopNameDestination: {
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
   },
-  accountCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 14,
+  stopTagText: {
+    fontSize: 10,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textMuted,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  routesScreen: {
+    gap: 16,
+  },
+  routesList: {
     gap: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
+  },
+  cardElevatedRoute: {
+    backgroundColor: COLORS.bgSurface,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.borderColor,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
-    shadowRadius: 16,
+    shadowRadius: 6,
     elevation: 1,
   },
-  accountBlock: {
+  routeListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actionIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
-  accountValue: {
-    color: COLORS.zinc700,
+  selectRouteAction: {
+    color: COLORS.accent,
     fontSize: 13,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
-  logoutButton: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 16,
-    paddingVertical: 14,
+  routeNameTitle: {
+    fontSize: 16,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  terminalsRow: {
+    gap: 2,
+    marginTop: 4,
+  },
+  terminalText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  profileScreen: {
+    gap: 16,
+  },
+  profileAvatarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  profileAvatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoutText: {
-    color: COLORS.zinc600,
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  profileAvatarText: {
+    color: COLORS.white,
+    fontSize: 24,
+    fontWeight: TYPOGRAPHY.weights.bold,
   },
-  footer: {
+  profileNameText: {
+    fontSize: 18,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  profileUsernameText: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  profileDetailRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderColor,
+    paddingBottom: 10,
+  },
+  detailLabel: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: COLORS.textPrimary,
+    marginTop: 3,
+  },
+  buttonSignOut: {
+    backgroundColor: COLORS.dangerLight,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+  },
+  buttonSignOutText: {
+    color: COLORS.danger,
+    fontSize: 15,
+    fontWeight: TYPOGRAPHY.weights.bold,
+  },
+  bottomTabBar: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 14,
-    backgroundColor: 'rgba(15, 23, 42, 0.96)',
-    borderRadius: 22,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.bgSurface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderColor,
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  tabBarItem: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 10,
   },
-  footerTab: {
-    alignItems: 'center',
-    minWidth: 80,
+  tabBarItemActive: {
+    backgroundColor: COLORS.accentLight,
   },
-  footerIcon: {
-    color: COLORS.white,
-    fontSize: 16,
+  tabTextActive: {
+    fontSize: 11,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.accent,
+    marginTop: 2,
   },
-  footerIconMuted: {
-    color: '#94A3B8',
-    fontSize: 16,
-  },
-  footerTextActive: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    marginTop: 3,
-  },
-  footerTextMuted: {
-    color: '#94A3B8',
-    fontSize: 10,
-    marginTop: 3,
+  tabTextMuted: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
 });

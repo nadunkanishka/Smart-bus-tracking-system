@@ -22,6 +22,10 @@ const busSchema = new mongoose.Schema(
       required: [true, 'Initial mileage is required'],
       min: [0, 'Initial mileage cannot be negative'],
     },
+    password: {
+      type: String,
+      default: '',
+    },
     status: {
       type: String,
       enum: ['Active', 'Idle', 'Maintenance'],

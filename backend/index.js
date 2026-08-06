@@ -82,6 +82,61 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// DRIVER / BUS AUTH ROUTE (For Driver App Authentication)
+app.post('/api/auth/driver-login', async (req, res) => {
+  try {
+    const { registration, busId, password } = req.body;
+    if ((!registration && !busId) || !password) {
+      return res.status(400).json({ error: 'Bus registration number and password are required.' });
+    }
+
+    const query = registration
+      ? { registration: registration.trim() }
+      : { busId: busId.trim() };
+
+    const bus = await Bus.findOne(query);
+    if (!bus) {
+      return res.status(404).json({ error: 'Bus not found in database. Check registration no.' });
+    }
+
+    if (!bus.password || bus.password !== password) {
+      return res.status(401).json({ error: 'Invalid password for this bus.' });
+    }
+
+    // Find assigned route in MongoDB for this bus
+    // Matches if route.assignedBus includes registration or busId
+    const assignedRoute = await Route.findOne({
+      assignedBus: { $regex: bus.registration, $options: 'i' },
+    }) || await Route.findOne({
+      assignedBus: { $regex: bus.busId || 'BUS-', $options: 'i' },
+    });
+
+    res.json({
+      message: 'Bus authentication successful',
+      bus: {
+        id: bus._id,
+        busId: bus.busId,
+        registration: bus.registration,
+        capacity: bus.capacity,
+        mileage: bus.mileage,
+        status: bus.status,
+      },
+      assignedRoute: assignedRoute
+        ? {
+            routeId: assignedRoute.routeId,
+            name: assignedRoute.name,
+            start: assignedRoute.start,
+            end: assignedRoute.end,
+            distance: assignedRoute.distance,
+            stops: assignedRoute.stops,
+          }
+        : null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DASHBOARD SUMMARY ROUTE (Calculated live from real MongoDB data)
 app.get('/api/dashboard/summary', async (req, res) => {
   try {
@@ -183,7 +238,7 @@ app.get('/api/buses', async (req, res) => {
 
 app.post('/api/buses', async (req, res) => {
   try {
-    const { registration, capacity, mileage, status } = req.body;
+    const { registration, capacity, mileage, password, status } = req.body;
     const seq = await getNextSequence('bus');
     const busId = `BUS-${String(seq).padStart(3, '0')}`;
 
@@ -192,6 +247,7 @@ app.post('/api/buses', async (req, res) => {
       registration,
       capacity: Number(capacity),
       mileage: Number(mileage),
+      password: password || '',
       status: status || 'Active',
     });
     const saved = await bus.save();
@@ -224,9 +280,13 @@ app.put('/api/buses/:id', async (req, res) => {
 
 app.delete('/api/buses/:id', async (req, res) => {
   try {
-    const query = mongoose.Types.ObjectId.isValid(req.params.id)
-      ? { $or: [{ _id: req.params.id }, { busId: req.params.id }] }
-      : { busId: req.params.id };
+    const idParam = req.params.id;
+    let query;
+    if (mongoose.Types.ObjectId.isValid(idParam)) {
+      query = { $or: [{ _id: idParam }, { busId: idParam }, { registration: idParam }] };
+    } else {
+      query = { $or: [{ busId: idParam }, { registration: idParam }] };
+    }
 
     const deleted = await Bus.findOneAndDelete(query);
     if (!deleted) return res.status(404).json({ error: 'Bus not found' });
@@ -248,7 +308,7 @@ app.get('/api/routes', async (req, res) => {
 
 app.post('/api/routes', async (req, res) => {
   try {
-    const { name, start, end, distance, stops, status } = req.body;
+    const { name, start, end, distance, stops, assignedBus, status } = req.body;
     const seq = await getNextSequence('route');
     const routeId = `RT-${String(seq).padStart(3, '0')}`;
 
@@ -259,6 +319,7 @@ app.post('/api/routes', async (req, res) => {
       end,
       distance: Number(distance),
       stops: Array.isArray(stops) ? stops : [],
+      assignedBus: assignedBus || '',
       status: status || 'Active',
     });
     const saved = await route.save();

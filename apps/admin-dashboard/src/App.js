@@ -5,8 +5,8 @@ const API_BASE = 'http://localhost:5000/api';
 
 const modalDefaults = {
   driver: { name: '', license: '', expiry: '', phone: '' },
-  bus: { registration: '', capacity: '', mileage: '' },
-  route: { name: '', start: '', end: '', distance: '', stops: [''] },
+  bus: { registration: '', capacity: '', mileage: '', password: '', status: 'Active' },
+  route: { name: '', start: '', end: '', distance: '', stops: [''], assignedBus: '' },
 };
 
 function App() {
@@ -100,6 +100,7 @@ function App() {
               registration: b.registration,
               capacity: `${b.capacity} seats`,
               mileage: `${Number(b.mileage || 0).toLocaleString('en-US')} km`,
+              password: b.password || '',
               rawCapacity: b.capacity,
               rawMileage: b.mileage,
               status: b.status || 'Active',
@@ -122,6 +123,7 @@ function App() {
               distance: `${r.distance} km`,
               rawDistance: r.distance,
               stops: Array.isArray(r.stops) ? r.stops : [],
+              assignedBus: r.assignedBus || '',
               status: r.status || 'Active',
             }))
           );
@@ -240,6 +242,8 @@ function App() {
           registration: record.registration,
           capacity: record.rawCapacity ?? String(record.capacity).replace(' seats', ''),
           mileage: record.rawMileage ?? String(record.mileage).replace(' km', '').replaceAll(',', ''),
+          password: record.password || '',
+          status: record.status || 'Active',
         });
       } else {
         setFormData({
@@ -252,6 +256,7 @@ function App() {
             : typeof record.stops === 'string'
               ? record.stops.split(',').map((s) => s.trim())
               : [''],
+          assignedBus: record.assignedBus || '',
         });
       }
       return;
@@ -277,7 +282,8 @@ function App() {
       open: true,
       entity,
       id: record.id,
-      rawId: record.rawId || record.id,
+      rawId: record.rawId || record._id || record.id,
+      registration: record.registration || '',
       label,
     });
   };
@@ -328,7 +334,8 @@ function App() {
         registration: formData.registration || 'NB-0000',
         capacity: Number(formData.capacity || 50),
         mileage: Number(formData.mileage || 0),
-        status: 'Active',
+        password: formData.password || '',
+        status: formData.status || 'Active',
       };
 
       try {
@@ -363,6 +370,7 @@ function App() {
         end: formData.end || 'End Terminal',
         distance: Number(formData.distance || 0),
         stops: cleanStops,
+        assignedBus: formData.assignedBus || '',
         status: 'Active',
       };
 
@@ -392,18 +400,28 @@ function App() {
   };
 
   const handleDelete = async () => {
-    const { entity, id, rawId } = confirmState;
+    const { entity, id, rawId, registration } = confirmState;
     const targetId = rawId || id;
 
+    // Instantly filter out from UI
+    if (entity === 'bus') {
+      setBuses((prev) => prev.filter((b) => b.rawId !== rawId && b.id !== id && b.registration !== registration));
+    } else if (entity === 'driver') {
+      setDrivers((prev) => prev.filter((d) => d.rawId !== rawId && d.id !== id));
+    } else if (entity === 'route') {
+      setRoutes((prev) => prev.filter((r) => r.rawId !== rawId && r.id !== id));
+    }
+
+    closeConfirm();
+
     try {
-      await fetch(`${API_BASE}/${entity}s/${targetId}`, { method: 'DELETE' });
-      showNotification('Record deleted successfully from MongoDB.');
+      await fetch(`${API_BASE}/${entity}s/${encodeURIComponent(targetId)}`, { method: 'DELETE' });
+      showNotification(`${entity.toUpperCase()} deleted successfully.`);
     } catch (err) {
       showNotification('Record deleted.');
     }
 
-    closeConfirm();
-    fetchBackendData();
+    await fetchBackendData();
   };
 
   // If not logged in, render Login View
@@ -754,6 +772,7 @@ function App() {
                       <th>Registration No.</th>
                       <th>Passenger Capacity</th>
                       <th>Total Mileage</th>
+                      <th>Password</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -761,7 +780,7 @@ function App() {
                   <tbody>
                     {buses.length === 0 ? (
                       <tr>
-                        <td colSpan="6" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
+                        <td colSpan="7" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
                           No buses registered yet. Click "Add New Bus" to register a bus!
                         </td>
                       </tr>
@@ -772,6 +791,9 @@ function App() {
                           <td className="mono-cell table-strong">{bus.registration}</td>
                           <td>{bus.capacity}</td>
                           <td>{bus.mileage}</td>
+                          <td className="mono-cell" style={{ color: '#64748b' }}>
+                            {bus.password ? bus.password : <span style={{ fontStyle: 'italic', color: '#cbd5e1' }}>None</span>}
+                          </td>
                           <td>
                             <StatusBadge status={bus.status} />
                           </td>
@@ -812,6 +834,7 @@ function App() {
                     <tr>
                       <th>Route ID</th>
                       <th>Route Name</th>
+                      <th>Assigned Bus</th>
                       <th>Start Terminal</th>
                       <th>End Terminal</th>
                       <th>Distance</th>
@@ -823,7 +846,7 @@ function App() {
                   <tbody>
                     {routes.length === 0 ? (
                       <tr>
-                        <td colSpan="8" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
+                        <td colSpan="9" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
                           No network routes created yet. Click "Create Route" to create one!
                         </td>
                       </tr>
@@ -832,6 +855,15 @@ function App() {
                         <tr key={route.id}>
                           <td className="mono-cell">{route.id}</td>
                           <td className="table-strong">{route.name}</td>
+                          <td>
+                            {route.assignedBus ? (
+                              <span className="mono-cell" style={{ fontWeight: 600, color: '#0284c7' }}>
+                                🚌 {route.assignedBus}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Unassigned</span>
+                            )}
+                          </td>
                           <td>{route.start}</td>
                           <td>{route.end}</td>
                           <td>{route.distance}</td>
@@ -961,6 +993,28 @@ function App() {
                     />
                   </Field>
                 </div>
+                <div className="form-grid">
+                  <Field label="Bus Password / Security PIN">
+                    <input
+                      type="text"
+                      className="form-input mono-input"
+                      value={formData.password}
+                      onChange={(event) => updateField('password', event.target.value)}
+                      placeholder="Enter bus password"
+                    />
+                  </Field>
+                  <Field label="Bus Operating Status">
+                    <select
+                      className="form-input"
+                      value={formData.status}
+                      onChange={(event) => updateField('status', event.target.value)}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Idle">Idle</option>
+                      <option value="Maintenance">Maintenance</option>
+                    </select>
+                  </Field>
+                </div>
               </div>
             )}
 
@@ -992,15 +1046,31 @@ function App() {
                     />
                   </Field>
                 </div>
-                <Field label="Distance (km) *">
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={formData.distance}
-                    onChange={(event) => updateField('distance', event.target.value)}
-                    placeholder="120"
-                  />
-                </Field>
+                <div className="form-grid">
+                  <Field label="Distance (km) *">
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={formData.distance}
+                      onChange={(event) => updateField('distance', event.target.value)}
+                      placeholder="120"
+                    />
+                  </Field>
+                  <Field label="Assign Bus (From Fleet)">
+                    <select
+                      className="form-input"
+                      value={formData.assignedBus}
+                      onChange={(event) => updateField('assignedBus', event.target.value)}
+                    >
+                      <option value="">-- No Bus Assigned --</option>
+                      {buses.map((b) => (
+                        <option key={b.id} value={`${b.registration} (${b.id})`}>
+                          {b.registration} — {b.id} ({b.capacity})
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
 
                 <Field label="Intermediate Stops (Enter each stop name)">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>

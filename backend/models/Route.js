@@ -30,6 +30,10 @@ const routeSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    assignedBus: {
+      type: String,
+      default: '',
+    },
     status: {
       type: String,
       enum: ['Active', 'Inactive', 'Under Construction'],

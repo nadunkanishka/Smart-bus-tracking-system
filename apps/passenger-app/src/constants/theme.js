@@ -1,43 +1,49 @@
 export const COLORS = {
-  // Ultra-Minimalist Zinc Color Tokens
-  zinc900: '#18181B', // text-zinc-900 / primary action
-  zinc800: '#27272A',
-  zinc700: '#3F3F46',
-  zinc600: '#52525B', // text-zinc-600 body
-  zinc500: '#71717A', // text-zinc-500 secondary
-  zinc400: '#A1A1AA', // text-zinc-400 micro labels
-  zinc200: '#E4E4E7', // border-zinc-200/60
-  zinc100: '#F4F4F5',
-  zinc50: '#FAFAFA',  // bg-zinc-50/50 backdrop
-  white: '#FFFFFF',    // bg-white cards/containers
-  signalGreen: '#05A357',
-  signalBlue: '#276EF1',
-  signalAmber: '#FFC043',
-  signalRed: '#E11900',
+  // Brand Color Palette (#F5F5F7 Base, #FFFFFF Cards, #007AFF Primary Accent)
+  bgBase: '#F5F5F7',
+  bgSurface: '#FFFFFF',
+  bgSurfaceElevated: '#EFEFEF',
+  borderColor: '#E5E5EA',
+  accent: '#007AFF',
+  accentDark: '#0056B3',
+  accentLight: '#E5F1FF',
+  accentGlow: 'rgba(0, 122, 255, 0.15)',
+  textPrimary: '#1C1C1E',
+  textSecondary: '#3A3A3C',
+  textMuted: '#8E8E93',
+  success: '#34C759',
+  successLight: '#E8F9ED',
+  warning: '#FF9500',
+  warningLight: '#FFF4E5',
+  danger: '#FF3B30',
+  dangerLight: '#FFEBEA',
+  white: '#FFFFFF',
 };
 
 export const TYPOGRAPHY = {
   fontFamily: 'System',
   sizes: {
-    xs: 12,
+    xs: 11,
     sm: 13,
-    md: 14,
-    lg: 16,
-    xl: 18,
-    xxl: 24,
-    heroEta: 30,
+    md: 15,
+    lg: 17,
+    xl: 20,
+    xxl: 26,
+    hero: 34,
   },
   weights: {
     regular: '400',
     medium: '500',
     semibold: '600',
     bold: '700',
+    heavy: '800',
   },
 };
 
 export const LAYOUT = {
-  borderRadiusXl: 12,
-  borderRadius2Xl: 16,
-  cardPadding: 24,
-  screenPadding: 24,
+  borderRadiusSm: 10,
+  borderRadiusMd: 14,
+  borderRadiusLg: 18,
+  cardPadding: 20,
+  screenPadding: 20,
 };
