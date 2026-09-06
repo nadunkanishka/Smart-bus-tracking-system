@@ -4,16 +4,16 @@ import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 import {
   fetchRoadRoute,
-  OSM_ATTRIBUTION,
-  OSM_TILE_URL,
   ROUTE_138_END,
   ROUTE_138_FALLBACK_COORDS,
   ROUTE_138_START,
   ROUTE_138_WAYPOINTS,
 } from '../utils/route138';
+import { NavigationArrowIcon } from './VectorIcons';
 
 const DEFAULT_BUS_COORDINATE = ROUTE_138_WAYPOINTS[2];
 const DEFAULT_PASSENGER_COORDINATE = { latitude: 6.89, longitude: 79.875 };
+const CARTO_POSITRON_TILE_URL = 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png';
 
 export default function OpenStreetMapContainer({
   busLocationName = 'High Level Road Stop',
@@ -65,37 +65,30 @@ export default function OpenStreetMapContainer({
         initialRegion={region}
         region={region}
         mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-        showsUserLocation
+        showsUserLocation={false}
         showsMyLocationButton={false}
         toolbarEnabled={false}
         loadingEnabled
       >
-        <UrlTile urlTemplate={OSM_TILE_URL} maximumZ={19} flipY={false} />
-        <Polyline coordinates={routeCoordinates} strokeColor={COLORS.signalBlue} strokeWidth={6} />
+        <UrlTile urlTemplate={CARTO_POSITRON_TILE_URL} maximumZ={19} flipY={false} />
+        <Polyline coordinates={routeCoordinates} strokeColor="#18181B" strokeWidth={5} lineCap="round" lineJoin="round" />
 
-        <Marker coordinate={activeBusCoordinate} title="NB-4521" description={`${etaMins} min away`}>
-          <View style={styles.busMarkerBadge}>
-            <View style={styles.markerDot} />
-            <Text style={styles.busBadgeText}>NB-4521 {busLocationName}</Text>
+        {/* Bus Marker (Orbix Studio 2025 black navigation disc) */}
+        <Marker coordinate={activeBusCoordinate} title="Active Bus" anchor={{ x: 0.5, y: 0.5 }}>
+          <View style={styles.busMarkerDisc}>
+            <NavigationArrowIcon color="#FFFFFF" size={16} />
           </View>
         </Marker>
 
-        <Marker coordinate={activePassengerCoordinate} title="Your stop">
-          <View style={styles.stopMarker}>
-            <View style={styles.stopMarkerDot} />
-            <Text style={styles.stopMarkerText}>Your Stop</Text>
+        {/* Destination Marker (Orbix Studio glowing coral beacon) */}
+        <Marker coordinate={activePassengerCoordinate} title="Target Destination" anchor={{ x: 0.5, y: 0.5 }}>
+          <View style={styles.destBeaconWrapper}>
+            <View style={styles.destBeaconHalo2} />
+            <View style={styles.destBeaconHalo1} />
+            <View style={styles.destBeaconCore} />
           </View>
         </Marker>
       </MapView>
-
-      <View pointerEvents="none" style={styles.overlayBadge}>
-        <Text style={styles.overlayTitle}>Live bus</Text>
-        <Text style={styles.overlayValue}>{etaMins} min away</Text>
-      </View>
-
-      <View pointerEvents="none" style={styles.attribution}>
-        <Text style={styles.attributionText}>{OSM_ATTRIBUTION}</Text>
-      </View>
     </View>
   );
 }
@@ -109,97 +102,57 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F4F7FB',
+    backgroundColor: '#F4F4F6',
   },
   map: {
     ...StyleSheet.absoluteFillObject,
   },
-  busMarkerBadge: {
-    flexDirection: 'row',
+  busMarkerDisc: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#141416',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    elevation: 8,
-    shadowColor: '#0F172A',
+    justifyContent: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.35,
     shadowRadius: 8,
-    borderWidth: 2,
-    borderColor: COLORS.white,
+    elevation: 8,
   },
-  markerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.signalGreen,
-    marginRight: 8,
-  },
-  busBadgeText: {
-    color: COLORS.white,
-    fontSize: TYPOGRAPHY.sizes.xs,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-  },
-  stopMarker: {
+  destBeaconWrapper: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  stopMarkerDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: COLORS.signalBlue,
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  stopMarkerText: {
-    marginTop: 5,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    color: COLORS.zinc900,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    borderWidth: 1,
-    borderColor: COLORS.zinc200,
-  },
-  overlayBadge: {
+  destBeaconHalo2: {
     position: 'absolute',
-    top: 14,
-    left: 14,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderWidth: 1,
-    borderColor: COLORS.zinc200,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 91, 55, 0.2)',
   },
-  overlayTitle: {
-    color: COLORS.zinc500,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.medium,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  overlayValue: {
-    color: COLORS.zinc900,
-    fontSize: TYPOGRAPHY.sizes.md,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    marginTop: 2,
-  },
-  attribution: {
+  destBeaconHalo1: {
     position: 'absolute',
-    right: 12,
-    bottom: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 91, 55, 0.3)',
   },
-  attributionText: {
-    color: COLORS.zinc600,
-    fontSize: 10,
-    fontWeight: TYPOGRAPHY.weights.medium,
+  destBeaconCore: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FF5B37',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#FF5B37',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 6,
   },
 });

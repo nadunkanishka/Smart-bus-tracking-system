@@ -2,8 +2,6 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   buildOsrmRouteUrl,
-  OSM_ATTRIBUTION,
-  OSM_TILE_URL,
   ROUTE_138_END,
   ROUTE_138_FALLBACK_COORDS,
   ROUTE_138_START,
@@ -13,14 +11,8 @@ import {
 const DEFAULT_BUS_COORDINATE = ROUTE_138_WAYPOINTS[2];
 const DEFAULT_PASSENGER_COORDINATE = { latitude: 6.89, longitude: 79.875 };
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+// CartoDB Positron provides the clean, modern, off-white map matching the Orbix Studio 2025 UI reference
+const CARTO_POSITRON_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
 export default function OpenStreetMapContainer({
   busLocationName = 'High Level Road Stop',
@@ -29,6 +21,7 @@ export default function OpenStreetMapContainer({
   passengerCoordinate,
   startCoordinate = ROUTE_138_START,
   endCoordinate = ROUTE_138_END,
+  interactive = true,
 }) {
   const activeBusCoordinate = busCoordinate || DEFAULT_BUS_COORDINATE;
   const activePassengerCoordinate = passengerCoordinate || DEFAULT_PASSENGER_COORDINATE;
@@ -48,20 +41,79 @@ export default function OpenStreetMapContainer({
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <style>
-        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #F4F7FB; }
-        .bus-pill, .stop-pill {
-          color: #FFFFFF;
-          padding: 6px 14px;
-          border-radius: 20px;
-          font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          border: 2px solid #FFFFFF;
-          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
-          white-space: nowrap;
+        * { box-sizing: border-box; }
+        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #F4F4F6; }
+        .leaflet-container { background: #F4F4F6; }
+        
+        /* Orbix Studio 2025 Bus Direction Marker (Black disc with white directional arrow) */
+        .orbix-bus-marker-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .bus-pill { background-color: #0F172A; }
-        .stop-pill { background-color: #2563EB; }
+        .orbix-bus-marker {
+          width: 36px;
+          height: 36px;
+          background: #141416;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 3px solid #FFFFFF;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+          transition: transform 0.3s ease;
+        }
+
+        /* Orbix Studio 2025 Glowing Target Destination Beacon */
+        .orbix-dest-marker {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dest-core {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #FF5B37;
+          border: 3.5px solid #FFFFFF;
+          box-shadow: 0 3px 12px rgba(255, 91, 55, 0.6);
+          position: relative;
+          z-index: 4;
+        }
+        .dest-halo {
+          position: absolute;
+          border-radius: 50%;
+          background: rgba(255, 91, 55, 0.22);
+          animation: orbixPulse 2.4s infinite ease-out;
+        }
+        .halo-1 { width: 30px; height: 30px; }
+        .halo-2 { width: 44px; height: 44px; animation-delay: 0.8s; opacity: 0.7; }
+        
+        @keyframes orbixPulse {
+          0% { transform: scale(0.75); opacity: 0.8; }
+          50% { transform: scale(1.18); opacity: 0.3; }
+          100% { transform: scale(0.75); opacity: 0.8; }
+        }
+
+        /* Micro floating ETA indicator on map */
+        .orbix-eta-tag {
+          background: #141416;
+          color: #FFFFFF;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 2px solid #FFFFFF;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+          white-space: nowrap;
+          margin-top: -8px;
+        }
+
+        .leaflet-control-attribution { display: none !important; }
       </style>
     </head>
     <body>
@@ -70,34 +122,53 @@ export default function OpenStreetMapContainer({
         const busPosition = [${activeBusCoordinate.latitude}, ${activeBusCoordinate.longitude}];
         const passengerPosition = [${activePassengerCoordinate.latitude}, ${activePassengerCoordinate.longitude}];
         const fallbackRoute = ${fallbackRouteJson}.map(({ latitude, longitude }) => [latitude, longitude]);
-        const map = L.map('map', { zoomControl: false }).setView(busPosition, 14);
+        
+        const map = L.map('map', { 
+          zoomControl: false,
+          attributionControl: false,
+          dragging: ${interactive},
+          touchZoom: ${interactive},
+          scrollWheelZoom: ${interactive}
+        }).setView(busPosition, 14);
 
-        L.tileLayer('${OSM_TILE_URL}', {
-          maxZoom: 19,
-          attribution: '${OSM_ATTRIBUTION}'
+        L.tileLayer('${CARTO_POSITRON_TILE_URL}', {
+          subdomains: 'abcd',
+          maxZoom: 19
         }).addTo(map);
 
-        function badgeIcon(className, text, width) {
-          return L.divIcon({
-            className: 'passenger-marker-wrapper',
-            html: '<div class="' + className + '">' + text + '</div>',
-            iconSize: [width, 32],
-            iconAnchor: [width / 2, 16]
-          });
-        }
+        const busIcon = L.divIcon({
+          className: 'orbix-bus-marker-wrapper',
+          html: '<div class="orbix-bus-marker"><svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><polygon points="12 2 19 21 12 17 5 21 12 2" /></svg></div>',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
+
+        const destIcon = L.divIcon({
+          className: 'orbix-dest-wrapper',
+          html: '<div class="orbix-dest-marker"><div class="dest-halo halo-2"></div><div class="dest-halo halo-1"></div><div class="dest-core"></div></div>',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        });
 
         function drawRoute(points) {
-          const routeLine = L.polyline(points, { color: '#2563EB', weight: 6, opacity: 0.9 }).addTo(map);
-          const group = L.featureGroup([
-            L.marker(busPosition, {
-              icon: badgeIcon('bus-pill', 'NB-4521 ${escapeHtml(busLocationName)} · ${etaMins} min', 190)
-            }),
-            L.marker(passengerPosition, {
-              icon: badgeIcon('stop-pill', 'Your stop', 92)
-            }),
-            routeLine
-          ]);
-          map.fitBounds(group.getBounds(), { padding: [44, 44], maxZoom: 15 });
+          // Deep Charcoal obsidian route line matching reference
+          const routeLine = L.polyline(points, { 
+            color: '#18181B', 
+            weight: 5, 
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(map);
+
+          const busMarker = L.marker(busPosition, { icon: busIcon }).addTo(map);
+          const destMarker = L.marker(passengerPosition, { icon: destIcon }).addTo(map);
+
+          const group = L.featureGroup([busMarker, destMarker, routeLine]);
+          map.fitBounds(group.getBounds(), { 
+            paddingTopLeft: [40, 40],
+            paddingBottomRight: [40, 180],
+            maxZoom: 15 
+          });
         }
 
         fetch('${routeUrl}')
@@ -125,7 +196,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F4F7FB',
+    backgroundColor: '#F4F4F6',
   },
   webMap: {
     width: '100%',
