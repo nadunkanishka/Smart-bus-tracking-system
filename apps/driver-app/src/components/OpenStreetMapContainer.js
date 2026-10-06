@@ -1,9 +1,8 @@
 import React from 'react';
+import { vehicleSvgString } from './vehicleShapes';
 import { StyleSheet, View } from 'react-native';
 import {
   buildOsrmRouteUrl,
-  OSM_ATTRIBUTION,
-  OSM_TILE_URL,
   ROUTE_138_END,
   ROUTE_138_FALLBACK_COORDS,
   ROUTE_138_START,
@@ -11,15 +10,8 @@ import {
 } from '../utils/route138';
 
 const DEFAULT_BUS_COORDINATE = ROUTE_138_WAYPOINTS[2];
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+// CHANGED: CARTO basemaps now require an API key, so use OSM tiles and tone them down with a CSS filter.
+const CARTO_POSITRON_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 export default function OpenStreetMapContainer({
   isOnDuty,
@@ -27,6 +19,7 @@ export default function OpenStreetMapContainer({
   liveCoordinate,
   startCoordinate = ROUTE_138_START,
   endCoordinate = ROUTE_138_END,
+  interactive = true,
 }) {
   const activeCoordinate = liveCoordinate || DEFAULT_BUS_COORDINATE;
   const routeUrl = buildOsrmRouteUrl({
@@ -35,7 +28,6 @@ export default function OpenStreetMapContainer({
     waypoints: ROUTE_138_WAYPOINTS,
   });
   const fallbackRouteJson = JSON.stringify(ROUTE_138_FALLBACK_COORDS);
-  const markerStatus = isOnDuty ? 'LIVE GPS' : 'OFFLINE';
 
   const osmHtml = `
     <!DOCTYPE html>
@@ -46,44 +38,105 @@ export default function OpenStreetMapContainer({
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <style>
-        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #FAFAFA; }
-        .driver-osm-pill {
-          background-color: ${isOnDuty ? '#05A357' : '#18181B'};
-          color: #FFFFFF;
-          padding: 6px 14px;
-          border-radius: 20px;
-          font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          border: 2px solid #FFFFFF;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-          white-space: nowrap;
+        * { box-sizing: border-box; }
+        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #EEF2F7; }
+        .leaflet-container { background: #EEF2F7; }
+        
+        
+        .orbix-dest-marker {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
+        .dest-core {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #F26B85;
+          border: 3.5px solid #FFFFFF;
+          box-shadow: 0 3px 12px rgba(242, 107, 133, 0.6);
+          position: relative;
+          z-index: 4;
+        }
+        .dest-halo {
+          position: absolute;
+          border-radius: 50%;
+          background: rgba(242, 107, 133, 0.22);
+          animation: orbixPulse 2.4s infinite ease-out;
+        }
+        .halo-1 { width: 30px; height: 30px; }
+        .halo-2 { width: 44px; height: 44px; animation-delay: 0.8s; opacity: 0.7; }
+        
+        @keyframes orbixPulse {
+          0% { transform: scale(0.75); opacity: 0.8; }
+          50% { transform: scale(1.18); opacity: 0.3; }
+          100% { transform: scale(0.75); opacity: 0.8; }
+        }
+
+        .sb-vehicle { width: 68px; height: 44px; background: #FFFFFF; border-radius: 999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(31, 58, 86, 0.22); }
+        .sb-route { stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: sbDraw 1.4s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+        @keyframes sbDraw { to { stroke-dashoffset: 0; } }
+        @media (prefers-reduced-motion: reduce) { .sb-route { animation: none; stroke-dashoffset: 0; } .dest-halo { animation: none; } }
+        .leaflet-tile-pane { filter: grayscale(1) brightness(1.1) contrast(0.78); }
+        .leaflet-control-attribution { display: none !important; }
       </style>
     </head>
     <body>
       <div id="map"></div>
       <script>
         const busPosition = [${activeCoordinate.latitude}, ${activeCoordinate.longitude}];
+        const destPosition = [${endCoordinate.latitude}, ${endCoordinate.longitude}];
         const fallbackRoute = ${fallbackRouteJson}.map(({ latitude, longitude }) => [latitude, longitude]);
-        const map = L.map('map', { zoomControl: false }).setView(busPosition, 14);
+        
+        const map = L.map('map', { 
+          zoomControl: false,
+          attributionControl: false,
+          dragging: ${interactive},
+          touchZoom: ${interactive},
+          scrollWheelZoom: ${interactive}
+        }).setView(busPosition, 14);
 
-        L.tileLayer('${OSM_TILE_URL}', {
-          maxZoom: 19,
-          attribution: '${OSM_ATTRIBUTION}'
+        L.tileLayer('${CARTO_POSITRON_TILE_URL}', {
+          subdomains: 'abc',
+          maxZoom: 19
         }).addTo(map);
 
         const busIcon = L.divIcon({
-          className: 'driver-marker-wrapper',
-          html: '<div class="driver-osm-pill">NB-4521 ${escapeHtml(markerStatus)}</div>',
-          iconSize: [150, 32],
-          iconAnchor: [75, 16]
+          className: 'sb-vehicle-wrapper',
+          html: ${JSON.stringify('<div class="sb-vehicle">' + vehicleSvgString('bus', { size: 52 }) + '</div>')},
+          iconSize: [68, 44],
+          iconAnchor: [34, 22]
         });
-        L.marker(busPosition, { icon: busIcon }).addTo(map);
+
+        const destIcon = L.divIcon({
+          className: 'orbix-dest-wrapper',
+          html: '<div class="orbix-dest-marker"><div class="dest-halo halo-2"></div><div class="dest-halo halo-1"></div><div class="dest-core"></div></div>',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        });
 
         function drawRoute(points) {
-          const routeLine = L.polyline(points, { color: '#276EF1', weight: 6, opacity: 0.9 }).addTo(map);
-          map.fitBounds(routeLine.getBounds(), { padding: [48, 48], maxZoom: 14 });
+          const routeLine = L.polyline(points, { 
+            color: '#F26B85',
+            weight: 6,
+            opacity: 1,
+            className: 'sb-route',
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(map);
+
+          const busMarker = L.marker(busPosition, { icon: busIcon }).addTo(map);
+          const destMarker = L.marker(destPosition, { icon: destIcon }).addTo(map);
+
+          const group = L.featureGroup([busMarker, destMarker, routeLine]);
+          map.fitBounds(group.getBounds(), { 
+            paddingTopLeft: [40, 90],
+            paddingBottomRight: [40, 330],
+            maxZoom: 15 
+          });
         }
 
         fetch('${routeUrl}')
@@ -111,7 +164,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#EEF2F7',
   },
   webMap: {
     width: '100%',
