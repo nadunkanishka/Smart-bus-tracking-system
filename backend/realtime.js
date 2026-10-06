@@ -143,6 +143,7 @@ function createRealtime(io, store) {
     if (res.ended) {
       await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date(fix.ts), completed: true });
       bus.trip = null;
+      routes.delete(bus.routeId); // the next trip on this route uses the history this one just added
     }
   }
 
