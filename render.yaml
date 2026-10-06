@@ -1,0 +1,28 @@
+# Render blueprint for the backend. MongoDB runs on MongoDB Atlas (free tier): paste its URI into MONGODB_URI.
+services:
+  - type: web
+    name: smartbus-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node index.js
+    healthCheckPath: /api/health
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: smartbus-cache, property: connectionString }
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+
+  - type: keyvalue
+    name: smartbus-cache
+    plan: free
+    ipAllowList: []

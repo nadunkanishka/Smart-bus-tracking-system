@@ -180,9 +180,20 @@ function createRealtime(io, store) {
       [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
     });
 
-    if (user?.role !== 'driver') return;
+    // Drivers authenticate with the handshake token, or afterwards with driver:auth (used by the load tests).
+    if (user?.role === 'driver') attachDriver(socket, user);
+    else {
+      socket.once('driver:auth', ({ token } = {}, ack) => {
+        const claims = token ? readToken(token) : null;
+        if (claims?.role !== 'driver') return ack?.({ ok: false, error: 'Invalid driver token' });
+        attachDriver(socket, claims);
+        return ack?.({ ok: true });
+      });
+    }
+  });
 
-    // Drivers: one live state per bus; a reconnect re-attaches to it so trip history survives network drops.
+  function attachDriver(socket, user) {
+    // One live state per bus; a reconnect re-attaches to it so trip history survives network drops.
     let bus = buses.get(user.busId);
     if (!bus) {
       bus = { busId: user.busId, registration: user.registration, routeId: user.routeId, driverName: user.driverName, onDuty: false };
@@ -222,7 +233,7 @@ function createRealtime(io, store) {
       if (bus.socketId === socket.id) { bus.connected = false; bus.disconnectedAt = Date.now(); }
       // The cached fix expires on its own TTL, so a short network drop does not blink the bus off the map.
     });
-  });
+  }
 
   // ── Read models for the admin dashboard ─────────────────────────────────
   const stats = (list) => {

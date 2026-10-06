@@ -15,6 +15,33 @@ The system consists of **4 main parts**:
 
 ---
 
+## 📚 Documentation
+
+| Document | Contents |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture diagram, data flow, ETA engine, offline buffer |
+| [docs/API.md](docs/API.md) | REST endpoints and Socket.IO events |
+| [docs/DATABASE.md](docs/DATABASE.md) | MongoDB collections, indexes and Redis keys |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Local setup, Docker, Render, driver APK build |
+| [docs/EVALUATION.md](docs/EVALUATION.md) | Measuring latency, ETA accuracy and load; user study |
+
+**First run:** in , copy  to , then run Unknown command: "install"
+
+
+Did you mean one of these?
+  npm install # Install a package
+  npm uninstall # Remove a package
+To see a list of supported npm commands, run:
+  npm help and  to create a demo route with a map path and stops. Run the tests with Unknown command: "test"
+
+
+Did you mean this?
+  npm test # Test a package
+To see a list of supported npm commands, run:
+  npm help. Simulate buses with .
+
+---
+
 ## 🛠️ Prerequisites (Install First)
 
 Make sure you have installed on your computer:

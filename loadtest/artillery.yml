@@ -1,0 +1,54 @@
+# Load test: simulated drivers streaming GPS every 3 s and passengers subscribed to the route.
+#
+#   cd loadtest
+#   ROUTE_ID=RT-001 JWT_SECRET=<same as backend> npx artillery run artillery.yml --output report.json
+#   npx artillery report report.json        # HTML report
+#
+# TARGET defaults to http://localhost:5000. Each driver is a virtual bus (LOAD-xxxx) on ROUTE_ID.
+config:
+  target: "http://localhost:5000"   # override with: --target http://host:port (and set TARGET to the same value)
+  processor: "./processor.js"
+  socketio:
+    transports: ["websocket"]
+  phases:
+    - name: warm up
+      duration: 20
+      arrivalRate: 2
+    - name: ramp to peak
+      duration: 40
+      arrivalRate: 2
+      rampTo: 15
+    - name: sustained peak
+      duration: 60
+      arrivalRate: 15
+  ensure:
+    maxErrorRate: 1
+
+scenarios:
+  - name: driver streaming GPS
+    engine: socketio
+    weight: 1
+    flow:
+      - function: "initDriver"
+      - emit:
+          channel: "driver:auth"
+          data: { token: "{{ token }}" }
+          acknowledge: { match: { json: "$.ok", value: true } }
+      - loop:
+          - function: "nextFix"
+          - emit:
+              channel: "gps:fix"
+              data: { lat: "{{ lat }}", lng: "{{ lng }}", speed: 10, heading: 0, ts: "{{ ts }}" }
+              acknowledge: { match: { json: "$.ok", value: true } }
+          - think: 3
+        count: 20
+
+  - name: passenger watching a route
+    engine: socketio
+    weight: 4
+    flow:
+      - emit:
+          channel: "route:subscribe"
+          data: { routeId: "{{ $processEnvironment.ROUTE_ID }}" }
+          acknowledge: { match: { json: "$.ok", value: true } }
+      - think: 60
