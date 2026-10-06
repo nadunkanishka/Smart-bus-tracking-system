@@ -37,6 +37,7 @@ import {
   Vehicle,
   VehicleLoader,
 } from './src/components/ui';
+import { liveryFor } from './src/components/vehicleShapes';
 import {
   ArrowRightIcon,
   BellIcon,
@@ -149,7 +150,7 @@ export default function App() {
   );
   const tracked = useMemo(() => pickBus(liveBuses, boardingIndex, destinationIndex), [liveBuses, boardingIndex, destinationIndex]);
   const mapBuses = useMemo(
-    () => liveBuses.map((b) => ({ id: b.busId, lat: b.lat, lng: b.lng, label: b.registration, stale: b.stale })),
+    () => liveBuses.map((b) => ({ id: b.busId, lat: b.lat, lng: b.lng, label: b.registration, stale: b.stale, heading: b.heading })),
     [liveBuses],
   );
 
@@ -819,7 +820,7 @@ function TrackingScreen({
           </View>
         ) : !selectedRoute.trackable ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={116} label="No map data" />
+            <Vehicle name="minibus" livery="violet" width={108} label="No map data" />
             <Text style={S.emptyStateTitle}>Live tracking is not set up for this route</Text>
             <Text style={S.emptyStateSub}>It has no map path or stop positions yet.</Text>
           </View>
@@ -921,7 +922,7 @@ function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingSt
             <BellIcon color={COLORS.ink} size={20} hasBadge={!!bus} />
           </IconButton>
         </View>
-        <Vehicle name="bus" width={120} style={S.homeHeaderBus} label="Illustrated city bus" />
+        <Vehicle name="bus" width={132} style={S.homeHeaderBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet style={S.homeSheet}>
@@ -981,7 +982,7 @@ function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingSt
                     </View>
                   </View>
                 </View>
-                <Vehicle name="bus" width={112} style={S.journeyBus} label="Illustrated city bus" />
+                <Vehicle name="bus" livery={liveryFor(selectedRoute.id)} status={bus.stale ? 'off' : undefined} running={!bus.stale} width={124} style={S.journeyBus} label="Illustrated city bus" />
               </View>
 
               <View style={S.journeyTerminals}>
@@ -1087,7 +1088,7 @@ function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteSearchQu
           </View>
         ) : filteredRoutes.length === 0 ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={120} label="No routes found" />
+            <Vehicle name="coach" width={128} label="No routes found" />
             <Text style={S.emptyStateTitle}>No routes found</Text>
             <Text style={S.emptyStateSub}>{routeSearchQuery ? 'Try a different search term' : 'Routes appear here once they are published.'}</Text>
           </View>

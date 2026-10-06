@@ -90,7 +90,7 @@ export default function Analytics({ api, routes }) {
               <tr>
                 <td colSpan="9" className="cell-empty">
                   <div className="empty-state">
-                    <Vehicle name="coach" width={120} label="No analytics yet" />
+                    <Vehicle name="decker" width={124} label="No analytics yet" />
                     {state === 'loading' ? 'Loading…' : 'Choose a route that has stops on the map to see its segments.'}
                   </div>
                 </td>

@@ -6,6 +6,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { vehicleSvgString } from './vehicleShapes';
 
+// The 8 drawn headings (index = model heading / 45). Index 0 is the three-quarter view used when a fix has no heading.
+const BUS_SVGS = [0, 45, 90, 135, 180, 225, 270, 315].map((heading) => vehicleSvgString('bus', { marker: true, size: 52, heading }));
+
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 const html = () => `<!DOCTYPE html>
@@ -16,7 +19,7 @@ const html = () => `<!DOCTYPE html>
 <style>
   html, body, #map { width: 100%; height: 100%; margin: 0; background: #EEF2F7; }
   .leaflet-tile-pane { filter: grayscale(1) brightness(1.1) contrast(0.78); }
-  .sb-bus { width: 68px; height: 44px; background: #fff; border-radius: 999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(31,58,86,.22); }
+  .sb-bus { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
   .sb-bus.stale { opacity: .55; }
   .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: #0F1419; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(15,20,25,.3); }
   .sb-stop.on { width: 18px; height: 18px; background: #F26B85; }
@@ -27,7 +30,8 @@ const html = () => `<!DOCTYPE html>
 </style></head><body><div id="map"></div><script>
   var map = L.map('map', { zoomControl: false }).setView([6.9, 79.87], 12);
   L.tileLayer('${TILE_URL}', { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-  var busSvg = ${JSON.stringify(vehicleSvgString('marker', { size: 44 }))};
+  var busSvgs = ${JSON.stringify(BUS_SVGS)};
+  function busSvg(h) { return busSvgs[h == null || isNaN(h) ? 0 : ((Math.round((225 + Number(h)) / 45) % 8) + 8) % 8]; }
   var routeLine = null, routeKey = '', stopLayer = L.layerGroup().addTo(map), buses = {}, pad = { top: 40, bottom: 40 };
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -66,10 +70,10 @@ const html = () => `<!DOCTYPE html>
       seen[bus.id] = 1;
       var b = buses[bus.id];
       if (!b) {
-        b = buses[bus.id] = { marker: L.marker([bus.lat, bus.lng], { icon: L.divIcon({ className: '', html: '<div class="sb-bus">' + busSvg + '</div>', iconSize: [68, 44], iconAnchor: [34, 22] }), title: bus.label || bus.id, zIndexOffset: 500 }).addTo(map) };
+        b = buses[bus.id] = { marker: L.marker([bus.lat, bus.lng], { icon: L.divIcon({ className: '', html: '<div class="sb-bus">' + busSvg(bus.heading) + '</div>', iconSize: [52, 52], iconAnchor: [26, 26] }), title: bus.label || bus.id, zIndexOffset: 500 }).addTo(map) };
         if (!routeLine) map.setView([bus.lat, bus.lng], 15);
       } else glide(b, [bus.lat, bus.lng]);
-      var el = b.marker.getElement(); if (el && el.firstChild) el.firstChild.className = 'sb-bus' + (bus.stale ? ' stale' : '');
+      var el = b.marker.getElement(); if (el && el.firstChild) { el.firstChild.className = 'sb-bus' + (bus.stale ? ' stale' : ''); if (b.h !== bus.heading) { b.h = bus.heading; el.firstChild.innerHTML = busSvg(bus.heading); } }
     });
     Object.keys(buses).forEach(function (id) { if (!seen[id]) { map.removeLayer(buses[id].marker); delete buses[id]; } });
   });

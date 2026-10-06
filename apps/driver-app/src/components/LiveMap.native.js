@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import MapView, { AnimatedRegion, Marker, MarkerAnimated, Polyline, UrlTile } from 'react-native-maps';
 import { Vehicle } from './ui';
+import { headingFor } from './vehicleShapes';
 
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const FALLBACK = { latitude: 6.9, longitude: 79.87, latitudeDelta: 0.12, longitudeDelta: 0.12 };
@@ -17,7 +18,7 @@ function BusMarker({ bus }) {
   return (
     <MarkerAnimated coordinate={position} anchor={{ x: 0.5, y: 0.5 }} title={bus.label || bus.id}>
       <View style={[styles.bus, bus.stale && styles.stale]}>
-        <Vehicle name="marker" width={44} label="Bus" />
+        <Vehicle name="bus" marker heading={headingFor(bus.heading)} width={52} label="Bus" />
       </View>
     </MarkerAnimated>
   );
@@ -58,8 +59,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
 const styles = StyleSheet.create({
   fill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#EEF2F7' },
   bus: {
-    width: 68, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#1F3A56', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 16, elevation: 8,
+    width: 52, height: 52, alignItems: 'center', justifyContent: 'center',
   },
   stale: { opacity: 0.55 },
   stop: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#0F1419', borderWidth: 3, borderColor: '#FFFFFF' },

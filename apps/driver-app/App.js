@@ -424,7 +424,7 @@ function ShiftScreen({
         <Text style={D.screenTitle}>{busRegistration}</Text>
         <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
         {/* CHANGED (illustration only): the bus shows a z while off duty; the toggle text still states the status. */}
-        <Vehicle name="bus" status={isOnShift ? undefined : 'idle'} width={112} style={D.headerBus} />
+        <Vehicle name="bus" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -505,7 +505,7 @@ function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, c
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Route Overview</Text>
         <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
-        <Vehicle name="bus" width={112} style={D.headerBus} label="Illustrated city bus" />
+        <Vehicle name="bus" width={124} style={D.headerBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -591,7 +591,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Telemetry</Text>
         <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
-        <Vehicle name="minibus" width={112} style={D.headerBus} label="Illustrated minibus" />
+        <Vehicle name="minibus" livery="orange" width={108} style={D.headerBus} label="Illustrated minibus" />
       </OverlapHeader>
 
       <OverlapSheet>

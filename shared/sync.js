@@ -3,11 +3,14 @@ import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COLORS, RADII, SPACE, TYPE, SHADOWS } from './tokens.js';
-import { SCENES, VEHICLES, vehicleSvgString } from './vehicleShapes.js';
+import { SCENES, VEHICLES, buildScene, vehicleSvgString } from './vehicleShapes.js';
 
 // Self-check: every scene points at a real bus and every colour key resolves.
-for (const [n] of Object.values(SCENES).flat()) if (!VEHICLES[n]) throw new Error(`SCENES uses unknown vehicle "${n}"`);
-for (const n of Object.keys(VEHICLES)) for (const status of [undefined, 'idle', 'maint', 'off']) if (/undefined|NaN/.test(vehicleSvgString(n, { status }))) throw new Error(`${n}: unresolved colour or attribute`);
+for (const [n] of Object.values(SCENES).flat()) if (!VEHICLES.includes(n)) throw new Error(`SCENES uses unknown vehicle "${n}"`);
+for (const s of Object.keys(SCENES)) if (/undefined|NaN/.test(JSON.stringify(buildScene(s)))) throw new Error(`scene ${s}: bad geometry`);
+for (const n of VEHICLES) for (const status of [undefined, 'idle', 'maint', 'off']) for (const heading of [0, 45, 90, 135, 180, 225, 270, 315]) {
+  if (/undefined|NaN/.test(vehicleSvgString(n, { status, heading }) + vehicleSvgString(n, { heading, marker: true }))) throw new Error(`${n}: unresolved colour or geometry at ${heading}°`);
+}
 
 const here = dirname(fileURLToPath(import.meta.url));
 const apps = join(here, '..', 'apps');
