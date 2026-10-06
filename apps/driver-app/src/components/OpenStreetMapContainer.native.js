@@ -8,10 +8,11 @@ import {
   ROUTE_138_START,
   ROUTE_138_WAYPOINTS,
 } from '../utils/route138';
-import { NavigationArrowIcon } from './VectorIcons';
+import { Vehicle } from './ui';
 
 const DEFAULT_BUS_COORDINATE = ROUTE_138_WAYPOINTS[2];
-const CARTO_POSITRON_TILE_URL = 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png';
+// CHANGED: CARTO basemaps now require an API key; OSM tiles are used instead.
+const CARTO_POSITRON_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 export default function OpenStreetMapContainer({
   isOnDuty,
@@ -67,11 +68,11 @@ export default function OpenStreetMapContainer({
         loadingEnabled
       >
         <UrlTile urlTemplate={CARTO_POSITRON_TILE_URL} maximumZ={19} flipY={false} />
-        <Polyline coordinates={routeCoordinates} strokeColor="#18181B" strokeWidth={5} lineCap="round" lineJoin="round" />
+        <Polyline coordinates={routeCoordinates} strokeColor="#F26B85" strokeWidth={6} lineCap="round" lineJoin="round" />
 
         <Marker coordinate={activeCoordinate} title="Driver Vehicle" anchor={{ x: 0.5, y: 0.5 }}>
           <View style={styles.busMarkerDisc}>
-            <NavigationArrowIcon color="#FFFFFF" size={16} />
+            <Vehicle name="bus" width={48} label="Bus" />
           </View>
         </Marker>
 
@@ -96,24 +97,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F4F4F6',
+    backgroundColor: '#EEF2F7',
   },
   map: {
     ...StyleSheet.absoluteFillObject,
   },
   busMarkerDisc: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#141416',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    width: 68,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    shadowColor: '#1F3A56',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
     elevation: 8,
   },
   destBeaconWrapper: {
@@ -127,23 +126,23 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 91, 55, 0.2)',
+    backgroundColor: 'rgba(242, 107, 133, 0.2)',
   },
   destBeaconHalo1: {
     position: 'absolute',
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(255, 91, 55, 0.3)',
+    backgroundColor: 'rgba(242, 107, 133, 0.3)',
   },
   destBeaconCore: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#FF5B37',
+    backgroundColor: '#F26B85',
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    shadowColor: '#FF5B37',
+    shadowColor: '#F26B85',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.5,
     shadowRadius: 6,

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   Platform,
   SafeAreaView,
@@ -8,22 +7,33 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as Location from 'expo-location';
 import OpenStreetMapContainer from './src/components/OpenStreetMapContainer';
-import { COLORS, TYPOGRAPHY } from './src/constants/theme';
+import { COLORS, RADII, SHADOWS, TYPE } from './src/constants/theme';
+// CHANGED (visual only): shared SmartBus design-system kit.
+import {
+  AuthLayout,
+  Banner,
+  Button,
+  FONT,
+  FloatingDock,
+  GradientCard,
+  IconButton,
+  OverlapHeader,
+  OverlapSheet,
+  Sheet,
+  TextField,
+  Toast,
+  Vehicle,
+} from './src/components/ui';
 import {
   ArrowRightIcon,
-  BellIcon,
   BusIcon,
   CheckIcon,
-  ClockIcon,
   LockIcon,
-  MapIcon,
-  MapPinIcon,
   MessageCircleIcon,
   MoreVerticalIcon,
   NavigationArrowIcon,
@@ -49,6 +59,8 @@ const DEFAULT_STOPS = ['Pettah', 'Borella Junction', 'Nugegoda Supermarket', 'Hi
 const INITIAL_COORDINATE = { latitude: 6.9271, longitude: 79.8612 };
 const DISPATCH_PHONE = '+94 11 248 7700';
 const MAX_LOG_ITEMS = 8;
+
+const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
 
 function formatCoord(val) { return Number(val).toFixed(4); }
 
@@ -253,83 +265,48 @@ export default function App() {
       />
 
       {/* Toast */}
-      {toastMsg ? (
-        <View style={D.toast} pointerEvents="none">
-          <Text style={D.toastText}>{toastMsg}</Text>
-        </View>
-      ) : null}
+      <Toast message={toastMsg} />
 
       {/* ═══════════════════════════════════════════════════
-          AUTH SCREEN
+          AUTH SCREEN  (CHANGED: hero + curved panel; split layout on desktop)
+          No Register screen: bus accounts are created by the admin dashboard.
       ═══════════════════════════════════════════════════ */}
       {!isAuthenticated ? (
-        <ScrollView
-          style={D.flex}
-          contentContainerStyle={D.authScroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Brand Hero */}
-          <View style={D.authHero}>
-            <View style={D.authOrb}>
-              <BusIcon color="#FFF" size={28} />
-            </View>
-            <Text style={D.authBrandTitle}>Driver Portal</Text>
-            <Text style={D.authBrandSub}>
-              Sign in to broadcast live GPS telemetry to passengers
+        <AuthLayout
+          scene="driver"
+          brand="SmartBus Driver"
+          tagline="Broadcast live GPS to passengers"
+          title="Driver sign in"
+          subtitle="Enter your bus registration details to start your shift."
+          footer={
+            <Text style={D.authHelp}>
+              Forgot your password? Ask Transit Dispatch at {DISPATCH_PHONE}.
             </Text>
-          </View>
-
-          {loginError ? (
-            <View style={D.errorCard}>
-              <Text style={D.errorText}>{loginError}</Text>
-            </View>
-          ) : null}
-
-          <View style={D.authCard}>
-            <Text style={D.authCardTitle}>Vehicle Sign In</Text>
-            <Text style={D.authCardSub}>Enter your bus registration details</Text>
-
-            <View style={D.field}>
-              <Text style={D.fieldLabel}>BUS REGISTRATION NO.</Text>
-              <TextInput
-                style={D.input}
-                value={busRegistration}
-                onChangeText={setBusRegistration}
-                placeholder="e.g. NB-4712"
-                placeholderTextColor="#A1A1AA"
-                autoCapitalize="characters"
-              />
-            </View>
-            <View style={D.field}>
-              <Text style={D.fieldLabel}>SECURITY PASSWORD</Text>
-              <TextInput
-                style={D.input}
-                value={busPassword}
-                onChangeText={setBusPassword}
-                placeholder="Enter driver password"
-                placeholderTextColor="#A1A1AA"
-                secureTextEntry
-                onSubmitEditing={handleLogin}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[D.primaryBtn, loginLoading && D.primaryBtnDisabled]}
-              onPress={handleLogin}
-              activeOpacity={0.85}
-              disabled={loginLoading}
-            >
-              {loginLoading
-                ? <ActivityIndicator color="#FFF" size="small" />
-                : <Text style={D.primaryBtnText}>Sign In & Start Shift</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+          }
+        >
+          {loginError ? <Banner tone="danger">{loginError}</Banner> : null}
+          <TextField
+            label="Bus registration no."
+            icon={<BusIcon color={COLORS.muted} size={20} />}
+            value={busRegistration}
+            onChangeText={setBusRegistration}
+            placeholder="e.g. NB-4712"
+            autoCapitalize="characters"
+          />
+          <TextField
+            label="Security password"
+            icon={<LockIcon color={COLORS.muted} size={20} />}
+            secure
+            value={busPassword}
+            onChangeText={setBusPassword}
+            placeholder="Enter driver password"
+            onSubmitEditing={handleLogin}
+          />
+          <Button title="Sign in & start shift" onPress={handleLogin} loading={loginLoading} />
+        </AuthLayout>
       ) : (
         /* ═══════════════════════════════════════════════════
-            AUTHENTICATED APP
+            AUTHENTICATED APP  (CHANGED: centred, width-constrained on desktop)
         ═══════════════════════════════════════════════════ */
         <View style={D.appShell}>
           {/* ─── SCREENS ───────────────────────────────── */}
@@ -396,8 +373,9 @@ export default function App() {
                 style={D.modalDismiss}
                 onPress={() => setIsDispatchModalOpen(false)}
                 activeOpacity={1}
+                accessibilityLabel="Close dispatch contact"
               />
-              <View style={D.modalSheet}>
+              <Sheet>
                 <View style={D.handleRow}><View style={D.handle} /></View>
 
                 {/* Dispatch Info */}
@@ -417,13 +395,15 @@ export default function App() {
                 </View>
 
                 {/* Mode Tabs */}
-                <View style={D.modeTabs}>
+                <View style={D.modeTabs} accessibilityRole="tablist">
                   <TouchableOpacity
                     style={[D.modeTab, dispatchMode === 'call' && D.modeTabActive]}
                     onPress={() => setDispatchMode('call')}
                     activeOpacity={0.8}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: dispatchMode === 'call' }}
                   >
-                    <PhoneCallIcon color={dispatchMode === 'call' ? '#FFF' : '#71717A'} size={14} />
+                    <PhoneCallIcon color={dispatchMode === 'call' ? '#FFF' : COLORS.muted} size={14} />
                     <Text style={[D.modeTabText, dispatchMode === 'call' && D.modeTabTextActive]}>
                       Call Dispatch
                     </Text>
@@ -432,8 +412,10 @@ export default function App() {
                     style={[D.modeTab, dispatchMode === 'message' && D.modeTabActive]}
                     onPress={() => setDispatchMode('message')}
                     activeOpacity={0.8}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: dispatchMode === 'message' }}
                   >
-                    <MessageCircleIcon color={dispatchMode === 'message' ? '#FFF' : '#71717A'} size={14} />
+                    <MessageCircleIcon color={dispatchMode === 'message' ? '#FFF' : COLORS.muted} size={14} />
                     <Text style={[D.modeTabText, dispatchMode === 'message' && D.modeTabTextActive]}>
                       Send Message
                     </Text>
@@ -442,26 +424,24 @@ export default function App() {
 
                 {dispatchMode === 'call' ? (
                   <View style={D.callView}>
-                    <Text style={D.callLabel}>Direct Dispatch Line</Text>
+                    <Text style={D.callLabel}>Direct dispatch line</Text>
                     <Text style={D.callNumber}>{DISPATCH_PHONE}</Text>
                     <Text style={D.callNote}>
                       Contact for route changes, incidents, or operational support.
                     </Text>
-                    <TouchableOpacity
-                      style={D.callBtn}
-                      activeOpacity={0.85}
+                    <Button
+                      title="Start call"
+                      tone="ink"
+                      icon={<PhoneCallIcon color={COLORS.accent} size={18} />}
                       onPress={() => {
                         setIsDispatchModalOpen(false);
                         showToast(`Calling Transit Dispatch at ${DISPATCH_PHONE}...`);
                       }}
-                    >
-                      <PhoneCallIcon color="#FFF" size={18} />
-                      <Text style={D.callBtnText}>Start Call</Text>
-                    </TouchableOpacity>
+                    />
                   </View>
                 ) : (
                   <View style={D.messageView}>
-                    <Text style={D.callLabel}>Quick Dispatch Messages</Text>
+                    <Text style={D.callLabelLeft}>Quick dispatch messages</Text>
                     {[
                       'Running behind schedule. Update ETA.',
                       'Mechanical issue. Need assistance.',
@@ -478,12 +458,12 @@ export default function App() {
                         }}
                       >
                         <Text style={D.quickMsgText}>{msg}</Text>
-                        <ArrowRightIcon color="#FF5B37" size={14} />
+                        <ArrowRightIcon color={COLORS.accentText} size={14} />
                       </TouchableOpacity>
                     ))}
                   </View>
                 )}
-              </View>
+              </Sheet>
             </View>
           </Modal>
         </View>
@@ -508,8 +488,19 @@ function ShiftScreen({
   onOpenDispatch,
   onViewRoute,
 }) {
+  const progress = isOnShift ? Math.min(0.95, Math.max(0.1, (currentStopIndex + 1) / routeStops.length)) : 0.1;
+  const gpsOk = gpsStatus === 'Connected';
   return (
     <View style={D.flex}>
+      {/* Map fills the screen; cards float on top */}
+      <View style={D.mapCanvas}>
+        <OpenStreetMapContainer
+          isOnDuty={isOnShift}
+          routeName={routeNumber}
+          liveCoordinate={driverCoordinate}
+        />
+      </View>
+
       {/* Floating Map Header */}
       <View style={D.mapHeader} pointerEvents="box-none">
         <View style={D.mapHeaderInner}>
@@ -520,80 +511,62 @@ function ShiftScreen({
             </View>
             <Text style={D.mapHeaderTitle}>Driver Navigation</Text>
           </View>
-          <TouchableOpacity style={D.moreBtn} onPress={onViewRoute} activeOpacity={0.8}>
-            <MoreVerticalIcon color="#121214" size={18} />
-          </TouchableOpacity>
+          <IconButton label="View route" onPress={onViewRoute} tone="soft">
+            <MoreVerticalIcon color={COLORS.ink} size={18} />
+          </IconButton>
         </View>
       </View>
 
-      {/* Map */}
-      <View style={D.mapCanvas}>
-        <OpenStreetMapContainer
-          isOnDuty={isOnShift}
-          routeName={routeNumber}
-          liveCoordinate={driverCoordinate}
-        />
-      </View>
-
-      {/* Obsidian Telemetry Sheet */}
-      <View style={D.darkSheet}>
-        <View style={D.handleRow}><View style={D.handle} /></View>
-
+      {/* Telemetry summary card (white, floats above the dock) */}
+      <View style={D.summaryCard}>
         {/* Header Row */}
         <View style={D.sheetHeader}>
-          <View>
-            <Text style={D.sheetMeta}>BUS REGISTRATION</Text>
+          <View style={D.flex}>
+            <Text style={D.sheetMeta}>Bus registration</Text>
             <Text style={D.sheetBusId}>{busRegistration}</Text>
-            <Text style={D.sheetRoute}>{routeLabel}</Text>
+            <Text style={D.sheetRoute} numberOfLines={1}>{routeLabel}</Text>
           </View>
-          <TouchableOpacity
-            style={[D.shiftBtn, isOnShift ? D.shiftBtnEnd : D.shiftBtnStart]}
+          <Button
+            title={isOnShift ? 'End shift' : 'Start shift'}
+            tone={isOnShift ? 'ink' : 'accent'}
+            size="sm"
+            full={false}
             onPress={onToggleShift}
-            activeOpacity={0.85}
-          >
-            {isOnShift
-              ? <><StopIcon color="#FFF" size={13} /><Text style={D.shiftBtnText}>End Shift</Text></>
-              : <><PlayIcon color="#FFF" size={13} /><Text style={D.shiftBtnText}>Start Shift</Text></>
-            }
-          </TouchableOpacity>
+            icon={isOnShift ? <StopIcon color={COLORS.accent} size={13} /> : <PlayIcon color={COLORS.ink} size={13} />}
+          />
         </View>
 
-        {/* Progress Bar */}
+        {/* Progress bar with coral arrow head */}
         <View style={D.progressWrap}>
-          <View style={D.progressBg}>
-            <View style={[D.progressFill, {
-              width: isOnShift ? `${((currentStopIndex + 1) / routeStops.length) * 100}%` : '10%'
-            }]} />
+          <View style={D.progressTrack}>
+            <View style={[D.progressFill, { flex: progress }]} />
+            <ArrowRightIcon color={COLORS.accent} size={20} />
+            <View style={[D.progressRest, { flex: 1 - progress }]} />
           </View>
           <View style={D.progressLabels}>
-            <Text style={D.progressLabel}>{routeStops[0]}</Text>
-            <Text style={D.progressLabelCenter}>Next: {routeStops[currentStopIndex]}</Text>
-            <Text style={D.progressLabel}>{routeStops[routeStops.length - 1]}</Text>
+            <Text style={D.progressLabel} numberOfLines={1}>{routeStops[0]}</Text>
+            <Text style={D.progressLabelCenter} numberOfLines={1}>Next: {routeStops[currentStopIndex]}</Text>
+            <Text style={D.progressLabelRight} numberOfLines={1}>{routeStops[routeStops.length - 1]}</Text>
           </View>
         </View>
 
-        {/* Telemetry Grid */}
+        {/* Three-column stat panel */}
         <View style={D.specsRow}>
           <View style={D.specBlock}>
-            <Text style={D.specLabel}>SPEED</Text>
+            <Text style={D.specLabel}>Speed</Text>
             <Text style={D.specValAccent}>{isOnShift ? `${busSpeed}` : '0'}<Text style={D.specUnit}> km/h</Text></Text>
           </View>
           <View style={D.specDivider} />
           <View style={D.specBlock}>
             <Text style={D.specLabel}>GPS</Text>
-            <Text style={[D.specVal, { color: gpsStatus === 'Connected' ? '#10B981' : '#EF4444' }]}>
+            <Text style={[D.specVal, { color: gpsOk ? COLORS.success : COLORS.danger }]}>
               {gpsStatus}
             </Text>
           </View>
           <View style={D.specDivider} />
           <View style={D.specBlock}>
-            <Text style={D.specLabel}>NEXT STOP</Text>
-            <Text style={D.specVal} numberOfLines={1}>{routeStops[currentStopIndex]}</Text>
-          </View>
-          <View style={D.specDivider} />
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>STATUS</Text>
-            <Text style={[D.specVal, isOnShift ? { color: '#10B981' } : { color: '#71717A' }]}>
+            <Text style={D.specLabel}>Status</Text>
+            <Text style={[D.specVal, { color: isOnShift ? COLORS.success : COLORS.muted }]}>
               {isOnShift ? 'Active' : 'Standby'}
             </Text>
           </View>
@@ -605,18 +578,18 @@ function ShiftScreen({
             <View style={D.dispatchCardAvatar}>
               <Text style={D.dispatchCardAvatarText}>HQ</Text>
             </View>
-            <View>
+            <View style={D.flex}>
               <Text style={D.dispatchCardName}>Transit Dispatch</Text>
-              <Text style={D.dispatchCardRole}>Central Command Center</Text>
+              <Text style={D.dispatchCardRole} numberOfLines={1}>Central Command Center</Text>
             </View>
           </View>
           <View style={D.dispatchBtns}>
-            <TouchableOpacity style={D.callActionBtn} onPress={() => onOpenDispatch('call')} activeOpacity={0.85}>
+            <IconButton label="Call dispatch" tone="ink" onPress={() => onOpenDispatch('call')}>
               <PhoneCallIcon color="#FFF" size={16} />
-            </TouchableOpacity>
-            <TouchableOpacity style={D.msgActionBtn} onPress={() => onOpenDispatch('message')} activeOpacity={0.85}>
-              <MessageCircleIcon color="#121214" size={16} />
-            </TouchableOpacity>
+            </IconButton>
+            <IconButton label="Message dispatch" tone="glass" onPress={() => onOpenDispatch('message')}>
+              <MessageCircleIcon color={COLORS.ink} size={16} />
+            </IconButton>
           </View>
         </View>
       </View>
@@ -633,59 +606,67 @@ function RouteScreen({ routeNumber, routeLabel, routeStops, currentStopIndex, is
       contentContainerStyle={D.routeScroll}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={D.screenTitle}>Route Overview</Text>
+      <OverlapHeader minHeight={150}>
+        <Text style={D.screenTitle}>Route Overview</Text>
+        <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
+        <Vehicle name="bus" width={130} style={D.headerBus} label="Illustrated city bus" />
+      </OverlapHeader>
 
-      {/* Route Badge Card */}
-      <View style={D.routeHeaderCard}>
-        <View style={D.routeHeaderLeft}>
-          <View style={D.routeNumBadge}>
-            <Text style={D.routeNumText}>{routeNumber.replace('Route ', '')}</Text>
-          </View>
-          <View>
-            <Text style={D.routeCardLabel}>{routeNumber}</Text>
-            <Text style={D.routeCardSub}>{routeLabel}</Text>
-          </View>
-        </View>
-        <View style={[D.statusPill, isOnShift ? D.statusPillActive : D.statusPillOff]}>
-          <Text style={[D.statusPillText, isOnShift ? D.statusPillTextActive : D.statusPillTextOff]}>
-            {isOnShift ? 'On Shift' : 'Standby'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Stop Timeline */}
-      <Text style={D.sectionLabel}>STOP TIMELINE</Text>
-      <View style={D.timelineCard}>
-        {routeStops.map((stop, idx) => {
-          const isPassed = idx < currentStopIndex;
-          const isCurrent = idx === currentStopIndex;
-          return (
-            <View key={idx} style={D.timelineRow}>
-              <View style={D.timelineLeft}>
-                <View style={[
-                  D.timelineDot,
-                  isPassed && D.dotPassed,
-                  isCurrent && D.dotCurrent,
-                ]}>
-                  {isPassed ? <CheckIcon color="#FFF" size={7} /> : null}
-                  {isCurrent ? <View style={D.dotCurrentInner} /> : null}
-                </View>
-                {idx < routeStops.length - 1 && (
-                  <View style={[D.timelineLine, isPassed && D.lineVPassed]} />
-                )}
+      <OverlapSheet>
+        {/* Route Badge Card: pastel gradient with illustrated bus on the right edge */}
+        <GradientCard tint="bus" style={D.routeHeaderCardWrap}>
+          <View style={D.routeHeaderCard}>
+            <View style={D.routeHeaderLeft}>
+              <View style={D.routeNumBadge}>
+                <Text style={D.routeNumText}>{routeNumber.replace('Route ', '')}</Text>
               </View>
-              <View style={D.timelineRight}>
-                <Text style={[D.timelineStop, isCurrent && D.timelineStopActive]}>
-                  {stop}
-                </Text>
-                <Text style={D.timelineTag}>
-                  {isPassed ? 'Passed' : isCurrent ? '→ Approaching Now' : 'Upcoming'}
-                </Text>
+              <View style={D.flex}>
+                <Text style={D.routeCardLabel}>{routeNumber}</Text>
+                <Text style={D.routeCardSub} numberOfLines={2}>{routeLabel}</Text>
               </View>
             </View>
-          );
-        })}
-      </View>
+            <View style={[D.statusPill, isOnShift ? D.statusPillActive : D.statusPillOff]}>
+              <Text style={[D.statusPillText, isOnShift ? D.statusPillTextActive : D.statusPillTextOff]}>
+                {isOnShift ? 'On Shift' : 'Standby'}
+              </Text>
+            </View>
+          </View>
+        </GradientCard>
+
+        {/* Stop Timeline */}
+        <Text style={D.sectionLabel}>Stop timeline</Text>
+        <View style={D.timelineCard}>
+          {routeStops.map((stop, idx) => {
+            const isPassed = idx < currentStopIndex;
+            const isCurrent = idx === currentStopIndex;
+            return (
+              <View key={idx} style={D.timelineRow}>
+                <View style={D.timelineLeft}>
+                  <View style={[
+                    D.timelineDot,
+                    isPassed && D.dotPassed,
+                    isCurrent && D.dotCurrent,
+                  ]}>
+                    {isPassed ? <CheckIcon color="#FFF" size={7} /> : null}
+                    {isCurrent ? <View style={D.dotCurrentInner} /> : null}
+                  </View>
+                  {idx < routeStops.length - 1 && (
+                    <View style={[D.timelineLine, isPassed && D.lineVPassed]} />
+                  )}
+                </View>
+                <View style={D.timelineRight}>
+                  <Text style={[D.timelineStop, isCurrent && D.timelineStopActive]}>
+                    {stop}
+                  </Text>
+                  <Text style={D.timelineTag}>
+                    {isPassed ? 'Passed' : isCurrent ? '→ Approaching Now' : 'Upcoming'}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </OverlapSheet>
     </ScrollView>
   );
 }
@@ -693,54 +674,63 @@ function RouteScreen({ routeNumber, routeLabel, routeStops, currentStopIndex, is
 // ─── Diagnostics Screen ──────────────────────────────────────────────────────
 
 function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnShift }) {
+  const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView
       style={D.flex}
       contentContainerStyle={D.routeScroll}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={D.screenTitle}>Telemetry</Text>
-      <Text style={D.screenSub}>Live diagnostics & GPS transmission log</Text>
+      <OverlapHeader minHeight={150}>
+        <Text style={D.screenTitle}>Telemetry</Text>
+        <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
+        <Vehicle name="van" width={120} style={D.headerBus} label="Illustrated delivery van" />
+      </OverlapHeader>
 
-      {/* Metrics Grid */}
-      <View style={D.metricsRow}>
-        <View style={D.metricCard}>
-          <SpeedometerIcon color="#FF5B37" size={22} />
-          <Text style={D.metricVal}>{isOnShift ? busSpeed : 0}<Text style={D.metricUnit}> km/h</Text></Text>
-          <Text style={D.metricLabel}>Speed</Text>
-        </View>
-        <View style={D.metricCard}>
-          <View style={[D.gpsStatusOrb, { backgroundColor: gpsStatus === 'Connected' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' }]}>
-            <View style={[D.gpsStatusDot, { backgroundColor: gpsStatus === 'Connected' ? '#10B981' : '#EF4444' }]} />
+      <OverlapSheet>
+        {/* Metrics Grid */}
+        <View style={D.metricsRow}>
+          <View style={D.metricCard}>
+            <View style={D.metricIcon}><SpeedometerIcon color={COLORS.accentText} size={22} /></View>
+            <Text style={D.metricVal}>{isOnShift ? busSpeed : 0}<Text style={D.metricUnit}> km/h</Text></Text>
+            <Text style={D.metricLabel}>Speed</Text>
           </View>
-          <Text style={[D.metricVal, { fontSize: 16, color: gpsStatus === 'Connected' ? '#10B981' : '#EF4444' }]}>
-            {gpsStatus}
-          </Text>
-          <Text style={D.metricLabel}>GPS</Text>
-        </View>
-      </View>
-
-      {/* Coordinates */}
-      <View style={D.coordCard}>
-        <Text style={D.sectionLabel}>CURRENT COORDINATES</Text>
-        <Text style={D.coordText}>
-          {formatCoord(driverCoordinate.latitude)}, {formatCoord(driverCoordinate.longitude)}
-        </Text>
-      </View>
-
-      {/* Logs */}
-      <Text style={[D.sectionLabel, { marginTop: 20 }]}>GPS TRANSMISSION LOG</Text>
-      <View style={D.logCard}>
-        {logs.length === 0 ? (
-          <Text style={D.emptyLog}>No fixes recorded. Start shift to broadcast.</Text>
-        ) : (
-          logs.map((entry, idx) => (
-            <View key={idx} style={D.logRow}>
-              <Text style={D.logText}>{entry}</Text>
+          <View style={D.metricCard}>
+            <View style={[D.metricIcon, { backgroundColor: gpsOk ? COLORS.successSoft : COLORS.dangerSoft }]}>
+              <View style={[D.gpsStatusDot, { backgroundColor: gpsOk ? COLORS.success : COLORS.danger }]} />
             </View>
-          ))
-        )}
-      </View>
+            <Text style={[D.metricValSm, { color: gpsOk ? COLORS.success : COLORS.danger }]}>
+              {gpsStatus}
+            </Text>
+            <Text style={D.metricLabel}>GPS</Text>
+          </View>
+        </View>
+
+        {/* Coordinates */}
+        <View style={D.coordCard}>
+          <Text style={D.sectionLabelFlat}>Current coordinates</Text>
+          <Text style={D.coordText}>
+            {formatCoord(driverCoordinate.latitude)}, {formatCoord(driverCoordinate.longitude)}
+          </Text>
+        </View>
+
+        {/* Logs */}
+        <Text style={D.sectionLabel}>GPS transmission log</Text>
+        <View style={D.logCard}>
+          {logs.length === 0 ? (
+            <View style={D.emptyLogBox}>
+              <Vehicle name="bus" width={110} label="No GPS fixes yet" />
+              <Text style={D.emptyLog}>No fixes recorded. Start shift to broadcast.</Text>
+            </View>
+          ) : (
+            logs.map((entry, idx) => (
+              <View key={idx} style={[D.logRow, idx === logs.length - 1 && D.logRowLast]}>
+                <Text style={D.logText}>{entry}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      </OverlapSheet>
     </ScrollView>
   );
 }
@@ -755,34 +745,36 @@ function ProfileScreen({ busRegistration, routeNumber, routeLabel, isOnShift, on
       showsVerticalScrollIndicator={false}
     >
       {/* Avatar hero */}
-      <View style={D.profileHero}>
-        <View style={D.profileAvatar}>
-          <Text style={D.profileAvatarText}>{(busRegistration || 'NB').slice(0, 2)}</Text>
+      <OverlapHeader minHeight={200}>
+        <View style={D.profileHero}>
+          <View style={D.profileAvatar}>
+            <Text style={D.profileAvatarText}>{(busRegistration || 'NB').slice(0, 2)}</Text>
+          </View>
+          <Text style={D.profileName}>{busRegistration || 'NB-4712'}</Text>
+          <Text style={D.profileSub}>Commercial Transit Vehicle</Text>
         </View>
-        <Text style={D.profileName}>{busRegistration || 'NB-4712'}</Text>
-        <Text style={D.profileSub}>Commercial Transit Vehicle</Text>
-      </View>
+      </OverlapHeader>
 
-      {/* Vehicle Details */}
-      <View style={D.profileCard}>
-        <Text style={D.profileCardTitle}>Vehicle Details</Text>
-        <PRow label="Registration" value={busRegistration} />
-        <PRow label="Assigned Route" value={routeNumber} />
-        <PRow label="Corridor" value={routeLabel} />
-        <PRow label="Shift Status" value={isOnShift ? 'Active (Broadcasting)' : 'Off-duty'} accent={isOnShift} />
-      </View>
+      <OverlapSheet>
+        {/* Vehicle Details */}
+        <View style={D.profileCard}>
+          <Text style={D.profileCardTitle}>Vehicle Details</Text>
+          <PRow label="Registration" value={busRegistration} />
+          <PRow label="Assigned Route" value={routeNumber} />
+          <PRow label="Corridor" value={routeLabel} />
+          <PRow label="Shift Status" value={isOnShift ? 'Active (Broadcasting)' : 'Off-duty'} accent={isOnShift} last />
+        </View>
 
-      {/* Sign Out */}
-      <TouchableOpacity style={D.signOutBtn} onPress={onLogout} activeOpacity={0.85}>
-        <Text style={D.signOutText}>Sign Out of Vehicle Console</Text>
-      </TouchableOpacity>
+        {/* Sign Out */}
+        <Button title="Sign Out of Vehicle Console" tone="dangerSoft" onPress={onLogout} />
+      </OverlapSheet>
     </ScrollView>
   );
 }
 
-function PRow({ label, value, accent }) {
+function PRow({ label, value, accent, last }) {
   return (
-    <View style={D.profileRow}>
+    <View style={[D.profileRow, last && D.profileRowLast]}>
       <Text style={D.profileRowLabel}>{label}</Text>
       <Text style={[D.profileRowValue, accent && D.profileRowValueAccent]}>{value}</Text>
     </View>
@@ -792,410 +784,204 @@ function PRow({ label, value, accent }) {
 // ─── Driver Bottom Dock ───────────────────────────────────────────────────────
 
 function DriverDock({ activeTab, setActiveTab }) {
+  const icon = (Cmp, size) => (a) => <Cmp color={a ? COLORS.ink : '#C9D3DD'} size={size} />;
   const items = [
-    { id: 'shift', label: 'Navigation', icon: (a) => <NavigationArrowIcon color={a ? '#FFF' : '#8E8E93'} size={18} /> },
-    { id: 'route', label: 'Route', icon: (a) => <RouteIcon color={a ? '#FFF' : '#8E8E93'} size={19} /> },
-    { id: 'diagnostics', label: 'Telemetry', icon: (a) => <SpeedometerIcon color={a ? '#FFF' : '#8E8E93'} size={19} /> },
-    { id: 'profile', label: 'Profile', icon: (a) => <UserIcon color={a ? '#FFF' : '#8E8E93'} size={19} /> },
+    { id: 'shift', label: 'Navigate', icon: icon(NavigationArrowIcon, 18) },
+    { id: 'route', label: 'Route', icon: icon(RouteIcon, 19) },
+    { id: 'diagnostics', label: 'Telemetry', icon: icon(SpeedometerIcon, 19) },
+    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
   ];
-
-  return (
-    <View style={D.dockWrapper}>
-      <View style={D.dock}>
-        {items.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={D.dockItem}
-              onPress={() => setActiveTab(item.id)}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-            >
-              <View style={[D.dockBtn, isActive && D.dockBtnPrimary]}>
-                {item.icon(isActive)}
-                <Text
-                  style={[D.dockLabel, isActive && D.dockLabelPrimary]}
-                  numberOfLines={1}
-                >
-                  {item.label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+  return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+// CHANGED: every value comes from shared tokens (COLORS / RADII / SHADOWS / TYPE); spacing is on the 4px scale.
+
+const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 
 const D = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F6F6F8' },
+  root: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
-  appShell: { flex: 1, flexDirection: 'column' },
-
-  // Toast
-  toast: {
-    position: 'absolute', top: 60, left: 20, right: 20, zIndex: 999,
-    backgroundColor: '#141416', paddingVertical: 12, paddingHorizontal: 18,
-    borderRadius: 16, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10,
+  appShell: {
+    flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center', overflow: 'hidden',
+    backgroundColor: COLORS.bg, ...(Platform.OS === 'web' ? SHADOWS.lg : null),
   },
-  toastText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
 
   // ─── Auth ───────────────────────────────────────────────
-  authScroll: { padding: 24, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16, paddingBottom: 48 },
-  authHero: { alignItems: 'center', marginBottom: 28 },
-  authOrb: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: '#141416',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 14, elevation: 6,
-  },
-  authBrandTitle: { fontSize: 26, fontWeight: '800', color: '#121214', letterSpacing: -0.5 },
-  authBrandSub: { fontSize: 14, color: '#71717A', marginTop: 5, textAlign: 'center', lineHeight: 20 },
-
-  errorCard: {
-    backgroundColor: '#FEE2E2', borderRadius: 12, padding: 14, marginBottom: 16,
-    borderWidth: 1, borderColor: '#FECACA',
-  },
-  errorText: { color: '#DC2626', fontSize: 13, fontWeight: '500' },
-
-  authCard: {
-    backgroundColor: '#FFF', borderRadius: 24, padding: 24,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 14, elevation: 3,
-  },
-  authCardTitle: { fontSize: 20, fontWeight: '700', color: '#121214' },
-  authCardSub: { fontSize: 13, color: '#71717A', marginTop: 4, marginBottom: 22 },
-
-  field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 10, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.9, marginBottom: 6 },
-  input: {
-    height: 50, backgroundColor: '#F7F7F9', borderRadius: 12,
-    paddingHorizontal: 14, fontSize: 15, color: '#121214',
-    borderWidth: 1, borderColor: '#E8E8EC',
-  },
-  primaryBtn: {
-    height: 52, backgroundColor: '#FF5B37', borderRadius: 14,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    marginTop: 12,
-    shadowColor: '#FF5B37', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5,
-  },
-  primaryBtnDisabled: { opacity: 0.7 },
-  primaryBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  authHelp: { ...type('small'), textAlign: 'center', color: COLORS.muted, marginTop: 24 },
 
   // ─── Shift Screen ────────────────────────────────────────
+  mapCanvas: { ...StyleSheet.absoluteFillObject },
   mapHeader: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 8,
-    paddingHorizontal: 18, paddingBottom: 10,
+    paddingTop: TOP_INSET + 8, paddingHorizontal: 16,
   },
   mapHeaderInner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 10,
-    borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 10, elevation: 4,
+    backgroundColor: COLORS.surface, borderRadius: RADII.lg, paddingLeft: 16, paddingRight: 8, paddingVertical: 8,
+    ...SHADOWS.md,
   },
-  mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   liveChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#141416', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill,
   },
-  liveChipOff: { backgroundColor: '#3F3F46' },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
-  liveDotOff: { backgroundColor: '#EF4444' },
-  liveText: { color: '#FFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  mapHeaderTitle: { fontSize: 15, fontWeight: '700', color: '#121214' },
-  moreBtn: {
-    width: 34, height: 34, borderRadius: 17, backgroundColor: '#F4F4F6',
-    alignItems: 'center', justifyContent: 'center',
+  liveChipOff: { backgroundColor: COLORS.muted },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent },
+  liveDotOff: { backgroundColor: COLORS.mutedLight },
+  liveText: { ...type('overline'), color: COLORS.white },
+  mapHeaderTitle: { ...type('h3'), color: COLORS.ink },
+
+  summaryCard: {
+    position: 'absolute', left: 16, right: 16, bottom: 104,
+    backgroundColor: COLORS.surface, borderRadius: RADII.xl, padding: 20, ...SHADOWS.lg,
   },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
+  sheetMeta: { ...type('caption'), color: COLORS.muted },
+  sheetBusId: { ...type('h2'), color: COLORS.ink },
+  sheetRoute: { ...type('small'), color: COLORS.muted },
 
-  mapCanvas: { flex: 1 },
-
-  darkSheet: {
-    backgroundColor: '#141416', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 95,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 12,
-  },
-  handleRow: { alignItems: 'center', paddingVertical: 8 },
-  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#3F3F46' },
-
-  sheetHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
-  sheetMeta: { fontSize: 10, color: '#71717A', fontWeight: '600', letterSpacing: 0.5, marginBottom: 2 },
-  sheetBusId: { fontSize: 22, fontWeight: '800', color: '#FFF', letterSpacing: -0.5 },
-  sheetRoute: { fontSize: 12, color: '#71717A', marginTop: 2 },
-
-  shiftBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 7,
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16,
-  },
-  shiftBtnStart: { backgroundColor: '#10B981' },
-  shiftBtnEnd: { backgroundColor: '#EF4444' },
-  shiftBtnText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
-
-  progressWrap: { marginBottom: 14 },
-  progressBg: {
-    height: 5, backgroundColor: '#2C2C31', borderRadius: 3, overflow: 'hidden', marginBottom: 8,
-  },
-  progressFill: { height: '100%', backgroundColor: '#FF5B37', borderRadius: 3 },
-  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressLabel: { fontSize: 10, color: '#71717A', fontWeight: '500', flex: 1 },
-  progressLabelCenter: { fontSize: 11, color: '#FF5B37', fontWeight: '700', flex: 1, textAlign: 'center' },
+  progressWrap: { marginBottom: 16 },
+  progressTrack: { flexDirection: 'row', alignItems: 'center', height: 20 },
+  progressFill: { height: 4, borderRadius: 2, backgroundColor: COLORS.accent },
+  progressRest: { height: 4, borderRadius: 2, backgroundColor: COLORS.ink },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, gap: 8 },
+  progressLabel: { ...type('caption'), color: COLORS.muted, flex: 1 },
+  progressLabelCenter: { ...type('caption'), color: COLORS.ink, flex: 1.4, textAlign: 'center' },
+  progressLabelRight: { ...type('caption'), color: COLORS.muted, flex: 1, textAlign: 'right' },
 
   specsRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1C1C1F', borderRadius: 16, padding: 14, marginBottom: 14,
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, paddingVertical: 16, marginBottom: 12,
   },
-  specBlock: { flex: 1, alignItems: 'center' },
-  specDivider: { width: 1, height: 32, backgroundColor: '#2C2C31' },
-  specLabel: { fontSize: 9, color: '#71717A', fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
-  specVal: { fontSize: 12, fontWeight: '600', color: '#D4D4D8', textAlign: 'center' },
-  specValAccent: { fontSize: 15, fontWeight: '800', color: '#FF5B37', textAlign: 'center' },
-  specUnit: { fontSize: 10, color: '#71717A', fontWeight: '500' },
+  specBlock: { flex: 1, alignItems: 'center', gap: 4 },
+  specDivider: { width: 1, height: 32, backgroundColor: COLORS.line },
+  specLabel: { ...type('caption'), color: COLORS.muted },
+  specVal: { ...type('bodyBold'), color: COLORS.ink, textAlign: 'center' },
+  specValAccent: { ...type('bodyBold'), color: COLORS.ink },
+  specUnit: { ...type('caption'), color: COLORS.muted },
 
   dispatchCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#1C1C1F', borderRadius: 18, padding: 14,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, padding: 12,
   },
-  dispatchLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  dispatchLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
   dispatchCardAvatar: {
-    width: 42, height: 42, borderRadius: 21, backgroundColor: '#27272A',
-    borderWidth: 2, borderColor: '#3F3F46', alignItems: 'center', justifyContent: 'center', marginRight: 12,
-  },
-  dispatchCardAvatarText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
-  dispatchCardName: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-  dispatchCardRole: { fontSize: 11, color: '#71717A', marginTop: 2 },
-  dispatchBtns: { flexDirection: 'row', gap: 10 },
-  callActionBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: '#FF5B37',
+    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primarySoft,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FF5B37', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 4,
   },
-  msgActionBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 2,
-  },
+  dispatchCardAvatarText: { ...type('smallBold'), color: COLORS.primaryDeep },
+  dispatchCardName: { ...type('smallBold'), color: COLORS.ink },
+  dispatchCardRole: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
+  dispatchBtns: { flexDirection: 'row', gap: 8 },
 
-  // ─── Route Screen ────────────────────────────────────────
-  routeScroll: { padding: 20, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16, paddingBottom: 110 },
-  screenTitle: { fontSize: 22, fontWeight: '800', color: '#121214', letterSpacing: -0.4 },
-  screenSub: { fontSize: 14, color: '#71717A', marginTop: 4, marginBottom: 20 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.9, marginBottom: 10 },
+  // ─── Route / Telemetry / Profile ─────────────────────────
+  routeScroll: { paddingBottom: 120 },
+  screenTitle: { ...type('h1'), color: COLORS.white, paddingTop: TOP_INSET },
+  screenSubHeader: { ...type('small'), color: COLORS.ink, marginTop: 4, maxWidth: '60%' },
+  headerBus: { position: 'absolute', right: 12, bottom: 34 },
 
-  routeHeaderCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#FFF', borderRadius: 22, padding: 18, marginBottom: 20, marginTop: 16,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3,
-  },
-  routeHeaderLeft: { flexDirection: 'row', alignItems: 'center' },
-  routeNumBadge: {
-    width: 52, height: 52, borderRadius: 16, backgroundColor: '#141416',
-    alignItems: 'center', justifyContent: 'center', marginRight: 14,
-  },
-  routeNumText: { color: '#FFF', fontSize: 15, fontWeight: '800' },
-  routeCardLabel: { fontSize: 15, fontWeight: '700', color: '#121214' },
-  routeCardSub: { fontSize: 12, color: '#71717A', marginTop: 2 },
-  statusPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
-  statusPillActive: { backgroundColor: 'rgba(16,185,129,0.12)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
-  statusPillOff: { backgroundColor: '#F4F4F6' },
-  statusPillText: { fontSize: 12, fontWeight: '600' },
-  statusPillTextActive: { color: '#10B981' },
-  statusPillTextOff: { color: '#71717A' },
+  sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: 24, marginBottom: 12 },
+  sectionLabelFlat: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginBottom: 8 },
 
-  timelineCard: {
-    backgroundColor: '#FFF', borderRadius: 22, padding: 20,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2,
-  },
-  timelineRow: { flexDirection: 'row', marginBottom: 10 },
-  timelineLeft: { alignItems: 'center', width: 22, marginRight: 14 },
+  routeHeaderCardWrap: { marginBottom: 0 },
+  routeHeaderCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, gap: 12 },
+  routeHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  routeNumBadge: { width: 52, height: 52, borderRadius: RADII.md, backgroundColor: COLORS.ink, alignItems: 'center', justifyContent: 'center' },
+  routeNumText: { ...type('h3'), color: COLORS.white },
+  routeCardLabel: { ...type('h3'), color: COLORS.ink },
+  routeCardSub: { ...type('small'), color: COLORS.inkSoft },
+  statusPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADII.pill },
+  statusPillActive: { backgroundColor: COLORS.successSoft },
+  statusPillOff: { backgroundColor: COLORS.surface },
+  statusPillText: { ...type('caption') },
+  statusPillTextActive: { color: COLORS.success },
+  statusPillTextOff: { color: COLORS.muted },
+
+  timelineCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
+  timelineRow: { flexDirection: 'row', minHeight: 56 },
+  timelineLeft: { alignItems: 'center', width: 24, marginRight: 12 },
   timelineDot: {
-    width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: '#D4D4D8',
-    backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
+    width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.mutedLight,
+    backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center',
   },
-  dotPassed: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  dotCurrent: { borderColor: '#FF5B37', borderWidth: 2, backgroundColor: 'rgba(255,91,55,0.1)' },
-  dotCurrentInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF5B37' },
-  timelineLine: { width: 2, flex: 1, backgroundColor: '#E4E4E7', marginVertical: 3 },
-  lineVPassed: { backgroundColor: '#10B981' },
-  timelineRight: { flex: 1, paddingTop: 1 },
-  timelineStop: { fontSize: 13, fontWeight: '500', color: '#121214' },
-  timelineStopActive: { fontWeight: '700', color: '#FF5B37' },
-  timelineTag: { fontSize: 10, color: '#A1A1AA', marginTop: 2 },
+  dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
+  dotCurrent: { borderColor: COLORS.accent, backgroundColor: COLORS.accentSoft },
+  dotCurrentInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.accent },
+  timelineLine: { width: 2, flex: 1, backgroundColor: COLORS.line, marginVertical: 4 },
+  lineVPassed: { backgroundColor: COLORS.primaryStrong },
+  timelineRight: { flex: 1, paddingBottom: 12 },
+  timelineStop: { ...type('bodyBold'), color: COLORS.ink },
+  timelineStopActive: { color: COLORS.accentText },
+  timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
 
-  // ─── Diagnostics Screen ──────────────────────────────────
-  metricsRow: { flexDirection: 'row', gap: 14, marginTop: 16, marginBottom: 16 },
-  metricCard: {
-    flex: 1, backgroundColor: '#FFF', borderRadius: 22, padding: 20, alignItems: 'center',
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
-  },
-  metricVal: { fontSize: 26, fontWeight: '800', color: '#121214', marginTop: 10 },
-  metricUnit: { fontSize: 14, color: '#71717A', fontWeight: '500' },
-  metricLabel: { fontSize: 11, color: '#A1A1AA', marginTop: 4, fontWeight: '500' },
-  gpsStatusOrb: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  gpsStatusDot: { width: 14, height: 14, borderRadius: 7 },
+  metricsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  metricCard: { flex: 1, backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, gap: 4, ...SHADOWS.sm },
+  metricIcon: { width: 44, height: 44, borderRadius: RADII.sm, backgroundColor: COLORS.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  metricVal: { ...type('h1'), color: COLORS.ink },
+  metricValSm: { ...type('h2') },
+  metricUnit: { ...type('small'), color: COLORS.muted },
+  metricLabel: { ...type('small'), color: COLORS.muted },
+  gpsStatusDot: { width: 12, height: 12, borderRadius: 6 },
+  coordCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
+  coordText: { ...type('h2'), color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  logCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, paddingHorizontal: 20, paddingVertical: 8, ...SHADOWS.sm },
+  logRow: { minHeight: 44, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.line },
+  logRowLast: { borderBottomWidth: 0 },
+  logText: { ...type('small'), color: COLORS.inkSoft, fontVariant: ['tabular-nums'] },
+  emptyLogBox: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+  emptyLog: { ...type('small'), color: COLORS.muted, textAlign: 'center' },
 
-  coordCard: {
-    backgroundColor: '#FFF', borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: '#E8E8EC',
-  },
-  coordText: { fontSize: 18, fontWeight: '700', color: '#121214', fontVariant: ['tabular-nums'], marginTop: 6 },
-
-  logCard: {
-    backgroundColor: '#FFF', borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: '#E8E8EC',
-  },
-  emptyLog: { fontSize: 13, color: '#A1A1AA', fontStyle: 'italic' },
-  logRow: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#F4F4F6' },
-  logText: { fontSize: 12, color: '#52525B', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
-
-  // ─── Profile Screen ──────────────────────────────────────
-  profileHero: {
-    alignItems: 'center', backgroundColor: '#FFF', borderRadius: 24, padding: 28, marginBottom: 16,
-    marginTop: 8, borderWidth: 1, borderColor: '#E8E8EC',
-  },
+  profileHero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
   profileAvatar: {
-    width: 76, height: 76, borderRadius: 38, backgroundColor: '#141416',
-    borderWidth: 3, borderColor: '#FF5B37', alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.surface,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
   },
-  profileAvatarText: { color: '#FFF', fontSize: 24, fontWeight: '700' },
-  profileName: { fontSize: 20, fontWeight: '700', color: '#121214' },
-  profileSub: { fontSize: 13, color: '#A1A1AA', marginTop: 3 },
-
-  profileCard: {
-    backgroundColor: '#FFF', borderRadius: 22, padding: 20, marginBottom: 14,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2,
-  },
-  profileCardTitle: { fontSize: 15, fontWeight: '700', color: '#121214', marginBottom: 14 },
+  profileAvatarText: { ...type('h1'), color: COLORS.primaryDeep },
+  profileName: { ...type('h1'), color: COLORS.white },
+  profileSub: { ...type('small'), color: COLORS.ink, marginTop: 4 },
+  profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
+  profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 4 },
   profileRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F4F4F6',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+    minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLORS.line,
   },
-  profileRowLabel: { fontSize: 13, color: '#71717A' },
-  profileRowValue: { fontSize: 13, fontWeight: '600', color: '#121214', maxWidth: '55%', textAlign: 'right' },
-  profileRowValueAccent: { color: '#10B981' },
+  profileRowLast: { borderBottomWidth: 0 },
+  profileRowLabel: { ...type('small'), color: COLORS.muted, flexShrink: 0 },
+  profileRowValue: { ...type('smallBold'), color: COLORS.ink, flexShrink: 1, textAlign: 'right' },
+  profileRowValueAccent: { color: COLORS.success },
 
-  signOutBtn: {
-    height: 50, borderRadius: 14, backgroundColor: '#FEE2E2',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-  },
-  signOutText: { color: '#DC2626', fontSize: 15, fontWeight: '700' },
-
-  // ─── Bottom Dock ─────────────────────────────────────────
-  dockWrapper: {
-    backgroundColor: '#141416',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 8,
-    paddingBottom: Platform.OS === 'ios' ? 22 : 10,
-    paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 16,
-  },
-  dock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    height: 52,
-  },
-  dockItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dockBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    minWidth: 64,
-    backgroundColor: 'transparent',
-  },
-  dockBtnPrimary: {
-    backgroundColor: '#FF5B37',
-    shadowColor: '#FF5B37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  dockLabel: {
-    fontSize: 10,
-    color: '#8E8E93',
-    fontWeight: '600',
-    marginTop: 2,
-    letterSpacing: 0.2,
-  },
-  dockLabelPrimary: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-
-  // ─── Dispatch Modal ──────────────────────────────────────
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  // ─── Dispatch modal ──────────────────────────────────────
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(15,20,25,0.45)', justifyContent: 'flex-end' },
   modalDismiss: { flex: 1 },
-  modalSheet: {
-    backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30,
-    padding: 24, maxHeight: '80%',
-    shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 12,
-  },
-
-  dispatchRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F9FB',
-    borderRadius: 18, padding: 16, marginBottom: 20,
-  },
-  dispatchAvatar: {
-    width: 52, height: 52, borderRadius: 26, backgroundColor: '#141416',
-    borderWidth: 2, borderColor: '#3F3F46', alignItems: 'center', justifyContent: 'center', marginRight: 14,
-  },
-  dispatchAvatarText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  handleRow: { alignItems: 'center', paddingBottom: 16 },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.line },
+  dispatchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.lg, padding: 16, marginBottom: 16, gap: 12 },
+  dispatchAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  dispatchAvatarText: { ...type('bodyBold'), color: COLORS.primaryDeep },
   dispatchInfo: { flex: 1 },
-  dispatchName: { fontSize: 16, fontWeight: '700', color: '#121214' },
-  dispatchRole: { fontSize: 12, color: '#71717A', marginTop: 2 },
-  dispatchPhone: { fontSize: 13, fontWeight: '600', color: '#FF5B37', marginTop: 4 },
-  onlineChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#141416', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
-  },
-  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
-  onlineText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
+  dispatchName: { ...type('bodyBold'), color: COLORS.ink },
+  dispatchRole: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
+  dispatchPhone: { ...type('smallBold'), color: COLORS.accentText, marginTop: 4 },
+  onlineChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.successSoft, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill },
+  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
+  onlineText: { ...type('caption'), color: COLORS.success },
 
-  modeTabs: {
-    flexDirection: 'row', backgroundColor: '#F0F0F3', borderRadius: 14, padding: 3, marginBottom: 20,
-  },
-  modeTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 11, borderRadius: 11 },
-  modeTabActive: { backgroundColor: '#141416' },
-  modeTabText: { fontSize: 13, fontWeight: '500', color: '#71717A' },
-  modeTabTextActive: { color: '#FFF', fontWeight: '700' },
+  modeTabs: { flexDirection: 'row', backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.pill, padding: 4, marginBottom: 24 },
+  modeTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, borderRadius: RADII.pill },
+  modeTabActive: { backgroundColor: COLORS.ink },
+  modeTabText: { ...type('smallBold'), color: COLORS.muted },
+  modeTabTextActive: { color: COLORS.white },
 
   callView: { alignItems: 'center' },
-  callLabel: { fontSize: 11, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.7, marginBottom: 8 },
-  callNumber: { fontSize: 26, fontWeight: '800', color: '#121214', letterSpacing: 1, marginBottom: 8 },
-  callNote: { fontSize: 13, color: '#71717A', textAlign: 'center', marginBottom: 24, lineHeight: 18 },
-  callBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#FF5B37', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 18,
-    shadowColor: '#FF5B37', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 5,
-  },
-  callBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-
+  callLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginBottom: 8 },
+  callLabelLeft: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginBottom: 12, alignSelf: 'flex-start' },
+  callNumber: { ...type('display'), color: COLORS.ink, marginBottom: 8, fontVariant: ['tabular-nums'] },
+  callNote: { ...type('small'), color: COLORS.muted, textAlign: 'center', marginBottom: 24 },
   messageView: { width: '100%' },
   quickMsgBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#F9F9FB', borderRadius: 14, padding: 16, marginBottom: 10,
-    borderWidth: 1, borderColor: '#E8E8EC',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, paddingHorizontal: 16, minHeight: 56, marginBottom: 8,
   },
-  quickMsgText: { fontSize: 14, color: '#121214', fontWeight: '500', flex: 1 },
+  quickMsgText: { ...type('body'), color: COLORS.ink, flex: 1 },
 });

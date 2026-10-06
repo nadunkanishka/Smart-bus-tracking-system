@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import './design/tokens.css'; // CHANGED: shared design tokens
 import './admin-theme.css';
+import { RoadScene, Vehicle } from './design/Vehicle'; // CHANGED: shared vehicle illustration set
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -21,6 +23,7 @@ function App() {
   const [loginCreds, setLoginCreds] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false); // CHANGED (UI-only): show/hide password toggle
 
   // App UI State
   const [activePage, setActivePage] = useState('dashboard');
@@ -213,9 +216,9 @@ function App() {
 
   const fleetChartStyle = {
     background: `conic-gradient(
-      #0284c7 0deg ${activePct}deg,
-      #94a3b8 ${activePct}deg ${idlePct}deg,
-      #f59e0b ${idlePct}deg 360deg
+      var(--primary) 0deg ${activePct}deg,
+      #C4CFDA ${activePct}deg ${idlePct}deg,
+      var(--accent) ${idlePct}deg 360deg
     )`,
   };
 
@@ -428,42 +431,62 @@ function App() {
   if (!user) {
     return (
       <div className="login-shell">
-        <div className="login-card">
-          <div className="login-brand-icon">
-            <BrandLogo />
+        {/* CHANGED: teal hero with vehicles on a road; the white form panel curves up over it on mobile */}
+        <section className="login-hero">
+          <div>
+            <div className="login-brand">
+              <span className="login-brand-icon"><Vehicle name="bus" width={36} label="SmartBus logo" /></span>
+              SmartBus Console
+            </div>
+            <span className="login-tagline">Fleet, drivers and routes in one place</span>
           </div>
-          <h2 className="login-title">Smart Bus Tracking</h2>
-          <p className="login-subtitle">Admin Control Panel Login</p>
+          <RoadScene scene="admin" className="login-scene" label="A metro train and a cargo truck on the road" />
+        </section>
 
-          {loginError && <div className="login-error">{loginError}</div>}
+        <div className="login-card">
+          <h2 className="login-title">Admin sign in</h2>
+          <p className="login-subtitle">Manage your fleet, drivers and routes.</p>
+
+          {loginError && <div className="login-error" role="alert">{loginError}</div>}
 
           <form onSubmit={handleLoginSubmit} className="login-form">
             <label className="field">
               <span className="form-label">Username</span>
-              <input
-                type="text"
-                className="form-input"
-                value={loginCreds.username}
-                onChange={(e) => setLoginCreds({ ...loginCreds, username: e.target.value })}
-                placeholder="Enter admin username"
-                required
-              />
+              <span className="input-wrap">
+                <svg className="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={loginCreds.username}
+                  onChange={(e) => setLoginCreds({ ...loginCreds, username: e.target.value })}
+                  placeholder="Enter admin username"
+                  autoComplete="username"
+                  required
+                />
+              </span>
             </label>
 
             <label className="field">
               <span className="form-label">Password</span>
-              <input
-                type="password"
-                className="form-input"
-                value={loginCreds.password}
-                onChange={(e) => setLoginCreds({ ...loginCreds, password: e.target.value })}
-                placeholder="Enter password"
-                required
-              />
+              <span className="input-wrap">
+                <svg className="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  className="form-input"
+                  value={loginCreds.password}
+                  onChange={(e) => setLoginCreds({ ...loginCreds, password: e.target.value })}
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                  required
+                />
+                <button type="button" className="toggle-pw" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" /><circle cx="12" cy="12" r="3" />{showPw && <path d="M3 3l18 18" />}</svg>
+                </button>
+              </span>
             </label>
 
             <button type="submit" className="login-btn" disabled={loginLoading}>
-              {loginLoading ? 'Signing In…' : 'Sign In to Dashboard'}
+              {loginLoading ? (<><span className="spinner" aria-hidden="true" />Signing In…</>) : 'Sign In to Dashboard'}
             </button>
           </form>
 
@@ -489,7 +512,7 @@ function App() {
       <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-icon">
-            <BrandLogo />
+            <Vehicle name="bus" width={36} label="SmartBus logo" />
           </div>
           <div className="brand-copy">
             <p className="brand-title">SmartBus Console</p>
@@ -546,7 +569,7 @@ function App() {
 
       <div className="main-panel">
         <header className="main-header">
-          <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="header-left">
             <button
               type="button"
               className="icon-button"
@@ -555,7 +578,7 @@ function App() {
             >
               <Icon type="menu" />
             </button>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
+            <h3 className="header-title">
               {currentPageTitle}
             </h3>
           </div>
@@ -564,8 +587,7 @@ function App() {
             <span className="header-clock">{clock}</span>
             <span className="system-status">
               <span
-                className="system-status-dot"
-                style={{ backgroundColor: backendConnected ? '#10b981' : '#f59e0b' }}
+                className={`system-status-dot ${backendConnected ? 'on' : 'off'}`}
               />
               {backendConnected ? 'MongoDB Connected' : 'Local State Mode'}
             </span>
@@ -618,18 +640,24 @@ function App() {
                   value={summary.activeRoutes}
                   subtitle="Active network routes"
                   icon="route"
+                  tint="train"
+                  vehicle="train"
                 />
                 <KpiCard
                   label="Registered Buses"
                   value={summary.registeredBuses}
                   subtitle={`${summary.fleetDistribution?.active || 0} Active / ${summary.fleetDistribution?.maintenance || 0} Maintenance`}
                   icon="bus"
+                  tint="bus"
+                  vehicle="bus"
                 />
                 <KpiCard
                   label="Active Drivers"
                   value={summary.activeDrivers}
                   subtitle="Authorized drivers in system"
                   icon="drivers"
+                  tint="taxi"
+                  vehicle="taxi"
                 />
               </div>
 
@@ -718,8 +746,8 @@ function App() {
                   <tbody>
                     {drivers.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
-                          No drivers registered yet. Click "Add New Driver" to add one!
+                        <td colSpan="7" className="cell-empty">
+                          <div className="empty-state"><Vehicle name="taxi" width={140} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -780,8 +808,8 @@ function App() {
                   <tbody>
                     {buses.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
-                          No buses registered yet. Click "Add New Bus" to register a bus!
+                        <td colSpan="7" className="cell-empty">
+                          <div className="empty-state"><Vehicle name="bus" width={140} label="Nothing here yet" />No buses registered yet. Click "Add New Bus" to register a bus!</div>
                         </td>
                       </tr>
                     ) : (
@@ -791,8 +819,8 @@ function App() {
                           <td className="mono-cell table-strong">{bus.registration}</td>
                           <td>{bus.capacity}</td>
                           <td>{bus.mileage}</td>
-                          <td className="mono-cell" style={{ color: '#64748b' }}>
-                            {bus.password ? bus.password : <span style={{ fontStyle: 'italic', color: '#cbd5e1' }}>None</span>}
+                          <td className="mono-cell cell-muted">
+                            {bus.password ? bus.password : <span className="cell-muted">None</span>}
                           </td>
                           <td>
                             <StatusBadge status={bus.status} />
@@ -846,8 +874,8 @@ function App() {
                   <tbody>
                     {routes.length === 0 ? (
                       <tr>
-                        <td colSpan="9" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
-                          No network routes created yet. Click "Create Route" to create one!
+                        <td colSpan="9" className="cell-empty">
+                          <div className="empty-state"><Vehicle name="train" width={140} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -857,11 +885,11 @@ function App() {
                           <td className="table-strong">{route.name}</td>
                           <td>
                             {route.assignedBus ? (
-                              <span className="mono-cell" style={{ fontWeight: 600, color: '#0284c7' }}>
-                                🚌 {route.assignedBus}
+                              <span className="mono-cell cell-bus">
+                                {route.assignedBus}
                               </span>
                             ) : (
-                              <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Unassigned</span>
+                              <span className="cell-muted">Unassigned</span>
                             )}
                           </td>
                           <td>{route.start}</td>
@@ -871,13 +899,13 @@ function App() {
                             {Array.isArray(route.stops) ? (
                               route.stops.length > 0 ? (
                                 <div>
-                                  <span style={{ fontWeight: 600 }}>{route.stops.length} stop{route.stops.length > 1 ? 's' : ''}</span>
-                                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                  <span className="table-strong">{route.stops.length} stop{route.stops.length > 1 ? 's' : ''}</span>
+                                  <div className="cell-hint">
                                     {route.stops.join(' → ')}
                                   </div>
                                 </div>
                               ) : (
-                                <span style={{ color: '#94a3b8' }}>Direct Route</span>
+                                <span className="cell-muted">Direct Route</span>
                               )
                             ) : (
                               route.stops || 'N/A'
@@ -1073,9 +1101,9 @@ function App() {
                 </div>
 
                 <Field label="Intermediate Stops (Enter each stop name)">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  <div className="stop-list">
                     {(Array.isArray(formData.stops) ? formData.stops : ['']).map((stop, index) => (
-                      <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <div key={index} className="stop-row">
                         <input
                           className="form-input"
                           value={stop}
@@ -1089,8 +1117,8 @@ function App() {
                         {Array.isArray(formData.stops) && formData.stops.length > 1 && (
                           <button
                             type="button"
-                            className="btn btn-danger"
-                            style={{ padding: '8px 12px', fontSize: '13px' }}
+                            className="btn btn-danger stop-remove"
+                            aria-label={`Remove stop ${index + 1}`}
                             onClick={() => {
                               const newStops = formData.stops.filter((_, i) => i !== index);
                               updateField('stops', newStops);
@@ -1103,8 +1131,7 @@ function App() {
                     ))}
                     <button
                       type="button"
-                      className="btn btn-secondary"
-                      style={{ alignSelf: 'flex-start', marginTop: '6px', fontSize: '13px', padding: '6px 14px' }}
+                      className="btn btn-secondary stop-add"
                       onClick={() => {
                         const currentStops = Array.isArray(formData.stops) ? formData.stops : [];
                         updateField('stops', [...currentStops, '']);
@@ -1156,17 +1183,6 @@ function App() {
   );
 }
 
-function BrandLogo() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" width="22" height="22" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="5" width="20" height="13" rx="3" stroke="currentColor" />
-      <path d="M6 18v2M18 18v2M2 11h20M7 8h3M14 8h3" strokeLinecap="round" />
-      <circle cx="7" cy="14" r="1" fill="currentColor" />
-      <circle cx="17" cy="14" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
 function Field({ label, children }) {
   return (
     <label className="field">
@@ -1180,9 +1196,10 @@ function TableShell({ children }) {
   return <div className="panel table-shell">{children}</div>;
 }
 
-function KpiCard({ label, value, subtitle, icon }) {
+function KpiCard({ label, value, subtitle, icon, tint, vehicle }) {
   return (
-    <div className="kpi-card">
+    <div className={`kpi-card tint-${tint}`}>
+      <Vehicle name={vehicle} width={150} className="kpi-art" label={`${vehicle} illustration`} />
       <div className="kpi-topline">
         <p>{label}</p>
         <span className="kpi-icon">

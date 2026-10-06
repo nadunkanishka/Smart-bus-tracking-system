@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   Modal,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -12,27 +11,42 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import OpenStreetMapContainer from './src/components/OpenStreetMapContainer';
-import { COLORS, TYPOGRAPHY } from './src/constants/theme';
+import { COLORS, RADII, SHADOWS, TYPE } from './src/constants/theme';
+// CHANGED (visual only): shared SmartBus design-system kit.
 import {
-  ArrowLeftIcon,
+  Avatar,
+  AuthLayout,
+  Button,
+  Checkbox,
+  Chip,
+  FONT,
+  FloatingDock,
+  GradientCard,
+  IconButton,
+  OverlapHeader,
+  OverlapSheet,
+  Sheet,
+  StrengthMeter,
+  TextField,
+  Toast,
+  Vehicle,
+} from './src/components/ui';
+import {
   ArrowRightIcon,
   BellIcon,
-  BusIcon,
   CheckIcon,
   ChevronDownIcon,
   FlagIcon,
   LockIcon,
   MapIcon,
   MapPinIcon,
-  MessageCircleIcon,
   MoreVerticalIcon,
   NavigationArrowIcon,
   PhoneCallIcon,
-  PlusIcon,
   RouteIcon,
-  ScanIcon,
   SearchIcon,
   UserIcon,
 } from './src/components/VectorIcons';
@@ -85,6 +99,8 @@ const INITIAL_BUS_LOCATION = {
 
 const PASSENGER_COORDINATE = { latitude: 6.89, longitude: 79.875 };
 
+const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
+
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 // 'home' | 'tracking' | 'routes' | 'profile'
 
@@ -99,6 +115,10 @@ export default function App() {
   const [regUsername, setRegUsername] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  // CHANGED (UI-only state for the redesigned auth screens; never sent anywhere)
+  const [regConfirm, setRegConfirm] = useState('');
+  const [regTerms, setRegTerms] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); // HOOK: persist session when real auth lands
 
   // Commuter Profile
   const [userProfile, setUserProfile] = useState({
@@ -218,6 +238,10 @@ export default function App() {
     setToastMsg(msg);
   }
 
+  // CHANGED: UI-layer gating for the new register fields only (handleRegister itself is untouched).
+  const confirmMismatch = regConfirm.length > 0 && regConfirm !== regPassword;
+  const registerBlocked = confirmMismatch || !regTerms;
+
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={S.root}>
@@ -228,185 +252,132 @@ export default function App() {
       />
 
       {/* ─── Toast ─────────────────────────────────────── */}
-      {toastMsg ? (
-        <View style={S.toast} pointerEvents="none">
-          <Text style={S.toastText}>{toastMsg}</Text>
-        </View>
-      ) : null}
+      <Toast message={toastMsg} />
 
       {!isAuthenticated ? (
         /* ═══════════════════════════════════════════════════
-            PASSENGER LOGIN / REGISTER
+            PASSENGER LOGIN / REGISTER  (CHANGED: new hero + curved panel layout)
         ═══════════════════════════════════════════════════ */
-        <ScrollView
-          style={S.flex}
-          contentContainerStyle={S.authScroll}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Brand Hero */}
-          <View style={S.authHero}>
-            <View style={S.authBrandOrb}>
-              <BusIcon color="#FFFFFF" size={28} />
+        authMode === 'login' ? (
+          <AuthLayout
+            scene="login"
+            tagline="Real-time bus tracking for Colombo commuters"
+            title="Welcome back"
+            subtitle="Where are you going today?"
+            footer={
+              <Text style={S.authSwitch}>
+                New here?{' '}
+                <Text style={S.authSwitchLink} accessibilityRole="link" onPress={() => setAuthMode('register')}>
+                  Create an account
+                </Text>
+              </Text>
+            }
+          >
+            <TextField
+              label="Name or username"
+              icon={<UserIcon color={COLORS.muted} size={20} />}
+              value={loginUsername}
+              onChangeText={setLoginUsername}
+              placeholder="Enter name (or leave blank to continue)"
+              autoCapitalize="none"
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
+            />
+            <TextField
+              label="Password"
+              icon={<LockIcon color={COLORS.muted} size={20} />}
+              secure
+              value={loginPassword}
+              onChangeText={setLoginPassword}
+              placeholder="Optional password"
+              returnKeyType="go"
+              onSubmitEditing={handleLogin}
+            />
+            <View style={S.authRow}>
+              <Checkbox checked={rememberMe} onChange={setRememberMe}>Remember me</Checkbox>
+              {/* HOOK: wire to a reset flow when passwords are enforced */}
+              <Pressable
+                onPress={() => showToast('Password reset is not available yet. Passwords are optional for now.')}
+                accessibilityRole="link"
+                style={S.linkTap}
+              >
+                <Text style={S.link}>Forgot password?</Text>
+              </Pressable>
             </View>
-            <Text style={S.authBrandTitle}>SmartBus</Text>
-            <Text style={S.authBrandSub}>Real-time bus tracking for Colombo commuters</Text>
-          </View>
-
-          {/* Tab Switcher */}
-          <View style={S.authTabs}>
-            <TouchableOpacity
-              style={[S.authTab, authMode === 'login' && S.authTabActive]}
-              onPress={() => setAuthMode('login')}
-              activeOpacity={0.8}
-            >
-              <Text style={[S.authTabText, authMode === 'login' && S.authTabTextActive]}>
-                Sign In
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[S.authTab, authMode === 'register' && S.authTabActive]}
-              onPress={() => setAuthMode('register')}
-              activeOpacity={0.8}
-            >
-              <Text style={[S.authTabText, authMode === 'register' && S.authTabTextActive]}>
-                Register
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Form Card */}
-          <View style={S.authCard}>
-            {authMode === 'login' ? (
-              <>
-                <Text style={S.authCardTitle}>Welcome Commuter</Text>
-                <Text style={S.authCardSub}>Press Sign In to track your bus instantly</Text>
-
-                <View style={S.field}>
-                  <Text style={S.fieldLabel}>NAME OR USERNAME</Text>
-                  <TextInput
-                    style={S.input}
-                    value={loginUsername}
-                    onChangeText={setLoginUsername}
-                    placeholder="Enter name (or leave blank to continue)"
-                    placeholderTextColor="#A1A1AA"
-                    autoCapitalize="none"
-                    returnKeyType="go"
-                    onSubmitEditing={handleLogin}
-                  />
-                </View>
-                <View style={S.field}>
-                  <Text style={S.fieldLabel}>PASSWORD</Text>
-                  <TextInput
-                    style={S.input}
-                    value={loginPassword}
-                    onChangeText={setLoginPassword}
-                    placeholder="Optional password"
-                    placeholderTextColor="#A1A1AA"
-                    secureTextEntry
-                    returnKeyType="go"
-                    onSubmitEditing={handleLogin}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={[S.primaryBtn, authLoading && S.primaryBtnDisabled]}
-                  onPress={handleLogin}
-                  activeOpacity={0.85}
-                  disabled={authLoading}
-                >
-                  {authLoading
-                    ? <ActivityIndicator color="#FFF" size="small" />
-                    : <Text style={S.primaryBtnText}>Sign In</Text>
-                  }
-                </TouchableOpacity>
-
-                <Text style={S.authSwitch}>
-                  New passenger?{' '}
-                  <Text style={S.authSwitchLink} onPress={() => setAuthMode('register')}>
-                    Create Account
-                  </Text>
+            <Button title="Log in" onPress={handleLogin} loading={authLoading} />
+          </AuthLayout>
+        ) : (
+          <AuthLayout
+            scene="register"
+            tagline="Personalise your daily commute"
+            title="Create account"
+            subtitle="It takes less than a minute."
+            footer={
+              <Text style={S.authSwitch}>
+                Already have an account?{' '}
+                <Text style={S.authSwitchLink} accessibilityRole="link" onPress={() => setAuthMode('login')}>
+                  Log in
                 </Text>
-              </>
-            ) : (
-              <>
-                <Text style={S.authCardTitle}>Create account</Text>
-                <Text style={S.authCardSub}>Personalize your daily commuter experience</Text>
-
-                <View style={S.field}>
-                  <Text style={S.fieldLabel}>FULL NAME</Text>
-                  <TextInput
-                    style={S.input}
-                    value={regFullName}
-                    onChangeText={setRegFullName}
-                    placeholder="e.g. Kasun Perera"
-                    placeholderTextColor="#A1A1AA"
-                    returnKeyType="next"
-                  />
-                </View>
-                <View style={S.field}>
-                  <Text style={S.fieldLabel}>USERNAME</Text>
-                  <TextInput
-                    style={S.input}
-                    value={regUsername}
-                    onChangeText={setRegUsername}
-                    placeholder="e.g. kasun_p"
-                    placeholderTextColor="#A1A1AA"
-                    autoCapitalize="none"
-                    returnKeyType="next"
-                  />
-                </View>
-                <View style={S.field}>
-                  <Text style={S.fieldLabel}>PHONE NUMBER</Text>
-                  <TextInput
-                    style={S.input}
-                    value={regPhone}
-                    onChangeText={setRegPhone}
-                    placeholder="+94 77 123 4567"
-                    placeholderTextColor="#A1A1AA"
-                    keyboardType="phone-pad"
-                    returnKeyType="next"
-                  />
-                </View>
-                <View style={S.field}>
-                  <Text style={S.fieldLabel}>PASSWORD</Text>
-                  <TextInput
-                    style={S.input}
-                    value={regPassword}
-                    onChangeText={setRegPassword}
-                    placeholder="Optional password"
-                    placeholderTextColor="#A1A1AA"
-                    secureTextEntry
-                    returnKeyType="done"
-                    onSubmitEditing={handleRegister}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={[S.primaryBtn, authLoading && S.primaryBtnDisabled]}
-                  onPress={handleRegister}
-                  activeOpacity={0.85}
-                  disabled={authLoading}
-                >
-                  {authLoading
-                    ? <ActivityIndicator color="#FFF" size="small" />
-                    : <Text style={S.primaryBtnText}>Create Account</Text>
-                  }
-                </TouchableOpacity>
-
-                <Text style={S.authSwitch}>
-                  Already have an account?{' '}
-                  <Text style={S.authSwitchLink} onPress={() => setAuthMode('login')}>
-                    Sign In
-                  </Text>
-                </Text>
-              </>
-            )}
-          </View>
-        </ScrollView>
+              </Text>
+            }
+          >
+            <TextField
+              label="Full name"
+              icon={<UserIcon color={COLORS.muted} size={20} />}
+              value={regFullName}
+              onChangeText={setRegFullName}
+              placeholder="e.g. Kasun Perera"
+              returnKeyType="next"
+            />
+            <TextField
+              label="Username"
+              icon={<UserIcon color={COLORS.muted} size={20} />}
+              value={regUsername}
+              onChangeText={setRegUsername}
+              placeholder="e.g. kasun_p"
+              autoCapitalize="none"
+              returnKeyType="next"
+            />
+            <TextField
+              label="Phone number"
+              icon={<PhoneCallIcon color={COLORS.muted} size={20} />}
+              value={regPhone}
+              onChangeText={setRegPhone}
+              placeholder="+94 77 123 4567"
+              keyboardType="phone-pad"
+              returnKeyType="next"
+            />
+            <TextField
+              label="Password"
+              icon={<LockIcon color={COLORS.muted} size={20} />}
+              secure
+              value={regPassword}
+              onChangeText={setRegPassword}
+              placeholder="Optional password"
+              returnKeyType="next"
+            />
+            <StrengthMeter password={regPassword} />
+            <TextField
+              label="Confirm password"
+              icon={<LockIcon color={COLORS.muted} size={20} />}
+              secure
+              value={regConfirm}
+              onChangeText={setRegConfirm}
+              placeholder="Re-enter password"
+              error={confirmMismatch ? 'Passwords do not match.' : undefined}
+              returnKeyType="done"
+              onSubmitEditing={registerBlocked ? undefined : handleRegister}
+            />
+            <Checkbox checked={regTerms} onChange={setRegTerms}>
+              I agree to the Terms of Service and Privacy Policy
+            </Checkbox>
+            <View style={{ height: 16 }} />
+            <Button title="Create account" onPress={handleRegister} loading={authLoading} disabled={registerBlocked} />
+          </AuthLayout>
+        )
       ) : (
         /* ═══════════════════════════════════════════════════
-            APPLICATION SHELL
+            APPLICATION SHELL  (CHANGED: centred, width-constrained on desktop)
         ═══════════════════════════════════════════════════ */
         <View style={S.appShell}>
           {/* ─── SCREEN AREA ──────────────────────────── */}
@@ -476,8 +447,9 @@ export default function App() {
                 style={S.modalDismissArea}
                 onPress={() => setIsStopModalOpen(false)}
                 activeOpacity={1}
+                accessibilityLabel="Close stop selector"
               />
-              <View style={S.modalSheet}>
+              <Sheet>
                 {/* Handle */}
                 <View style={S.modalHandleRow}>
                   <View style={S.modalHandle} />
@@ -485,23 +457,19 @@ export default function App() {
 
                 <View style={S.modalHeaderRow}>
                   <Text style={S.modalTitle}>Select Your Stops</Text>
-                  <TouchableOpacity
-                    style={S.modalCloseBtn}
-                    onPress={() => setIsStopModalOpen(false)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={S.modalCloseBtnText}>Done</Text>
-                  </TouchableOpacity>
+                  <Button title="Done" tone="ink" size="sm" full={false} onPress={() => setIsStopModalOpen(false)} />
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false}>
                   {/* Route selector */}
-                  <Text style={S.modalSectionLabel}>ACTIVE ROUTE</Text>
+                  <Text style={S.modalSectionLabel}>Active route</Text>
                   <View style={S.routeChipsRow}>
                     {ROUTE_DATABASE.map(r => (
-                      <TouchableOpacity
+                      <Chip
                         key={r.id}
-                        style={[S.routeChip, selectedRoute.id === r.id && S.routeChipActive]}
+                        label={r.shortName}
+                        selected={selectedRoute.id === r.id}
+                        tone="ink"
                         onPress={() => {
                           setSelectedRoute(r);
                           setBoardingStop(r.stops[0]);
@@ -509,27 +477,22 @@ export default function App() {
                           setIsBoardingOpen(false);
                           setIsDestOpen(false);
                         }}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[S.routeChipText, selectedRoute.id === r.id && S.routeChipTextActive]}>
-                          {r.shortName}
-                        </Text>
-                      </TouchableOpacity>
+                      />
                     ))}
                   </View>
 
                   {/* Boarding */}
-                  <Text style={[S.modalSectionLabel, { marginTop: 20 }]}>BOARDING STOP</Text>
+                  <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Boarding stop</Text>
                   <TouchableOpacity
                     style={S.dropdownTrigger}
                     onPress={() => { setIsBoardingOpen(p => !p); setIsDestOpen(false); }}
                     activeOpacity={0.8}
                   >
                     <View style={S.dropdownTriggerLeft}>
-                      <MapPinIcon color="#FF5B37" size={16} />
+                      <MapPinIcon color={COLORS.accent} size={18} />
                       <Text style={S.dropdownTriggerText}>{boardingStop}</Text>
                     </View>
-                    <ChevronDownIcon color="#71717A" size={16} />
+                    <ChevronDownIcon color={COLORS.muted} size={16} />
                   </TouchableOpacity>
                   {isBoardingOpen && (
                     <View style={S.dropdownList}>
@@ -542,24 +505,24 @@ export default function App() {
                           <Text style={[S.dropdownItemText, boardingStop === stop && S.dropdownItemTextActive]}>
                             {stop}
                           </Text>
-                          {boardingStop === stop && <CheckIcon color="#FF5B37" size={14} />}
+                          {boardingStop === stop && <CheckIcon color={COLORS.accentText} size={14} />}
                         </TouchableOpacity>
                       ))}
                     </View>
                   )}
 
                   {/* Destination */}
-                  <Text style={[S.modalSectionLabel, { marginTop: 20 }]}>DESTINATION STOP</Text>
+                  <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Destination stop</Text>
                   <TouchableOpacity
                     style={S.dropdownTrigger}
                     onPress={() => { setIsDestOpen(p => !p); setIsBoardingOpen(false); }}
                     activeOpacity={0.8}
                   >
                     <View style={S.dropdownTriggerLeft}>
-                      <FlagIcon color="#FF5B37" size={16} />
+                      <FlagIcon color={COLORS.accent} size={18} />
                       <Text style={S.dropdownTriggerText}>{destinationStop}</Text>
                     </View>
-                    <ChevronDownIcon color="#71717A" size={16} />
+                    <ChevronDownIcon color={COLORS.muted} size={16} />
                   </TouchableOpacity>
                   {isDestOpen && (
                     <View style={S.dropdownList}>
@@ -572,14 +535,14 @@ export default function App() {
                           <Text style={[S.dropdownItemText, destinationStop === stop && S.dropdownItemTextActive]}>
                             {stop}
                           </Text>
-                          {destinationStop === stop && <CheckIcon color="#FF5B37" size={14} />}
+                          {destinationStop === stop && <CheckIcon color={COLORS.accentText} size={14} />}
                         </TouchableOpacity>
                       ))}
                     </View>
                   )}
 
                   {/* Timeline */}
-                  <Text style={[S.modalSectionLabel, { marginTop: 24 }]}>ROUTE TIMELINE</Text>
+                  <Text style={[S.modalSectionLabel, S.modalSectionGapLg]}>Route timeline</Text>
                   <View style={S.timelineContainer}>
                     {selectedRoute.stops.map((stop, idx) => {
                       const isPassed = idx < boardingIndex;
@@ -618,7 +581,7 @@ export default function App() {
                     })}
                   </View>
                 </ScrollView>
-              </View>
+              </Sheet>
             </View>
           </Modal>
 
@@ -629,6 +592,43 @@ export default function App() {
 }
 
 // ─── Screen Components ────────────────────────────────────────────────────────
+
+// Small stop picker used inside the floating route card. (Markup moved into a helper; handlers unchanged.)
+function StopPicker({ label, dotStyle, value, expanded, onToggle, stops, onPick, alignRight }) {
+  return (
+    <View style={S.stopSelectorCol}>
+      <View style={S.stopSelectorHeader}>
+        <View style={dotStyle} />
+        <Text style={S.stopSelectorLabel}>{label}</Text>
+      </View>
+      <TouchableOpacity
+        style={S.stopSelectorBtn}
+        onPress={onToggle}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={`${label} stop: ${value}`}
+      >
+        <Text style={S.stopSelectorValue} numberOfLines={1}>{value}</Text>
+        <ChevronDownIcon color={COLORS.accentText} size={14} />
+      </TouchableOpacity>
+      {expanded && (
+        <View style={[S.stopInlineList, alignRight && S.stopInlineListRight]}>
+          {stops.map((stop, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[S.stopInlineItem, value === stop && S.stopInlineItemActive]}
+              onPress={() => onPick(stop)}
+              activeOpacity={0.8}
+            >
+              <Text style={[S.stopInlineText, value === stop && S.stopInlineTextActive]}>{stop}</Text>
+              {value === stop && <CheckIcon color={COLORS.accentText} size={12} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function TrackingScreen({
   liveBus,
@@ -646,8 +646,21 @@ function TrackingScreen({
   setDestinationStop,
   onOpenStops,
 }) {
+  // CHANGED (visual): progress derived from the existing live ETA so the arrow head moves with the bus.
+  const progress = Math.min(0.92, Math.max(0.12, 1 - liveBus.etaMinutes / 10));
+
   return (
     <View style={S.flex}>
+      {/* Map fills the whole screen; cards float on top */}
+      <View style={S.mapCanvas}>
+        <OpenStreetMapContainer
+          busLocationName={boardingStop}
+          etaMins={liveBus.etaMinutes}
+          busCoordinate={{ latitude: liveBus.latitude, longitude: liveBus.longitude }}
+          passengerCoordinate={PASSENGER_COORDINATE}
+        />
+      </View>
+
       {/* Floating Map Header */}
       <View style={S.mapHeader} pointerEvents="box-none">
         <View style={S.mapHeaderInner}>
@@ -658,103 +671,44 @@ function TrackingScreen({
             </View>
             <Text style={S.mapHeaderTitle}>Bus Tracker</Text>
           </View>
-          <TouchableOpacity style={S.mapMenuBtn} onPress={onOpenStops} activeOpacity={0.8}>
-            <MoreVerticalIcon color="#121214" size={18} />
-          </TouchableOpacity>
+          <IconButton label="Change stops" onPress={onOpenStops} tone="soft" size={44}>
+            <MoreVerticalIcon color={COLORS.ink} size={18} />
+          </IconButton>
         </View>
       </View>
 
-      {/* Map fills the top portion */}
-      <View style={S.mapCanvas}>
-        <OpenStreetMapContainer
-          busLocationName={boardingStop}
-          etaMins={liveBus.etaMinutes}
-          busCoordinate={{ latitude: liveBus.latitude, longitude: liveBus.longitude }}
-          passengerCoordinate={PASSENGER_COORDINATE}
+      {/* ── INLINE STOP SELECTOR (floating card) ─────────────────── */}
+      <View style={S.stopSelectorBar}>
+        <StopPicker
+          label="BOARDING"
+          dotStyle={S.stopDotGreen}
+          value={boardingStop}
+          expanded={isBoardingExpanded}
+          onToggle={() => { setIsBoardingExpanded(p => !p); setIsDestExpanded(false); }}
+          stops={routeStops}
+          onPick={(stop) => { setBoardingStop(stop); setIsBoardingExpanded(false); }}
+        />
+        <View style={S.stopSelectorDivider}>
+          <ArrowRightIcon color={COLORS.accent} size={16} />
+        </View>
+        <StopPicker
+          label="DESTINATION"
+          dotStyle={S.stopDotOrange}
+          value={destinationStop}
+          expanded={isDestExpanded}
+          onToggle={() => { setIsDestExpanded(p => !p); setIsBoardingExpanded(false); }}
+          stops={routeStops}
+          onPick={(stop) => { setDestinationStop(stop); setIsDestExpanded(false); }}
+          alignRight
         />
       </View>
 
-      {/* ── INLINE STOP SELECTOR ─────────────────────────────────── */}
-      <View style={S.stopSelectorBar}>
-        {/* Boarding Stop */}
-        <View style={S.stopSelectorCol}>
-          <View style={S.stopSelectorHeader}>
-            <View style={S.stopDotGreen} />
-            <Text style={S.stopSelectorLabel}>BOARDING</Text>
-          </View>
-          <TouchableOpacity
-            style={S.stopSelectorBtn}
-            onPress={() => { setIsBoardingExpanded(p => !p); setIsDestExpanded(false); }}
-            activeOpacity={0.8}
-          >
-            <Text style={S.stopSelectorValue} numberOfLines={1}>{boardingStop}</Text>
-            <ChevronDownIcon color="#FF5B37" size={14} />
-          </TouchableOpacity>
-          {isBoardingExpanded && (
-            <View style={S.stopInlineList}>
-              {routeStops.map((stop, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[S.stopInlineItem, boardingStop === stop && S.stopInlineItemActive]}
-                  onPress={() => { setBoardingStop(stop); setIsBoardingExpanded(false); }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[S.stopInlineText, boardingStop === stop && S.stopInlineTextActive]}>{stop}</Text>
-                  {boardingStop === stop && <CheckIcon color="#FF5B37" size={12} />}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Divider Arrow */}
-        <View style={S.stopSelectorDivider}>
-          <ArrowRightIcon color="#D4D4D8" size={16} />
-        </View>
-
-        {/* Destination Stop */}
-        <View style={S.stopSelectorCol}>
-          <View style={S.stopSelectorHeader}>
-            <View style={S.stopDotOrange} />
-            <Text style={S.stopSelectorLabel}>DESTINATION</Text>
-          </View>
-          <TouchableOpacity
-            style={S.stopSelectorBtn}
-            onPress={() => { setIsDestExpanded(p => !p); setIsBoardingExpanded(false); }}
-            activeOpacity={0.8}
-          >
-            <Text style={S.stopSelectorValue} numberOfLines={1}>{destinationStop}</Text>
-            <ChevronDownIcon color="#FF5B37" size={14} />
-          </TouchableOpacity>
-          {isDestExpanded && (
-            <View style={[S.stopInlineList, S.stopInlineListRight]}>
-              {routeStops.map((stop, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[S.stopInlineItem, destinationStop === stop && S.stopInlineItemActive]}
-                  onPress={() => { setDestinationStop(stop); setIsDestExpanded(false); }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[S.stopInlineText, destinationStop === stop && S.stopInlineTextActive]}>{stop}</Text>
-                  {destinationStop === stop && <CheckIcon color="#FF5B37" size={12} />}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Dark Telemetry Sheet */}
-      <View style={S.darkSheet}>
-        {/* Drag Handle */}
-        <View style={S.sheetHandleRow}>
-          <View style={S.sheetHandle} />
-        </View>
-
+      {/* Bottom summary card (white, floats above the dock) */}
+      <View style={S.summaryCard}>
         {/* Header: Booking ID + Status */}
         <View style={S.sheetTopRow}>
-          <View>
-            <Text style={S.sheetMetaLabel}>BOOKING ID</Text>
+          <View style={S.flex}>
+            <Text style={S.sheetMetaLabel}>Booking ID</Text>
             <Text style={S.sheetBookingId}>{liveBus.bookingId}</Text>
           </View>
           <View style={S.transitBadge}>
@@ -762,52 +716,25 @@ function TrackingScreen({
           </View>
         </View>
 
-        {/* Horizontal Step Progress */}
-        <View style={S.stepProgress}>
-          <View style={S.stepLine}>
-            {/* Step nodes */}
-            <View style={S.stepDotCompleted}><CheckIcon color="#FFF" size={7} /></View>
-            <View style={S.stepDash} />
-            <View style={S.stepDotActive}><View style={S.stepDotInner} /></View>
-            <View style={S.stepDash} />
-            <View style={S.stepDotUpcoming} />
-            <View style={S.stepDash} />
-            <View style={S.stepDotTarget}><View style={S.stepTargetInner} /></View>
+        {/* Progress: coral arrow head, distance / ETA like the reference */}
+        <View style={S.progressBlock}>
+          <View style={S.progressMeta}>
+            <Text style={S.progressMetaVal}>{liveBus.speed} km/h</Text>
+            <Text style={S.progressMetaVal}>{liveBus.etaMinutes} min</Text>
+            <Text style={S.progressMetaVal}>{selectedRoute.duration}</Text>
           </View>
-          <View style={S.stepLabels}>
-            <View>
-              <Text style={S.stepLabelMeta}>Departed</Text>
-              <Text style={S.stepLabelStop} numberOfLines={1}>{selectedRoute.startTerminal}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={S.stepLabelMeta}>{liveBus.etaMinutes} min away</Text>
-              <Text style={S.stepLabelStop} numberOfLines={1}>{destinationStop}</Text>
-            </View>
+          <View style={S.progressTrack}>
+            <View style={[S.progressDone, { flex: progress }]} />
+            <ArrowRightIcon color={COLORS.accent} size={20} />
+            <View style={[S.progressLeft, { flex: 1 - progress }]} />
+          </View>
+          <View style={S.progressLabels}>
+            <Text style={S.progressLabel} numberOfLines={1}>Departed · {selectedRoute.startTerminal}</Text>
+            <Text style={S.progressLabelRight} numberOfLines={1}>{liveBus.etaMinutes} min away</Text>
           </View>
         </View>
 
-        {/* Telemetry Grid */}
-        <View style={S.specsRow}>
-          <View style={S.specBlock}>
-            <Text style={S.specLabel}>FROM</Text>
-            <Text style={S.specVal} numberOfLines={1}>{boardingStop}</Text>
-          </View>
-          <View style={S.specDivider} />
-          <View style={S.specBlock}>
-            <Text style={S.specLabel}>TO</Text>
-            <Text style={S.specVal} numberOfLines={1}>{destinationStop}</Text>
-          </View>
-          <View style={S.specDivider} />
-          <View style={S.specBlock}>
-            <Text style={S.specLabel}>SPEED</Text>
-            <Text style={[S.specVal, S.specValAccent]}>{liveBus.speed} km/h</Text>
-          </View>
-          <View style={S.specDivider} />
-          <View style={S.specBlock}>
-            <Text style={S.specLabel}>ETA</Text>
-            <Text style={[S.specVal, S.specValAccent]}>{liveBus.etaMinutes} min</Text>
-          </View>
-        </View>
+        {/* From / To already shown in the floating stop selector above, so no duplicate block here. */}
 
         {/* Driver Card */}
         <View style={S.driverCard}>
@@ -815,9 +742,9 @@ function TrackingScreen({
             <View style={S.driverAvatar}>
               <Text style={S.driverAvatarText}>SP</Text>
             </View>
-            <View>
+            <View style={S.flex}>
               <Text style={S.driverName}>{liveBus.driverName}</Text>
-              <Text style={S.driverRole}>Route Driver · {liveBus.id}</Text>
+              <Text style={S.driverRole} numberOfLines={1}>Route Driver · {liveBus.id}</Text>
             </View>
           </View>
           <View style={S.driverStatusBadge}>
@@ -826,137 +753,155 @@ function TrackingScreen({
           </View>
         </View>
 
-        {/* Change Stops Link */}
-        <TouchableOpacity style={S.changeStopsLink} onPress={onOpenStops} activeOpacity={0.8}>
-          <MapPinIcon color="#FF5B37" size={14} />
-          <Text style={S.changeStopsText}>Change Boarding / Destination Stop</Text>
-          <ArrowRightIcon color="#FF5B37" size={12} />
-        </TouchableOpacity>
+        {/* Change Stops */}
+        <Button
+          title="Change boarding / destination"
+          tone="ink"
+          onPress={onOpenStops}
+          icon={<MapPinIcon color={COLORS.accent} size={18} />}
+        />
       </View>
     </View>
   );
 }
 
 function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
+  const services = [
+    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.accent} size={22} /> },
+    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primaryStrong} size={22} /> },
+    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.ink} size={22} /> },
+  ];
   return (
     <ScrollView
       style={S.flex}
       contentContainerStyle={S.homeScroll}
       showsVerticalScrollIndicator={false}
     >
-      {/* Greeting Header */}
-      <View style={S.homeHeader}>
-        <View>
-          <Text style={S.homeGreeting}>Good morning,</Text>
-          <Text style={S.homeUserName}>{userProfile?.name || 'Passenger'}</Text>
+      {/* Greeting header (teal) with overlapping sheet below */}
+      <OverlapHeader minHeight={196}>
+        <View style={S.homeHeader}>
+          <Avatar label={userProfile?.name} size={48} />
+          <View style={S.homeHeaderText}>
+            <Text style={S.homeGreeting}>Good morning,</Text>
+            <Text style={S.homeUserName} numberOfLines={1}>{userProfile?.name || 'Passenger'}</Text>
+          </View>
+          <IconButton label="Notifications" onPress={() => showToast('No new alerts for Route ' + selectedRoute.id)}>
+            <BellIcon color={COLORS.ink} size={20} hasBadge />
+          </IconButton>
         </View>
-        <TouchableOpacity
-          style={S.bellBtn}
-          onPress={() => showToast('No new alerts for Route ' + selectedRoute.id)}
-          activeOpacity={0.8}
-        >
-          <BellIcon color="#121214" size={20} hasBadge />
-        </TouchableOpacity>
-      </View>
+        <Vehicle name="bus" width={150} style={S.homeHeaderBus} label="Illustrated city bus" />
+      </OverlapHeader>
 
-      {/* Travelling To Card */}
-      <View style={S.travelCard}>
-        <View style={S.travelCardLeft}>
-          <BusIcon color="#FF5B37" size={20} />
-          <View style={{ marginLeft: 12 }}>
-            <Text style={S.travelCardLabel}>Travelling to</Text>
-            <Text style={S.travelCardPlace}>{destinationStop}</Text>
+      <OverlapSheet style={S.homeSheet}>
+        {/* Travelling To Card */}
+        <View style={S.travelCard}>
+          <View style={S.travelCardLeft}>
+            <View style={S.travelIcon}>
+              <MapPinIcon color={COLORS.accent} size={20} />
+            </View>
+            <View style={S.flex}>
+              <Text style={S.travelCardLabel}>Travelling to</Text>
+              <Text style={S.travelCardPlace} numberOfLines={1}>{destinationStop}</Text>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity style={S.travelCardBtn} onPress={onOpenStops} activeOpacity={0.8}>
-          <Text style={S.travelCardBtnText}>Change</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={S.quickRow}>
-        <TouchableOpacity style={S.quickCard} onPress={onGoTracking} activeOpacity={0.88}>
-          <NavigationArrowIcon color="#FF5B37" size={20} />
-          <Text style={S.quickCardTitle}>Live{'\n'}Tracker</Text>
-          <Text style={S.quickCardSub}>Map view</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={S.quickCard} onPress={onGoRoutes} activeOpacity={0.88}>
-          <RouteIcon color="#121214" size={20} />
-          <Text style={S.quickCardTitle}>Browse{'\n'}Routes</Text>
-          <Text style={S.quickCardSub}>3 active</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={S.quickCard} onPress={onOpenStops} activeOpacity={0.88}>
-          <MapPinIcon color="#121214" size={20} />
-          <Text style={S.quickCardTitle}>My{'\n'}Stops</Text>
-          <Text style={S.quickCardSub}>Customize</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Active Journey Card */}
-      <Text style={S.sectionTitle}>Active Journey</Text>
-      <TouchableOpacity style={S.journeyCard} onPress={onGoTracking} activeOpacity={0.9}>
-        <View style={S.journeyCardTop}>
-          <View style={S.journeyBusIcon}>
-            <BusIcon color="#FFF" size={18} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={S.journeyBusId}>Bus {liveBus.id}</Text>
-            <Text style={S.journeyRouteName}>{selectedRoute.shortName}</Text>
-          </View>
-          <View style={S.inTransitBadge}>
-            <Text style={S.inTransitText}>Transit</Text>
-          </View>
+          <Button title="Change" tone="soft" size="sm" full={false} onPress={onOpenStops} />
         </View>
 
-        {/* Horizontal progress bar */}
-        <View style={S.journeyProgress}>
-          <View style={S.journeyDotStart} />
-          <View style={S.journeyLine}>
-            <View style={S.journeyLineProgress} />
-          </View>
-          <View style={S.journeyBusPill}>
-            <Text style={S.journeyBusPillText}>{liveBus.etaMinutes}m</Text>
-          </View>
-          <View style={S.journeyLine}>
-            <View style={S.journeyLineProgress} />
-          </View>
-          <View style={S.journeyDotEnd} />
+        {/* Services */}
+        <Text style={S.sectionTitle}>Services</Text>
+        <View style={S.quickRow}>
+          {services.map(s => (
+            <Pressable
+              key={s.key}
+              onPress={s.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={s.label}
+              style={({ pressed }) => [S.quickItem, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+            >
+              <View style={S.quickTile}>{s.icon}</View>
+              <Text style={S.quickLabel}>{s.label}</Text>
+            </Pressable>
+          ))}
         </View>
 
-        <View style={S.journeyTerminals}>
-          <View>
-            <Text style={S.journeyTerminalLabel}>FROM</Text>
-            <Text style={S.journeyTerminalName}>{boardingStop}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={S.journeyTerminalLabel}>TO</Text>
-            <Text style={S.journeyTerminalName}>{destinationStop}</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
+        {/* Active Journey: pastel gradient status card with illustrated bus on the right edge */}
+        <Text style={S.sectionTitle}>Active Journey</Text>
+        <GradientCard tint="bus" style={S.journeyCard}>
+          <Pressable
+            onPress={onGoTracking}
+            accessibilityRole="button"
+            accessibilityLabel={`Open live tracker for bus ${liveBus.id}`}
+            style={({ pressed }) => [S.journeyPress, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}
+          >
+            <View style={S.journeyCardTop}>
+              <View style={S.flex}>
+                <Text style={S.journeyBusId}>Bus {liveBus.id}</Text>
+                <Text style={S.journeyRouteName}>{selectedRoute.shortName}</Text>
+                <View style={S.journeyKv}>
+                  <View>
+                    <Text style={S.journeyKvLabel}>Status</Text>
+                    <Text style={S.journeyKvVal}>Transit</Text>
+                  </View>
+                  <View>
+                    <Text style={S.journeyKvLabel}>Arrival</Text>
+                    <Text style={S.journeyKvVal}>{liveBus.etaMinutes} min</Text>
+                  </View>
+                </View>
+              </View>
+              <Vehicle name="bus" width={132} style={S.journeyBus} label="Illustrated city bus" />
+            </View>
 
-      {/* Route Summary */}
-      <View style={S.sectionRow}>
-        <Text style={S.sectionTitle}>My Route</Text>
-        <TouchableOpacity onPress={onGoRoutes} activeOpacity={0.7}>
-          <Text style={S.sectionLink}>Change</Text>
-        </TouchableOpacity>
-      </View>
+            {/* Horizontal progress bar */}
+            <View style={S.journeyProgress}>
+              <View style={S.journeyDotStart} />
+              <View style={S.journeyLine}>
+                <View style={S.journeyLineProgress} />
+              </View>
+              <View style={S.journeyBusPill}>
+                <Text style={S.journeyBusPillText}>{liveBus.etaMinutes}m</Text>
+              </View>
+              <View style={S.journeyLine}>
+                <View style={S.journeyLineProgress} />
+              </View>
+              <View style={S.journeyDotEnd} />
+            </View>
 
-      <View style={S.routeSummaryCard}>
-        <View style={S.routeSummaryHeader}>
-          <View style={S.routeBadge}>
-            <Text style={S.routeBadgeText}>{selectedRoute.shortName}</Text>
+            <View style={S.journeyTerminals}>
+              <View style={S.flex}>
+                <Text style={S.journeyTerminalLabel}>From</Text>
+                <Text style={S.journeyTerminalName} numberOfLines={1}>{boardingStop}</Text>
+              </View>
+              <View style={S.journeyTerminalRight}>
+                <Text style={S.journeyTerminalLabel}>To</Text>
+                <Text style={S.journeyTerminalName} numberOfLines={1}>{destinationStop}</Text>
+              </View>
+            </View>
+          </Pressable>
+        </GradientCard>
+
+        {/* Route Summary */}
+        <View style={S.sectionRow}>
+          <Text style={S.sectionTitleFlat}>My Route</Text>
+          <TouchableOpacity onPress={onGoRoutes} activeOpacity={0.7} style={S.linkTap} accessibilityRole="link">
+            <Text style={S.link}>See all</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={S.routeSummaryCard}>
+          <View style={S.routeSummaryHeader}>
+            <View style={S.routeBadge}>
+              <Text style={S.routeBadgeText}>{selectedRoute.shortName}</Text>
+            </View>
+            <Text style={S.routeSummaryMeta}>{selectedRoute.duration} · {selectedRoute.activeBuses} buses active</Text>
           </View>
-          <Text style={S.routeSummaryMeta}>{selectedRoute.duration} · {selectedRoute.activeBuses} buses active</Text>
+          <Text style={S.routeSummaryName}>{selectedRoute.name}</Text>
+          <View style={S.routeTerminalRow}>
+            <Text style={S.routeTerminalText}>{selectedRoute.startTerminal}</Text>
+            <ArrowRightIcon color={COLORS.accent} size={12} />
+            <Text style={S.routeTerminalText}>{selectedRoute.endTerminal}</Text>
+          </View>
         </View>
-        <Text style={S.routeSummaryName}>{selectedRoute.name}</Text>
-        <View style={S.routeTerminalRow}>
-          <Text style={S.routeTerminalText}>{selectedRoute.startTerminal}</Text>
-          <ArrowRightIcon color="#A1A1AA" size={12} />
-          <Text style={S.routeTerminalText}>{selectedRoute.endTerminal}</Text>
-        </View>
-      </View>
+      </OverlapSheet>
     </ScrollView>
   );
 }
@@ -968,99 +913,112 @@ function RoutesScreen({ routeSearchQuery, setRouteSearchQuery, filteredRoutes, s
       contentContainerStyle={S.routesScroll}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={S.screenTitle}>Bus Routes</Text>
-      <Text style={S.screenSubtitle}>Select a route to start tracking your bus</Text>
+      <OverlapHeader minHeight={190}>
+        <Text style={S.screenTitle}>Bus Routes</Text>
+        <Text style={S.screenSubtitle}>Select a route to start tracking your bus</Text>
 
-      {/* Search */}
-      <View style={S.searchBar}>
-        <SearchIcon color="#A1A1AA" size={18} />
-        <TextInput
-          style={S.searchInput}
-          value={routeSearchQuery}
-          onChangeText={setRouteSearchQuery}
-          placeholder="Search route no. or stop name…"
-          placeholderTextColor="#A1A1AA"
-        />
-        {routeSearchQuery ? (
-          <TouchableOpacity onPress={() => setRouteSearchQuery('')} activeOpacity={0.7}>
-            <Text style={S.searchClear}>✕</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+        {/* Search */}
+        <View style={S.searchBar}>
+          <SearchIcon color={COLORS.muted} size={18} />
+          <TextInput
+            style={S.searchInput}
+            value={routeSearchQuery}
+            onChangeText={setRouteSearchQuery}
+            placeholder="Search route no. or stop name…"
+            placeholderTextColor={COLORS.mutedLight}
+            accessibilityLabel="Search routes"
+          />
+          {routeSearchQuery ? (
+            <TouchableOpacity onPress={() => setRouteSearchQuery('')} activeOpacity={0.7} style={S.searchClearTap} accessibilityLabel="Clear search" accessibilityRole="button">
+              <Text style={S.searchClear}>✕</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </OverlapHeader>
 
-      {/* Currently Selected */}
-      {selectedRoute && (
-        <View style={S.activeRouteBanner}>
-          <View style={S.activeRouteLeft}>
-            <NavigationArrowIcon color="#FF5B37" size={14} />
-            <Text style={S.activeRouteBannerText}>
-              Tracking {selectedRoute.shortName}
-            </Text>
+      <OverlapSheet>
+        {/* Currently Selected */}
+        {selectedRoute && (
+          <View style={S.activeRouteBanner}>
+            <View style={S.activeRouteLeft}>
+              <NavigationArrowIcon color={COLORS.accentText} size={14} />
+              <Text style={S.activeRouteBannerText}>
+                Tracking {selectedRoute.shortName}
+              </Text>
+            </View>
+            <View style={S.activeDot} />
           </View>
-          <View style={S.activeDot} />
-        </View>
-      )}
+        )}
 
-      {/* Route Cards */}
-      {filteredRoutes.length === 0 ? (
-        <View style={S.emptyState}>
-          <BusIcon color="#D4D4D8" size={40} />
-          <Text style={S.emptyStateTitle}>No routes found</Text>
-          <Text style={S.emptyStateSub}>Try a different search term</Text>
-        </View>
-      ) : (
-        filteredRoutes.map(route => (
-          <TouchableOpacity
-            key={route.id}
-            style={[S.routeCard, selectedRoute.id === route.id && S.routeCardActive]}
-            onPress={() => onSelectRoute(route)}
-            activeOpacity={0.85}
-          >
-            <View style={S.routeCardTop}>
-              <View style={[S.routeNumBadge, selectedRoute.id === route.id && S.routeNumBadgeActive]}>
-                <Text style={[S.routeNumText, selectedRoute.id === route.id && S.routeNumTextActive]}>
-                  {route.id}
-                </Text>
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={S.routeCardName} numberOfLines={1}>{route.name}</Text>
-                <Text style={S.routeCardMeta}>{route.duration} · {route.activeBuses} buses</Text>
-              </View>
-              {selectedRoute.id === route.id ? (
-                <View style={S.trackingPill}>
-                  <Text style={S.trackingPillText}>Tracking</Text>
-                </View>
-              ) : (
-                <View style={S.trackRoutePill}>
-                  <Text style={S.trackRoutePillText}>Select</Text>
-                  <ArrowRightIcon color="#FF5B37" size={12} />
-                </View>
-              )}
-            </View>
+        {/* Route Cards */}
+        {filteredRoutes.length === 0 ? (
+          <View style={S.emptyState}>
+            <Vehicle name="bus" width={140} label="No routes found" />
+            <Text style={S.emptyStateTitle}>No routes found</Text>
+            <Text style={S.emptyStateSub}>Try a different search term</Text>
+          </View>
+        ) : (
+          filteredRoutes.map(route => {
+            const isSel = selectedRoute.id === route.id;
+            const Wrap = isSel ? GradientCard : View;
+            const wrapProps = isSel ? { tint: 'bus', id: `route-${route.id}`, style: S.routeCardWrap } : { style: [S.routeCardWrap, S.routeCardPlain] };
+            return (
+              <Wrap key={route.id} {...wrapProps}>
+                <TouchableOpacity
+                  style={S.routeCard}
+                  onPress={() => onSelectRoute(route)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${route.name}, ${isSel ? 'currently tracking' : 'select'}`}
+                >
+                  <View style={S.routeCardTop}>
+                    <View style={[S.routeNumBadge, isSel && S.routeNumBadgeActive]}>
+                      <Text style={[S.routeNumText, isSel && S.routeNumTextActive]}>
+                        {route.id}
+                      </Text>
+                    </View>
+                    <View style={S.routeCardTitleBox}>
+                      <Text style={S.routeCardName} numberOfLines={1}>{route.name}</Text>
+                      <Text style={S.routeCardMeta}>{route.duration} · {route.activeBuses} buses</Text>
+                    </View>
+                    {isSel ? (
+                      <View style={S.trackingPill}>
+                        <Text style={S.trackingPillText}>Tracking</Text>
+                      </View>
+                    ) : (
+                      <View style={S.trackRoutePill}>
+                        <Text style={S.trackRoutePillText}>Select</Text>
+                        <ArrowRightIcon color={COLORS.primaryStrong} size={12} />
+                      </View>
+                    )}
+                  </View>
 
-            <View style={S.routeTerminalsCard}>
-              <View style={S.terminalItem}>
-                <View style={S.terminalDotStart} />
-                <Text style={S.terminalName} numberOfLines={1}>{route.startTerminal}</Text>
-              </View>
-              <View style={S.terminalDashedLine} />
-              <View style={S.terminalItem}>
-                <View style={S.terminalDotEnd} />
-                <Text style={S.terminalName} numberOfLines={1}>{route.endTerminal}</Text>
-              </View>
-            </View>
+                  <View style={S.routeTerminalsCard}>
+                    <View style={S.terminalItem}>
+                      <View style={S.terminalDotStart} />
+                      <Text style={S.terminalName} numberOfLines={1}>{route.startTerminal}</Text>
+                    </View>
+                    <View style={S.terminalDashedLine} />
+                    <View style={S.terminalItem}>
+                      <View style={S.terminalDotEnd} />
+                      <Text style={S.terminalName} numberOfLines={1}>{route.endTerminal}</Text>
+                    </View>
+                  </View>
 
-            {/* Stops */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.stopsScroll}>
-              {route.stops.map((stop, idx) => (
-                <View key={idx} style={S.stopChip}>
-                  <Text style={S.stopChipText}>{stop}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </TouchableOpacity>
-        ))
-      )}
+                  {/* Stops */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.stopsScroll}>
+                    {route.stops.map((stop, idx) => (
+                      <View key={idx} style={S.stopChip}>
+                        <Text style={S.stopChipText}>{stop}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </TouchableOpacity>
+              </Wrap>
+            );
+          })
+        )}
+      </OverlapSheet>
     </ScrollView>
   );
 }
@@ -1073,53 +1031,53 @@ function ProfileScreen({ userProfile, selectedRoute, boardingStop, destinationSt
       showsVerticalScrollIndicator={false}
     >
       {/* Avatar Hero */}
-      <View style={S.profileHero}>
-        <View style={S.profileAvatar}>
-          <Text style={S.profileAvatarText}>
-            {(userProfile?.name || 'P').charAt(0).toUpperCase()}
-          </Text>
+      <OverlapHeader minHeight={200}>
+        <View style={S.profileHero}>
+          <View style={S.profileAvatar}>
+            <Text style={S.profileAvatarText}>
+              {(userProfile?.name || 'P').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <Text style={S.profileName}>{userProfile?.name || 'Passenger'}</Text>
+          <Text style={S.profileUsername}>{userProfile?.type || 'Daily Commuter'}</Text>
         </View>
-        <Text style={S.profileName}>{userProfile?.name || 'Passenger'}</Text>
-        <Text style={S.profileUsername}>{userProfile?.type || 'Daily Commuter'}</Text>
-      </View>
+      </OverlapHeader>
 
-      {/* Commuter Information */}
-      <View style={S.profileCard}>
-        <Text style={S.profileCardTitle}>Commuter Information</Text>
-        <ProfileRow label="Passenger Type" value={userProfile?.type || 'Daily Commuter'} />
-        <ProfileRow label="Region" value="Western Province, Colombo" />
-        <ProfileRow label="App Access" value="Instant Public Access (No Password)" />
-      </View>
-
-      {/* Journey Preferences */}
-      <View style={S.profileCard}>
-        <View style={S.profileCardHeader}>
-          <Text style={S.profileCardTitle}>Journey Preferences</Text>
-          <TouchableOpacity onPress={onOpenStops} activeOpacity={0.7}>
-            <Text style={S.editLink}>Edit Stops</Text>
-          </TouchableOpacity>
+      <OverlapSheet>
+        {/* Commuter Information */}
+        <View style={S.profileCard}>
+          <Text style={S.profileCardTitle}>Commuter Information</Text>
+          <ProfileRow label="Passenger Type" value={userProfile?.type || 'Daily Commuter'} />
+          <ProfileRow label="Region" value="Western Province, Colombo" />
+          <ProfileRow label="App Access" value="Instant Public Access (No Password)" last />
         </View>
-        <ProfileRow label="Preferred Route" value={selectedRoute.shortName} />
-        <ProfileRow label="Boarding Stop" value={boardingStop} accent />
-        <ProfileRow label="Destination Stop" value={destinationStop} accent />
-      </View>
 
-      {/* Reset Stops Defaults */}
-      <TouchableOpacity style={S.resetDefaultsBtn} onPress={onResetDefaults} activeOpacity={0.85}>
-        <Text style={S.resetDefaultsBtnText}>Reset Route Terminals</Text>
-      </TouchableOpacity>
+        {/* Journey Preferences */}
+        <View style={S.profileCard}>
+          <View style={S.profileCardHeader}>
+            <Text style={S.profileCardTitleFlat}>Journey Preferences</Text>
+            <TouchableOpacity onPress={onOpenStops} activeOpacity={0.7} style={S.linkTap} accessibilityRole="link">
+              <Text style={S.link}>Edit Stops</Text>
+            </TouchableOpacity>
+          </View>
+          <ProfileRow label="Preferred Route" value={selectedRoute.shortName} />
+          <ProfileRow label="Boarding Stop" value={boardingStop} accent />
+          <ProfileRow label="Destination Stop" value={destinationStop} accent last />
+        </View>
 
-      {/* Sign Out / Switch User */}
-      <TouchableOpacity style={S.signOutBtn} onPress={onLogout} activeOpacity={0.85}>
-        <Text style={S.signOutBtnText}>Sign Out</Text>
-      </TouchableOpacity>
+        {/* Reset Stops Defaults */}
+        <Button title="Reset Route Terminals" tone="soft" onPress={onResetDefaults} style={S.profileBtn} />
+
+        {/* Sign Out / Switch User */}
+        <Button title="Sign Out" tone="dangerSoft" onPress={onLogout} style={S.profileBtn} />
+      </OverlapSheet>
     </ScrollView>
   );
 }
 
-function ProfileRow({ label, value, accent }) {
+function ProfileRow({ label, value, accent, last }) {
   return (
-    <View style={S.profileRow}>
+    <View style={[S.profileRow, last && S.profileRowLast]}>
       <Text style={S.profileRowLabel}>{label}</Text>
       <Text style={[S.profileRowValue, accent && S.profileRowValueAccent]}>{value}</Text>
     </View>
@@ -1127,639 +1085,315 @@ function ProfileRow({ label, value, accent }) {
 }
 
 function BottomDock({ activeTab, setActiveTab }) {
+  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.ink : '#C9D3DD'} size={size} />;
   const items = [
-    { id: 'home', label: 'Home', icon: (active) => <MapIcon color={active ? '#FFFFFF' : '#8E8E93'} size={19} /> },
-    { id: 'tracking', label: 'Track', icon: (active) => <NavigationArrowIcon color={active ? '#FFFFFF' : '#8E8E93'} size={18} /> },
-    { id: 'routes', label: 'Routes', icon: (active) => <RouteIcon color={active ? '#FFFFFF' : '#8E8E93'} size={19} /> },
-    { id: 'profile', label: 'Profile', icon: (active) => <UserIcon color={active ? '#FFFFFF' : '#8E8E93'} size={19} /> },
+    { id: 'home', label: 'Home', icon: icon(MapIcon, 19) },
+    { id: 'tracking', label: 'Track', icon: icon(NavigationArrowIcon, 18) },
+    { id: 'routes', label: 'Routes', icon: icon(RouteIcon, 19) },
+    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
   ];
-
-  return (
-    <View style={S.dockWrapper}>
-      <View style={S.dock}>
-        {items.map(item => {
-          const isActive = activeTab === item.id;
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={S.dockItem}
-              onPress={() => setActiveTab(item.id)}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-            >
-              <View style={[S.dockBtn, isActive && S.dockBtnPrimary]}>
-                {item.icon(isActive)}
-                <Text
-                  style={[S.dockLabel, isActive && S.dockLabelPrimary]}
-                  numberOfLines={1}
-                >
-                  {item.label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+  return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+// CHANGED: every value comes from shared tokens (COLORS / RADII / SHADOWS / TYPE); spacing is on the 4px scale.
+
+const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 
 const S = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F6F6F8' },
+  root: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
-  appShell: { flex: 1, flexDirection: 'column' },
-
-  // Toast
-  toast: {
-    position: 'absolute', top: 60, left: 20, right: 20, zIndex: 999,
-    backgroundColor: '#141416', paddingVertical: 12, paddingHorizontal: 18,
-    borderRadius: 16, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 10,
+  // On desktop the signed-in app is a centred phone-width column, never a stretched mobile screen.
+  appShell: {
+    flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center', overflow: 'hidden',
+    backgroundColor: COLORS.bg, ...(Platform.OS === 'web' ? SHADOWS.lg : null),
   },
-  toastText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
 
   // ─── Auth ───────────────────────────────────────────────
-  authScroll: { padding: 24, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16, paddingBottom: 40 },
-  authHero: { alignItems: 'center', marginBottom: 32 },
-  authBrandOrb: {
-    width: 72, height: 72, borderRadius: 36, backgroundColor: '#141416',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.18, shadowRadius: 14, elevation: 6,
-  },
-  authBrandTitle: { fontSize: 26, fontWeight: '800', color: '#121214', letterSpacing: -0.5 },
-  authBrandSub: { fontSize: 14, color: '#71717A', marginTop: 5, textAlign: 'center' },
-
-  authTabs: {
-    flexDirection: 'row', backgroundColor: '#EAEAEE', borderRadius: 14, padding: 3, marginBottom: 20,
-  },
-  authTab: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 11 },
-  authTabActive: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
-  },
-  authTabText: { fontSize: 14, fontWeight: '500', color: '#71717A' },
-  authTabTextActive: { fontWeight: '700', color: '#121214' },
-
-  authCard: {
-    backgroundColor: '#FFF', borderRadius: 24, padding: 24,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 14, elevation: 3,
-  },
-  authCardTitle: { fontSize: 20, fontWeight: '700', color: '#121214' },
-  authCardSub: { fontSize: 13, color: '#71717A', marginTop: 4, marginBottom: 22 },
-
-  field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 10, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.9, marginBottom: 6 },
-  input: {
-    height: 50, backgroundColor: '#F7F7F9', borderRadius: 12,
-    paddingHorizontal: 14, fontSize: 15, color: '#121214',
-    borderWidth: 1, borderColor: '#E8E8EC',
-  },
-
-  primaryBtn: {
-    height: 52, backgroundColor: '#FF5B37', borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center', marginTop: 12,
-    shadowColor: '#FF5B37', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 5,
-  },
-  primaryBtnDisabled: { opacity: 0.7 },
-  primaryBtnText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-
-  authSwitch: { textAlign: 'center', fontSize: 13, color: '#71717A', marginTop: 16 },
-  authSwitchLink: { color: '#FF5B37', fontWeight: '600' },
+  authRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, gap: 12 },
+  authSwitch: { ...type('small'), textAlign: 'center', color: COLORS.muted, marginTop: 24 },
+  authSwitchLink: { color: COLORS.accentText, fontWeight: '700' },
+  link: { ...type('smallBold'), color: COLORS.accentText },
+  linkTap: { minHeight: 44, justifyContent: 'center' },
 
   // ─── Tracking Screen ────────────────────────────────────
+  mapCanvas: { ...StyleSheet.absoluteFillObject },
   mapHeader: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 8 : 8,
-    paddingHorizontal: 18, paddingBottom: 10,
+    paddingTop: TOP_INSET + 8, paddingHorizontal: 16,
   },
   mapHeaderInner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 10,
-    borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 10, elevation: 4,
+    backgroundColor: COLORS.surface, borderRadius: RADII.lg, paddingLeft: 16, paddingRight: 8, paddingVertical: 8,
+    ...SHADOWS.md,
   },
-  mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   liveChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#141416', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill,
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' },
-  liveText: { color: '#FFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  mapHeaderTitle: { fontSize: 15, fontWeight: '700', color: '#121214' },
-  mapMenuBtn: {
-    width: 34, height: 34, borderRadius: 17, backgroundColor: '#F4F4F6',
-    alignItems: 'center', justifyContent: 'center',
-  },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent },
+  liveText: { ...type('overline'), color: COLORS.white },
+  mapHeaderTitle: { ...type('h3'), color: COLORS.ink },
 
-  mapCanvas: { flex: 1 },
+  // Floating stop selector card
+  stopSelectorBar: {
+    position: 'absolute', top: TOP_INSET + 8 + 60 + 8, left: 16, right: 16, zIndex: 20,
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 12,
+    ...SHADOWS.md,
+  },
+  stopSelectorCol: { flex: 1, position: 'relative' },
+  stopSelectorHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  stopDotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primaryStrong },
+  stopDotOrange: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent },
+  stopSelectorLabel: { ...type('overline'), color: COLORS.muted },
+  stopSelectorBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.sm, paddingHorizontal: 12, minHeight: 44,
+  },
+  stopSelectorValue: { ...type('smallBold'), color: COLORS.ink, flex: 1, marginRight: 4 },
+  stopSelectorDivider: { width: 28, alignItems: 'center', justifyContent: 'flex-end', height: 70 },
+  stopInlineList: {
+    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: 8,
+    backgroundColor: COLORS.surface, borderRadius: RADII.md, overflow: 'hidden', minWidth: 190,
+    ...SHADOWS.lg,
+  },
+  stopInlineListRight: { left: 'auto', right: 0 },
+  stopInlineItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    minHeight: 44, paddingHorizontal: 16,
+  },
+  stopInlineItemActive: { backgroundColor: COLORS.accentSoft },
+  stopInlineText: { ...type('small'), color: COLORS.ink },
+  stopInlineTextActive: { color: COLORS.accentText, fontWeight: '700' },
 
-  // Dark Sheet
-  darkSheet: {
-    backgroundColor: '#141416', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 95,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 12,
+  // Bottom summary card
+  summaryCard: {
+    position: 'absolute', left: 16, right: 16, bottom: 104,
+    backgroundColor: COLORS.surface, borderRadius: RADII.xl, padding: 20,
+    ...SHADOWS.lg,
   },
-  sheetHandleRow: { alignItems: 'center', paddingVertical: 8 },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#3F3F46' },
-  sheetTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
-  sheetMetaLabel: { fontSize: 10, color: '#71717A', fontWeight: '600', letterSpacing: 0.5, marginBottom: 2 },
-  sheetBookingId: { fontSize: 20, fontWeight: '800', color: '#FFF', letterSpacing: -0.5 },
-  transitBadge: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999,
-    backgroundColor: '#1E1E22', borderWidth: 1, borderColor: '#2C2C31',
-  },
-  transitBadgeText: { fontSize: 11, fontWeight: '600', color: '#D4D4D8' },
+  sheetTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
+  sheetMetaLabel: { ...type('caption'), color: COLORS.muted },
+  sheetBookingId: { ...type('h2'), color: COLORS.ink },
+  transitBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADII.pill, backgroundColor: COLORS.successSoft },
+  transitBadgeText: { ...type('caption'), color: COLORS.success },
 
-  // Step Progress
-  stepProgress: { marginBottom: 16, backgroundColor: '#1C1C1F', borderRadius: 18, padding: 16 },
-  stepLine: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  stepDotCompleted: {
-    width: 20, height: 20, borderRadius: 10, backgroundColor: '#FF5B37',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  stepDash: { flex: 1, height: 2, backgroundColor: '#2C2C31', marginHorizontal: 4, borderStyle: 'dashed', borderWidth: 1, borderColor: '#3F3F46' },
-  stepDotActive: {
-    width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,91,55,0.2)',
-    borderWidth: 2, borderColor: '#FF5B37', alignItems: 'center', justifyContent: 'center',
-  },
-  stepDotInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5B37' },
-  stepDotUpcoming: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: '#3F3F46' },
-  stepDotTarget: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: '#52525B', alignItems: 'center', justifyContent: 'center' },
-  stepTargetInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#71717A' },
-  stepLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  stepLabelMeta: { fontSize: 10, color: '#71717A', fontWeight: '500' },
-  stepLabelStop: { fontSize: 13, fontWeight: '600', color: '#FFF', marginTop: 2, maxWidth: 130 },
+  progressBlock: { marginBottom: 16 },
+  progressMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  progressMetaVal: { ...type('smallBold'), color: COLORS.ink },
+  progressTrack: { flexDirection: 'row', alignItems: 'center', height: 20 },
+  progressDone: { height: 4, borderRadius: 2, backgroundColor: COLORS.accent },
+  progressLeft: { height: 4, borderRadius: 2, backgroundColor: COLORS.ink },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, gap: 12 },
+  progressLabel: { ...type('caption'), color: COLORS.muted, flex: 1 },
+  progressLabelRight: { ...type('caption'), color: COLORS.muted },
 
-  // Specs Row
-  specsRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1C1C1F', borderRadius: 16, padding: 14, marginBottom: 14,
-  },
-  specBlock: { flex: 1, alignItems: 'center' },
-  specDivider: { width: 1, height: 32, backgroundColor: '#2C2C31' },
-  specLabel: { fontSize: 9, color: '#71717A', fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
-  specVal: { fontSize: 12, fontWeight: '600', color: '#D4D4D8', textAlign: 'center' },
-  specValAccent: { color: '#FF5B37', fontWeight: '700', fontSize: 13 },
 
   // Driver Card
   driverCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#1C1C1F', borderRadius: 18, padding: 14, marginBottom: 12,
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, padding: 12, marginBottom: 16, gap: 12,
   },
-  driverLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  driverLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
   driverAvatar: {
-    width: 42, height: 42, borderRadius: 21, backgroundColor: '#27272A',
-    borderWidth: 2, borderColor: '#FF5B37', alignItems: 'center', justifyContent: 'center', marginRight: 12,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.ink,
+    alignItems: 'center', justifyContent: 'center',
   },
-  driverAvatarText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  driverName: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-  driverRole: { fontSize: 11, color: '#71717A', marginTop: 2 },
+  driverAvatarText: { ...type('smallBold'), color: COLORS.white },
+  driverName: { ...type('smallBold'), color: COLORS.ink },
+  driverRole: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
   driverStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
-    gap: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: COLORS.successSoft, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADII.pill,
   },
-  driverStatusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#22C55E',
-  },
-  driverStatusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#22C55E',
-  },
-
-  // Change Stops link
-  changeStopsLink: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 8,
-  },
-  changeStopsText: { fontSize: 12, color: '#FF5B37', fontWeight: '600' },
+  driverStatusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
+  driverStatusText: { ...type('caption'), color: COLORS.success },
 
   // ─── Home Screen ────────────────────────────────────────
-  homeScroll: { padding: 20, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16, paddingBottom: 110 },
-
-  homeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  homeGreeting: { fontSize: 13, color: '#71717A', fontWeight: '500' },
-  homeUserName: { fontSize: 22, fontWeight: '800', color: '#121214', letterSpacing: -0.4, marginTop: 2 },
-  bellBtn: {
-    width: 42, height: 42, borderRadius: 21, backgroundColor: '#FFF',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
-  },
+  homeScroll: { paddingBottom: 120 },
+  homeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: TOP_INSET },
+  homeHeaderText: { flex: 1 },
+  homeGreeting: { ...type('small'), color: COLORS.ink },
+  homeUserName: { ...type('h1'), color: COLORS.white },
+  homeHeaderBus: { position: "absolute", right: 12, bottom: 34 },
+  homeSheet: { minHeight: 600 },
 
   travelCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#FFF', borderRadius: 18, padding: 16, marginBottom: 20,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+    backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 16, marginBottom: 24,
+    ...SHADOWS.sm,
   },
-  travelCardLeft: { flexDirection: 'row', alignItems: 'center' },
-  travelCardLabel: { fontSize: 11, color: '#71717A', fontWeight: '500' },
-  travelCardPlace: { fontSize: 15, fontWeight: '700', color: '#121214', marginTop: 1 },
-  travelCardBtn: { backgroundColor: '#F4F4F6', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
-  travelCardBtnText: { fontSize: 12, fontWeight: '600', color: '#52525B' },
+  travelCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
+  travelIcon: { width: 44, height: 44, borderRadius: RADII.sm, backgroundColor: COLORS.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  travelCardLabel: { ...type('caption'), color: COLORS.muted },
+  travelCardPlace: { ...type('bodyBold'), color: COLORS.ink },
 
   quickRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  quickCard: {
-    flex: 1, backgroundColor: '#FFF', borderRadius: 18, padding: 14,
-    alignItems: 'flex-start', justifyContent: 'space-between',
-    borderWidth: 1, borderColor: '#E8E8EC', minHeight: 90,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2,
+  quickItem: { flex: 1, alignItems: 'center', gap: 8 },
+  quickTile: {
+    width: 64, height: 64, borderRadius: RADII.lg, backgroundColor: COLORS.surface,
+    alignItems: 'center', justifyContent: 'center', ...SHADOWS.sm,
   },
-  quickCardTitle: { fontSize: 13, fontWeight: '700', color: '#121214', marginTop: 8, lineHeight: 17 },
-  quickCardSub: { fontSize: 10, color: '#A1A1AA', fontWeight: '500', marginTop: 2 },
+  quickLabel: { ...type('caption'), color: COLORS.ink, textAlign: 'center' },
 
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#121214', marginBottom: 12 },
+  sectionTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 12 },
+  sectionTitleFlat: { ...type('h3'), color: COLORS.ink },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  sectionLink: { fontSize: 13, fontWeight: '600', color: '#FF5B37' },
 
-  journeyCard: {
-    backgroundColor: '#FFF', borderRadius: 22, padding: 18, marginBottom: 24,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 14, elevation: 3,
-  },
-  journeyCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  journeyBusIcon: {
-    width: 44, height: 44, borderRadius: 14, backgroundColor: '#141416',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  journeyBusId: { fontSize: 15, fontWeight: '700', color: '#121214' },
-  journeyRouteName: { fontSize: 12, color: '#71717A', marginTop: 2 },
-  inTransitBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999 },
-  inTransitText: { fontSize: 11, fontWeight: '600', color: '#52525B' },
+  journeyCard: { marginBottom: 24 },
+  journeyPress: { padding: 20 },
+  journeyCardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 8 },
+  journeyBus: { marginTop: 8, marginRight: -28 },
+  journeyBusId: { ...type('h2'), color: COLORS.ink },
+  journeyRouteName: { ...type('small'), color: COLORS.muted, marginTop: 2 },
+  journeyKv: { flexDirection: 'row', gap: 24, marginTop: 12 },
+  journeyKvLabel: { ...type('caption'), color: COLORS.muted },
+  journeyKvVal: { ...type('smallBold'), color: COLORS.ink },
 
-  journeyProgress: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  journeyDotStart: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#FF5B37' },
-  journeyLine: { flex: 1, height: 2, backgroundColor: '#F0F0F3', marginHorizontal: 4 },
-  journeyLineProgress: { width: '40%', height: '100%', backgroundColor: '#FF5B37', borderRadius: 1 },
-  journeyBusPill: {
-    backgroundColor: '#141416', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
-  },
-  journeyBusPillText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  journeyDotEnd: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: '#D4D4D8' },
-  journeyTerminals: { flexDirection: 'row', justifyContent: 'space-between' },
-  journeyTerminalLabel: { fontSize: 10, color: '#A1A1AA', fontWeight: '600', letterSpacing: 0.5 },
-  journeyTerminalName: { fontSize: 13, fontWeight: '600', color: '#121214', marginTop: 2 },
+  journeyProgress: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  journeyDotStart: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.accent },
+  journeyLine: { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.7)', marginHorizontal: 4 },
+  journeyLineProgress: { width: '40%', height: '100%', backgroundColor: COLORS.accent, borderRadius: 2 },
+  journeyBusPill: { backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill },
+  journeyBusPillText: { ...type('caption'), color: COLORS.white },
+  journeyDotEnd: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.ink },
+  journeyTerminals: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
+  journeyTerminalRight: { flex: 1, alignItems: 'flex-end' },
+  journeyTerminalLabel: { ...type('caption'), color: COLORS.muted },
+  journeyTerminalName: { ...type('smallBold'), color: COLORS.ink },
 
-  routeSummaryCard: {
-    backgroundColor: '#FFF', borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2,
-  },
-  routeSummaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  routeBadge: {
-    backgroundColor: '#141416', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginRight: 10,
-  },
-  routeBadgeText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  routeSummaryMeta: { fontSize: 12, color: '#71717A' },
-  routeSummaryName: { fontSize: 14, fontWeight: '600', color: '#121214', marginBottom: 6 },
+  routeSummaryCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
+  routeSummaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 12 },
+  routeBadge: { backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill },
+  routeBadgeText: { ...type('caption'), color: COLORS.white },
+  routeSummaryMeta: { ...type('small'), color: COLORS.muted, flexShrink: 1 },
+  routeSummaryName: { ...type('bodyBold'), color: COLORS.ink, marginBottom: 8 },
   routeTerminalRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  routeTerminalText: { fontSize: 12, color: '#71717A', flex: 1 },
+  routeTerminalText: { ...type('small'), color: COLORS.muted, flex: 1 },
 
   // ─── Routes Screen ──────────────────────────────────────
-  routesScroll: { padding: 20, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16, paddingBottom: 110 },
-  screenTitle: { fontSize: 22, fontWeight: '800', color: '#121214', letterSpacing: -0.4 },
-  screenSubtitle: { fontSize: 14, color: '#71717A', marginTop: 4, marginBottom: 20 },
+  routesScroll: { paddingBottom: 120 },
+  screenTitle: { ...type('h1'), color: COLORS.white, paddingTop: TOP_INSET },
+  screenSubtitle: { ...type('small'), color: COLORS.ink, marginTop: 4, marginBottom: 16 },
 
   searchBar: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
-    borderRadius: 999, paddingHorizontal: 18, height: 52,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 2,
-    marginBottom: 16,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
+    borderRadius: RADII.pill, paddingHorizontal: 20, minHeight: 52, gap: 12, ...SHADOWS.sm,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#121214', marginHorizontal: 10 },
-  searchClear: { fontSize: 14, color: '#A1A1AA', fontWeight: '600' },
+  searchInput: { flex: 1, ...type('body'), color: COLORS.ink, minHeight: 48, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : null) },
+  searchClearTap: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -12 },
+  searchClear: { ...type('bodyBold'), color: COLORS.muted },
 
   activeRouteBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,91,55,0.08)', borderRadius: 12, padding: 12, marginBottom: 16,
-    borderWidth: 1, borderColor: 'rgba(255,91,55,0.2)',
+    backgroundColor: COLORS.accentSoft, borderRadius: RADII.md, padding: 16, marginBottom: 16,
   },
   activeRouteLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  activeRouteBannerText: { fontSize: 13, fontWeight: '600', color: '#FF5B37' },
-  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
+  activeRouteBannerText: { ...type('smallBold'), color: COLORS.accentText },
+  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
 
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyStateTitle: { fontSize: 16, fontWeight: '600', color: '#121214', marginTop: 16 },
-  emptyStateSub: { fontSize: 13, color: '#A1A1AA', marginTop: 4 },
+  emptyState: { alignItems: 'center', paddingVertical: 48, gap: 4 },
+  emptyStateTitle: { ...type('h3'), color: COLORS.ink, marginTop: 16 },
+  emptyStateSub: { ...type('small'), color: COLORS.muted },
 
-  routeCard: {
-    backgroundColor: '#FFF', borderRadius: 22, padding: 18, marginBottom: 14,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 3,
-  },
-  routeCardActive: { borderColor: 'rgba(255,91,55,0.3)', backgroundColor: '#FFFAF9' },
-  routeCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  routeCardWrap: { marginBottom: 16 },
+  routeCardPlain: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, ...SHADOWS.sm },
+  routeCard: { padding: 20 },
+  routeCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
   routeNumBadge: {
-    width: 42, height: 42, borderRadius: 12, backgroundColor: '#F4F4F6',
+    width: 44, height: 44, borderRadius: RADII.sm, backgroundColor: COLORS.primarySoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  routeNumBadgeActive: { backgroundColor: '#141416' },
-  routeNumText: { fontSize: 14, fontWeight: '800', color: '#121214' },
-  routeNumTextActive: { color: '#FFF' },
-  routeCardName: { fontSize: 14, fontWeight: '600', color: '#121214' },
-  routeCardMeta: { fontSize: 12, color: '#A1A1AA', marginTop: 2 },
-  trackingPill: { backgroundColor: 'rgba(255,91,55,0.12)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
-  trackingPillText: { fontSize: 11, fontWeight: '600', color: '#FF5B37' },
-  trackRoutePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#F9F9FB', borderRadius: 999 },
-  trackRoutePillText: { fontSize: 11, fontWeight: '600', color: '#FF5B37' },
+  routeNumBadgeActive: { backgroundColor: COLORS.ink },
+  routeNumText: { ...type('bodyBold'), color: COLORS.primaryDeep },
+  routeNumTextActive: { color: COLORS.white },
+  routeCardTitleBox: { flex: 1 },
+  routeCardName: { ...type('smallBold'), color: COLORS.ink },
+  routeCardMeta: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
+  trackingPill: { backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADII.pill },
+  trackingPillText: { ...type('caption'), color: COLORS.white },
+  trackRoutePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: COLORS.primarySoft, borderRadius: RADII.pill },
+  trackRoutePillText: { ...type('caption'), color: COLORS.primaryDeep },
 
   routeTerminalsCard: { marginBottom: 12 },
-  terminalItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  terminalDotStart: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#10B981' },
-  terminalDotEnd: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF5B37' },
-  terminalDashedLine: { width: 1, height: 14, backgroundColor: '#E4E4E7', marginLeft: 4 },
-  terminalName: { fontSize: 13, color: '#52525B', fontWeight: '500', flex: 1 },
+  terminalItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
+  terminalDotStart: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primaryStrong },
+  terminalDotEnd: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.ink },
+  terminalDashedLine: { width: 2, height: 12, backgroundColor: COLORS.mutedLight, marginLeft: 4, borderRadius: 1 },
+  terminalName: { ...type('small'), color: COLORS.inkSoft, flex: 1 },
 
   stopsScroll: { marginTop: 4 },
-  stopChip: { backgroundColor: '#F4F4F6', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginRight: 8 },
-  stopChipText: { fontSize: 11, color: '#71717A', fontWeight: '500' },
+  stopChip: { backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 4, marginRight: 8 },
+  stopChipText: { ...type('caption'), color: COLORS.inkSoft },
 
   // ─── Profile Screen ─────────────────────────────────────
-  profileScroll: { padding: 20, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16, paddingBottom: 110 },
-  profileHero: {
-    alignItems: 'center', backgroundColor: '#FFF', borderRadius: 24, padding: 28, marginBottom: 16,
-    borderWidth: 1, borderColor: '#E8E8EC',
-  },
+  profileScroll: { paddingBottom: 120 },
+  profileHero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
   profileAvatar: {
-    width: 76, height: 76, borderRadius: 38, backgroundColor: '#141416',
-    borderWidth: 3, borderColor: '#FF5B37', alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.surface,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
   },
-  profileAvatarText: { color: '#FFF', fontSize: 28, fontWeight: '700' },
-  profileName: { fontSize: 20, fontWeight: '700', color: '#121214' },
-  profileUsername: { fontSize: 13, color: '#A1A1AA', marginTop: 3 },
+  profileAvatarText: { ...type('display'), color: COLORS.primaryDeep },
+  profileName: { ...type('h1'), color: COLORS.white },
+  profileUsername: { ...type('small'), color: COLORS.ink, marginTop: 4 },
 
-  profileCard: {
-    backgroundColor: '#FFF', borderRadius: 22, padding: 20, marginBottom: 14,
-    borderWidth: 1, borderColor: '#E8E8EC',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2,
-  },
-  profileCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
-  profileCardTitle: { fontSize: 15, fontWeight: '700', color: '#121214', marginBottom: 14 },
-  editLink: { fontSize: 13, fontWeight: '600', color: '#FF5B37' },
+  profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
+  profileCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 4 },
+  profileCardTitleFlat: { ...type('h3'), color: COLORS.ink },
   profileRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F4F4F6',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+    minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLORS.line,
   },
-  profileRowLabel: { fontSize: 13, color: '#71717A' },
-  profileRowValue: { fontSize: 13, fontWeight: '600', color: '#121214', maxWidth: '55%', textAlign: 'right' },
-  profileRowValueAccent: { color: '#FF5B37' },
-
-  resetDefaultsBtn: {
-    height: 48, borderRadius: 14, backgroundColor: '#F4F4F6',
-    borderWidth: 1, borderColor: '#E4E4E8',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  resetDefaultsBtnText: { color: '#71717A', fontSize: 14, fontWeight: '600' },
-  signOutBtn: {
-    height: 48, borderRadius: 14, backgroundColor: '#FEE2E2',
-    alignItems: 'center', justifyContent: 'center', marginTop: 10,
-  },
-  signOutBtnText: { color: '#DC2626', fontSize: 14, fontWeight: '700' },
-
-  // ─── Bottom Dock ─────────────────────────────────────────
-  dockWrapper: {
-    backgroundColor: '#141416',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingHorizontal: 8,
-    paddingBottom: Platform.OS === 'ios' ? 22 : 10,
-    paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 16,
-  },
-  dock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    height: 52,
-  },
-  dockItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dockBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    minWidth: 64,
-    backgroundColor: 'transparent',
-  },
-  dockBtnPrimary: {
-    backgroundColor: '#FF5B37',
-    shadowColor: '#FF5B37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  dockLabel: {
-    fontSize: 10,
-    color: '#8E8E93',
-    fontWeight: '600',
-    marginTop: 2,
-    letterSpacing: 0.2,
-  },
-  dockLabelPrimary: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-
-  // ─── Inline Stop Selector ──────────────────────────────────
-  stopSelectorBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F3',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 4,
-    zIndex: 20,
-  },
-  stopSelectorCol: { flex: 1, position: 'relative' },
-  stopSelectorHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 },
-  stopDotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
-  stopDotOrange: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5B37' },
-  stopSelectorLabel: { fontSize: 9, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.8 },
-  stopSelectorBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F7F7F9',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderColor: '#E8E8EC',
-  },
-  stopSelectorValue: { fontSize: 13, fontWeight: '700', color: '#121214', flex: 1, marginRight: 4 },
-  stopSelectorDivider: {
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 10,
-    paddingTop: 18,
-  },
-  stopInlineList: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E8E8EC',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 10,
-    marginTop: 4,
-  },
-  stopInlineListRight: { left: 'auto', right: 0 },
-  stopInlineItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F4F4F6',
-  },
-  stopInlineItemActive: { backgroundColor: 'rgba(255,91,55,0.06)' },
-  stopInlineText: { fontSize: 13, color: '#121214', fontWeight: '500' },
-  stopInlineTextActive: { color: '#FF5B37', fontWeight: '700' },
+  profileRowLast: { borderBottomWidth: 0 },
+  profileRowLabel: { ...type('small'), color: COLORS.muted, flexShrink: 0 },
+  profileRowValue: { ...type('smallBold'), color: COLORS.ink, flexShrink: 1, textAlign: 'right' },
+  profileRowValueAccent: { color: COLORS.accentText },
+  profileBtn: { marginBottom: 12 },
 
   // ─── Stop Selector Modal ─────────────────────────────────
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(15,20,25,0.45)', justifyContent: 'flex-end' },
   modalDismissArea: { flex: 1 },
-  modalSheet: {
-    backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30,
-    padding: 24, maxHeight: '85%',
-    shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 12,
-  },
-  modalHandleRow: { alignItems: 'center', paddingBottom: 14 },
-  modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#E4E4E7' },
-  modalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#121214' },
-  modalCloseBtn: { backgroundColor: '#FF5B37', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 999 },
-  modalCloseBtnText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
+  modalHandleRow: { alignItems: 'center', paddingBottom: 16 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.line },
+  modalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+  modalTitle: { ...type('h2'), color: COLORS.ink },
 
-  modalSectionLabel: { fontSize: 10, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.9, marginBottom: 10 },
-
-  routeChipsRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  routeChip: {
-    paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999,
-    backgroundColor: '#F4F4F6', borderWidth: 1, borderColor: '#E8E8EC',
-  },
-  routeChipActive: { backgroundColor: '#141416', borderColor: '#141416' },
-  routeChipText: { fontSize: 13, fontWeight: '600', color: '#52525B' },
-  routeChipTextActive: { color: '#FFF' },
+  modalSectionLabel: { ...type('overline'), color: COLORS.muted, marginBottom: 12, textTransform: 'uppercase' },
+  modalSectionGap: { marginTop: 24 },
+  modalSectionGapLg: { marginTop: 32 },
+  routeChipsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
 
   dropdownTrigger: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#F7F7F9', borderRadius: 14, paddingHorizontal: 16, height: 50,
-    borderWidth: 1, borderColor: '#E8E8EC',
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, paddingHorizontal: 16, minHeight: 52,
   },
-  dropdownTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  dropdownTriggerText: { fontSize: 14, fontWeight: '600', color: '#121214' },
-  dropdownList: {
-    backgroundColor: '#FFF', borderRadius: 14, borderWidth: 1, borderColor: '#E8E8EC',
-    marginTop: 6, overflow: 'hidden',
-  },
-  dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F4F4F6' },
-  dropdownItemActive: { backgroundColor: 'rgba(255,91,55,0.06)' },
-  dropdownItemText: { fontSize: 14, color: '#121214' },
-  dropdownItemTextActive: { color: '#FF5B37', fontWeight: '600' },
+  dropdownTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dropdownTriggerText: { ...type('bodyBold'), color: COLORS.ink },
+  dropdownList: { backgroundColor: COLORS.surface, borderRadius: RADII.md, marginTop: 8, overflow: 'hidden', ...SHADOWS.md },
+  dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 16 },
+  dropdownItemActive: { backgroundColor: COLORS.accentSoft },
+  dropdownItemText: { ...type('body'), color: COLORS.ink },
+  dropdownItemTextActive: { color: COLORS.accentText, fontWeight: '700' },
 
   // Timeline
   timelineContainer: { paddingVertical: 4 },
   timelineRow: { flexDirection: 'row', marginBottom: 8 },
-  timelineLeft: { alignItems: 'center', width: 22, marginRight: 12 },
+  timelineLeft: { alignItems: 'center', width: 24, marginRight: 12 },
   timelineDot: {
-    width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: '#D4D4D8',
-    backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
+    width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.mutedLight,
+    backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center',
   },
-  dotPassed: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  dotBoarding: { backgroundColor: '#FF5B37', borderColor: '#FF5B37' },
-  dotDestination: { backgroundColor: '#141416', borderColor: '#141416' },
-  dotActive: { borderColor: '#FF5B37' },
-  timelineLineV: { width: 2, flex: 1, backgroundColor: '#E4E4E7', marginVertical: 3 },
-  lineVPassed: { backgroundColor: '#10B981' },
-  timelineRight: { flex: 1, paddingTop: 1 },
-  timelineStopName: { fontSize: 13, fontWeight: '500', color: '#121214' },
-  timelineStopNameHighlight: { fontWeight: '700', color: '#FF5B37' },
-  timelineTag: { fontSize: 10, color: '#A1A1AA', marginTop: 2 },
-
-  // ─── Contact Modal ───────────────────────────────────────
-  contactSheet: { paddingBottom: 36 },
-  contactDriverRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F9FB',
-    borderRadius: 18, padding: 16, marginBottom: 20,
-  },
-  contactAvatar: {
-    width: 52, height: 52, borderRadius: 26, backgroundColor: '#141416',
-    borderWidth: 2, borderColor: '#FF5B37', alignItems: 'center', justifyContent: 'center', marginRight: 14,
-  },
-  contactAvatarText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  contactDriverInfo: { flex: 1 },
-  contactDriverName: { fontSize: 16, fontWeight: '700', color: '#121214' },
-  contactDriverRole: { fontSize: 12, color: '#71717A', marginTop: 2 },
-  contactDriverPhone: { fontSize: 13, fontWeight: '600', color: '#FF5B37', marginTop: 4 },
-  liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#141416', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
-
-  contactTabs: {
-    flexDirection: 'row', backgroundColor: '#F0F0F3', borderRadius: 14, padding: 3, marginBottom: 20,
-  },
-  contactTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 11, borderRadius: 11 },
-  contactTabActive: { backgroundColor: '#141416' },
-  contactTabText: { fontSize: 13, fontWeight: '500', color: '#71717A' },
-  contactTabTextActive: { color: '#FFF', fontWeight: '700' },
-
-  callView: { alignItems: 'center' },
-  callLabel: { fontSize: 11, fontWeight: '700', color: '#A1A1AA', letterSpacing: 0.7, marginBottom: 8 },
-  callNumber: { fontSize: 26, fontWeight: '800', color: '#121214', letterSpacing: 1, marginBottom: 8 },
-  callNote: { fontSize: 13, color: '#71717A', textAlign: 'center', marginBottom: 24, lineHeight: 18 },
-  callActionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#FF5B37', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 18,
-    shadowColor: '#FF5B37', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 5,
-  },
-  callActionBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-
-  messageView: { width: '100%' },
-  quickMsgBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#F9F9FB', borderRadius: 14, padding: 16, marginBottom: 10,
-    borderWidth: 1, borderColor: '#E8E8EC',
-  },
-  quickMsgText: { fontSize: 14, color: '#121214', fontWeight: '500', flex: 1 },
+  dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
+  dotBoarding: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
+  dotDestination: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
+  dotActive: { borderColor: COLORS.accent },
+  timelineLineV: { width: 2, flex: 1, backgroundColor: COLORS.line, marginVertical: 4 },
+  lineVPassed: { backgroundColor: COLORS.primaryStrong },
+  timelineRight: { flex: 1, paddingTop: 0, paddingBottom: 8 },
+  timelineStopName: { ...type('small'), color: COLORS.ink },
+  timelineStopNameHighlight: { fontWeight: '700', color: COLORS.accentText },
+  timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
 });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { vehicleSvgString } from './vehicleShapes';
 import { StyleSheet, View } from 'react-native';
 import {
   buildOsrmRouteUrl,
@@ -12,7 +13,8 @@ const DEFAULT_BUS_COORDINATE = ROUTE_138_WAYPOINTS[2];
 const DEFAULT_PASSENGER_COORDINATE = { latitude: 6.89, longitude: 79.875 };
 
 // CartoDB Positron provides the clean, modern, off-white map matching the Orbix Studio 2025 UI reference
-const CARTO_POSITRON_TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+// CHANGED: CARTO basemaps now require an API key, so use OSM tiles and tone them down with a CSS filter.
+const CARTO_POSITRON_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 export default function OpenStreetMapContainer({
   busLocationName = 'High Level Road Stop',
@@ -42,28 +44,11 @@ export default function OpenStreetMapContainer({
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <style>
         * { box-sizing: border-box; }
-        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #F4F4F6; }
-        .leaflet-container { background: #F4F4F6; }
+        html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; background: #EEF2F7; }
+        .leaflet-container { background: #EEF2F7; }
         
         /* Orbix Studio 2025 Bus Direction Marker (Black disc with white directional arrow) */
-        .orbix-bus-marker-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .orbix-bus-marker {
-          width: 36px;
-          height: 36px;
-          background: #141416;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 3px solid #FFFFFF;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-          transition: transform 0.3s ease;
-        }
-
+        
         /* Orbix Studio 2025 Glowing Target Destination Beacon */
         .orbix-dest-marker {
           position: relative;
@@ -77,16 +62,16 @@ export default function OpenStreetMapContainer({
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #FF5B37;
+          background: #F26B85;
           border: 3.5px solid #FFFFFF;
-          box-shadow: 0 3px 12px rgba(255, 91, 55, 0.6);
+          box-shadow: 0 3px 12px rgba(242, 107, 133, 0.6);
           position: relative;
           z-index: 4;
         }
         .dest-halo {
           position: absolute;
           border-radius: 50%;
-          background: rgba(255, 91, 55, 0.22);
+          background: rgba(242, 107, 133, 0.22);
           animation: orbixPulse 2.4s infinite ease-out;
         }
         .halo-1 { width: 30px; height: 30px; }
@@ -113,6 +98,11 @@ export default function OpenStreetMapContainer({
           margin-top: -8px;
         }
 
+        .sb-vehicle { width: 68px; height: 44px; background: #FFFFFF; border-radius: 999px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(31, 58, 86, 0.22); }
+        .sb-route { stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: sbDraw 1.4s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
+        @keyframes sbDraw { to { stroke-dashoffset: 0; } }
+        @media (prefers-reduced-motion: reduce) { .sb-route { animation: none; stroke-dashoffset: 0; } .dest-halo { animation: none; } }
+        .leaflet-tile-pane { filter: grayscale(1) brightness(1.1) contrast(0.78); }
         .leaflet-control-attribution { display: none !important; }
       </style>
     </head>
@@ -132,15 +122,15 @@ export default function OpenStreetMapContainer({
         }).setView(busPosition, 14);
 
         L.tileLayer('${CARTO_POSITRON_TILE_URL}', {
-          subdomains: 'abcd',
+          subdomains: 'abc',
           maxZoom: 19
         }).addTo(map);
 
         const busIcon = L.divIcon({
-          className: 'orbix-bus-marker-wrapper',
-          html: '<div class="orbix-bus-marker"><svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><polygon points="12 2 19 21 12 17 5 21 12 2" /></svg></div>',
-          iconSize: [36, 36],
-          iconAnchor: [18, 18]
+          className: 'sb-vehicle-wrapper',
+          html: ${JSON.stringify('<div class="sb-vehicle">' + vehicleSvgString('bus', { size: 52 }) + '</div>')},
+          iconSize: [68, 44],
+          iconAnchor: [34, 22]
         });
 
         const destIcon = L.divIcon({
@@ -153,9 +143,10 @@ export default function OpenStreetMapContainer({
         function drawRoute(points) {
           // Deep Charcoal obsidian route line matching reference
           const routeLine = L.polyline(points, { 
-            color: '#18181B', 
-            weight: 5, 
-            opacity: 0.95,
+            color: '#F26B85',
+            weight: 6,
+            opacity: 1,
+            className: 'sb-route',
             lineCap: 'round',
             lineJoin: 'round'
           }).addTo(map);
@@ -165,8 +156,8 @@ export default function OpenStreetMapContainer({
 
           const group = L.featureGroup([busMarker, destMarker, routeLine]);
           map.fitBounds(group.getBounds(), { 
-            paddingTopLeft: [40, 40],
-            paddingBottomRight: [40, 180],
+            paddingTopLeft: [40, 150],
+            paddingBottomRight: [40, 300],
             maxZoom: 15 
           });
         }
@@ -196,7 +187,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: '#F4F4F6',
+    backgroundColor: '#EEF2F7',
   },
   webMap: {
     width: '100%',
