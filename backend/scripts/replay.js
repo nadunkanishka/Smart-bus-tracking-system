@@ -69,8 +69,8 @@ const pointAt = (line, cum, d) => {
   const tick = setInterval(() => {
     const elapsed = (Date.now() - started) / 1000;
     drivers.forEach((d, n) => {
-      d.dist += SPEED * (INTERVAL / 1000);
-      if (d.dist > total) d.dist = 0; // loop back to the start: a new trip
+      // reach the end exactly once, then loop back to the start as a new trip
+      d.dist = d.dist >= total ? 0 : Math.min(total, d.dist + SPEED * (INTERVAL / 1000));
       const [lat, lng] = pointAt(line, cum, d.dist);
       const fix = { lat, lng, speed: SPEED, heading: 0, ts: Date.now(), seq: d.sent += 1 };
 

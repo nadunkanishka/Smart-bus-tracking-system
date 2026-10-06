@@ -110,8 +110,9 @@ function createRealtime(io, store) {
       finished: eta ? eta.finished : false,
       stops: eta ? eta.stops : [], // ETA for every stop: passed, or minutes away
     };
-    await store.setLast(bus.busId, payload);
     io.to(room(bus.routeId)).emit('bus:update', payload);
+    // A cache failure must not stop live updates: passengers already subscribed still get the push above.
+    store.setLast(bus.busId, payload).catch((err) => console.error('[store] write failed:', err.message));
     metrics.broadcasts += 1;
     if (!buffered) { // latency is only meaningful for fixes sent as they were captured
       sample(metrics.ingestMs, recvTs - fix.ts);
@@ -125,7 +126,7 @@ function createRealtime(io, store) {
     if (!bus.trip || (eta.segIndex < bus.trip.segIndex && eta.distAlong < 200)) {
       // first fix, or the bus is back at the start of the route: a new trip begins
       if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date(fix.ts) });
-      bus.trip = startTrip(eta, fix, `TRIP-${crypto.randomUUID().slice(0, 8)}`);
+      bus.trip = startTrip(route, eta, fix, `TRIP-${crypto.randomUUID().slice(0, 8)}`);
       await Trip.create({ tripId: bus.trip.tripId, busId: bus.busId, registration: bus.registration, routeId: bus.routeId, startedAt: new Date(fix.ts) });
       return;
     }
@@ -157,6 +158,17 @@ function createRealtime(io, store) {
     io.to(room(bus.routeId)).emit('bus:offline', { busId: bus.busId });
   }
 
+  // A failing handler (database or cache down) is logged and reported to the client instead of crashing the server.
+  const safe = (fn) => async (...args) => {
+    try {
+      await fn(...args);
+    } catch (err) {
+      console.error('[socket]', err.message);
+      const ack = args[args.length - 1];
+      if (typeof ack === 'function') ack({ ok: false, error: 'Server error' });
+    }
+  };
+
   // ── Sockets ─────────────────────────────────────────────────────────────
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
@@ -168,14 +180,14 @@ function createRealtime(io, store) {
     const user = socket.data.user;
 
     // Passengers (and the admin map): one route room at a time, snapshot served from the cache.
-    socket.on('route:subscribe', async ({ routeId } = {}, ack) => {
+    socket.on('route:subscribe', safe(async ({ routeId } = {}, ack) => {
       if (typeof routeId !== 'string' || !routeId) return ack?.({ ok: false, error: 'routeId is required' });
       [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
       socket.join(room(routeId));
       const snapshot = await store.byRoute(routeId);
       socket.emit('route:snapshot', { routeId, buses: snapshot, serverTs: Date.now() });
       return ack?.({ ok: true, buses: snapshot.length });
-    });
+    }));
     socket.on('route:unsubscribe', () => {
       [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
     });
@@ -201,21 +213,21 @@ function createRealtime(io, store) {
     }
     Object.assign(bus, { routeId: user.routeId, driverName: user.driverName, socketId: socket.id, connected: true, connectedAt: Date.now() });
 
-    socket.on('driver:duty', async ({ onDuty } = {}, ack) => {
+    socket.on('driver:duty', safe(async ({ onDuty } = {}, ack) => {
       if (onDuty) { bus.onDuty = true; bus.lastSeen = Date.now(); } else await goOffline(bus);
       ack?.({ ok: true, onDuty: bus.onDuty });
-    });
+    }));
 
-    socket.on('gps:fix', async (raw, ack) => {
+    socket.on('gps:fix', safe(async (raw, ack) => {
       if (!bus.routeId) return ack?.({ ok: false, error: 'No route assigned to this bus' });
       bus.onDuty = true;
       const result = await handleFix(bus, raw);
       return ack?.({ ok: result === 'accepted' || result === 'duplicate', result, ts: raw?.ts, nextStopIndex: bus.nextStopIndex ?? null });
-    });
+    }));
 
     // Offline buffer flush: fixes are replayed oldest-first so trip history stays correct, and duplicates
     // (a batch re-sent because its ack was lost) are dropped by the timestamp check.
-    socket.on('gps:batch', async (list, ack) => {
+    socket.on('gps:batch', safe(async (list, ack) => {
       if (!Array.isArray(list) || list.length > 1000) return ack?.({ ok: false, error: 'Batch must be an array of at most 1000 fixes' });
       if (!bus.routeId) return ack?.({ ok: false, error: 'No route assigned to this bus' });
       metrics.batches += 1;
@@ -227,7 +239,7 @@ function createRealtime(io, store) {
         counts[result === 'accepted' || result === 'duplicate' ? result : 'rejected'] += 1;
       }
       return ack?.({ ok: true, ...counts, lastTs: sorted.length ? Number(sorted[sorted.length - 1]?.ts) : null });
-    });
+    }));
 
     socket.on('disconnect', () => {
       if (bus.socketId === socket.id) { bus.connected = false; bus.disconnectedAt = Date.now(); }

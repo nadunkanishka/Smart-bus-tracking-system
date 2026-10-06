@@ -8,7 +8,8 @@
     "dev": "nodemon index.js",
     "test": "node --test",
     "seed": "node scripts/seed.js",
-    "replay": "node scripts/replay.js"
+    "replay": "node scripts/replay.js",
+    "clear-sim": "node scripts/clear-sim-data.js"
   },
   "keywords": [],
   "author": "",

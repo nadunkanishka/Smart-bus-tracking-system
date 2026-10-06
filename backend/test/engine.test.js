@@ -78,6 +78,18 @@ test('stops behind the bus are marked passed and the end of the route finishes t
   assert.ok(end.stops.every((s) => s.status === 'passed'));
 });
 
+test('a bus that stops just short of the final stop still finishes the trip', () => {
+  const route = prepareRoute(LINE, STOPS);
+  const eta = computeEta(route, { lat: 0.009, lng: 0.0088, speed: 0 }); // ~22 m before S2
+  assert.equal(eta.finished, true);
+});
+
+test('a trip that starts a little past the first stop still counts as a full first segment', () => {
+  const route = prepareRoute(LINE, STOPS);
+  const fix = { lat: 0.0009, lng: 0, speed: 8, ts: 1000 }; // ~100 m after S0
+  assert.equal(startTrip(route, computeEta(route, fix), fix, 'TRIP-3').partial, false);
+});
+
 test('prepareRoute rejects routes that cannot be segmented', () => {
   assert.throws(() => prepareRoute([[0, 0]], STOPS));
   assert.throws(() => prepareRoute(LINE, [STOPS[0]]));
@@ -105,7 +117,7 @@ test('trip tracker logs segment traversal, dwell and predicted-vs-actual arrival
   };
 
   let step = at(0, 0, 10, 0);
-  const state = startTrip(step.eta, step.fix, 'TRIP-1');
+  const state = startTrip(route, step.eta, step.fix, 'TRIP-1');
   assert.equal(state.partial, false);
   const predictedS1 = state.predictions.find((p) => p.stopIndex === 1).predictedArrival;
 
@@ -134,7 +146,7 @@ test('trip tracker logs segment traversal, dwell and predicted-vs-actual arrival
 test('a bus that joins mid-segment does not produce a partial traversal sample', () => {
   const route = prepareRoute(LINE, STOPS);
   const fix = { lat: 0.0045, lng: 0, speed: 10, ts: 1000 };
-  const state = startTrip(computeEta(route, fix), fix, 'TRIP-2');
+  const state = startTrip(route, computeEta(route, fix), fix, 'TRIP-2');
   assert.equal(state.partial, true);
   const next = { lat: 0.009, lng: 0.001, speed: 10, ts: 61000 };
   assert.equal(advance(state, route, computeEta(route, next), next).segmentLogs.length, 0);

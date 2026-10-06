@@ -5,19 +5,21 @@ const { DEFAULTS } = require('./eta');
 
 const STOP_RADIUS_M = 40; // slow time this close to a stop counts as dwell
 const MAX_GAP_MS = 30000; // gaps longer than this (offline, off duty) are not counted as dwell
+const START_RADIUS_M = 150; // a trip that begins this close to the first stop counts as starting there
 
 const snapshot = (eta, ts) => eta.stops
   .filter((s) => s.status === 'upcoming')
   .map((s) => ({ stopIndex: s.index, predictedAt: ts, predictedArrival: ts + s.etaSec * 1000 }));
 
-function startTrip(eta, fix, tripId) {
+function startTrip(route, eta, fix, tripId) {
   return {
     tripId,
     segIndex: eta.segIndex,
     segEnteredTs: fix.ts,
     dwellMs: 0,
     lastTs: fix.ts,
-    partial: eta.distAlong > STOP_RADIUS_M, // joined mid-segment: its traversal time is not a full sample
+    // joined mid-segment: its traversal time is not a full sample
+    partial: eta.distAlong - route.stopDist[eta.segIndex] > START_RADIUS_M,
     predictions: snapshot(eta, fix.ts),
   };
 }

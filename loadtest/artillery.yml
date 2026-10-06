@@ -7,7 +7,7 @@
 # TARGET defaults to http://localhost:5000. Each driver is a virtual bus (LOAD-xxxx) on ROUTE_ID.
 config:
   target: "http://localhost:5000"   # override with: --target http://host:port (and set TARGET to the same value)
-  processor: "./processor.js"
+  processor: "./processor.cjs"
   socketio:
     transports: ["websocket"]
   phases:

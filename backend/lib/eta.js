@@ -12,6 +12,7 @@ const DEFAULTS = {
   speedMps: 5.5, // ~20 km/h urban bus average, used when a segment has no history yet
   dwellSec: 20, // default dwell per intermediate stop without history
   minMovingMps: 1.5, // below this the bus is treated as stopped/crawling
+  arriveM: 40, // within this distance of the final stop the trip counts as finished (buses rarely park on the exact point)
 };
 
 // line: [[lat,lng]...], stops: [{ name, lat, lng }], history: { [segIndex]: { traversalSec, dwellSec, samples } }
@@ -52,7 +53,7 @@ function computeEta(route, fix, near) {
   // (b) active segment: the last stop already reached decides it
   let seg = 0;
   while (seg < last - 1 && d >= route.stopDist[seg + 1]) seg += 1;
-  const atEnd = d >= route.stopDist[last] - 1;
+  const atEnd = d >= route.stopDist[last] - DEFAULTS.arriveM;
   const remaining = Math.max(0, route.stopDist[seg + 1] - d);
 
   // (c) current segment from instantaneous speed; when stopped or crawling, use the segment's usual speed

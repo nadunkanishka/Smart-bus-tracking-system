@@ -38,7 +38,7 @@ function redisStore(client) {
     kind: 'redis',
     async setLast(busId, value) {
       await client.multi()
-        .set(key(busId), JSON.stringify(value), { EX: TTL_SEC })
+        .setEx(key(busId), TTL_SEC, JSON.stringify(value))
         .sAdd(routeKey(value.routeId), busId)
         .sAdd('buses:active', busId)
         .exec();
@@ -61,10 +61,13 @@ async function createStore(url = process.env.REDIS_URL) {
     console.warn('[store] REDIS_URL not set: using the in-memory fallback (single instance, dev only).');
     return memoryStore();
   }
-  const client = createClient({ url, socket: { connectTimeout: 2000, reconnectStrategy: (n) => (n > 3 ? false : 300) } });
-  client.on('error', () => {}); // connection errors are handled by the connect() rejection below
+  // Give up quickly if Redis is not there at startup; once connected, keep reconnecting with a short backoff.
+  let connected = false;
+  const client = createClient({ url, socket: { connectTimeout: 2000, reconnectStrategy: (n) => (!connected && n > 3 ? false : Math.min(n * 200, 3000)) } });
+  client.on('error', (err) => { if (connected) console.error('[store] Redis error:', err.message); });
   try {
     await client.connect();
+    connected = true;
     console.log('[store] Redis connected');
     return redisStore(client);
   } catch (err) {
