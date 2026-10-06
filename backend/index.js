@@ -31,7 +31,8 @@ app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '1mb' }));
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: corsOrigin } });
+// Short heartbeat so a dropped mobile connection is noticed within ~15 s.
+const io = new Server(server, { cors: { origin: corsOrigin }, pingInterval: 8000, pingTimeout: 7000 });
 let realtime = null; // set once the latest-fix store is ready
 let store = null;
 

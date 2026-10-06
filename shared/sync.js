@@ -12,6 +12,9 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('tokens.js', join(apps, app, 'src/constants/theme.js'));
   put('vehicleShapes.js', join(apps, app, 'src/components/vehicleShapes.js'));
   put('native/ui.js', join(apps, app, 'src/components/ui.js'));
+  put('native/LiveMap.js', join(apps, app, 'src/components/LiveMap.js'));
+  put('native/LiveMap.native.js', join(apps, app, 'src/components/LiveMap.native.js'));
+  put('native/api.js', join(apps, app, 'src/api.js'));
 }
 const admin = join(apps, 'admin-dashboard/src/design');
 put('vehicleShapes.js', join(admin, 'vehicleShapes.js'));

@@ -80,6 +80,7 @@ function createRealtime(io, store) {
     if (route) {
       eta = computeEta(route, fix, bus.distAlong);
       bus.distAlong = eta.distAlong;
+      bus.nextStopIndex = Math.min(eta.segIndex + 1, route.stops.length - 1);
       await track(bus, route, eta, fix);
     }
 
@@ -198,7 +199,7 @@ function createRealtime(io, store) {
       if (!bus.routeId) return ack?.({ ok: false, error: 'No route assigned to this bus' });
       bus.onDuty = true;
       const result = await handleFix(bus, raw);
-      return ack?.({ ok: result === 'accepted' || result === 'duplicate', result, ts: raw?.ts });
+      return ack?.({ ok: result === 'accepted' || result === 'duplicate', result, ts: raw?.ts, nextStopIndex: bus.nextStopIndex ?? null });
     });
 
     // Offline buffer flush: fixes are replayed oldest-first so trip history stays correct, and duplicates
@@ -233,12 +234,16 @@ function createRealtime(io, store) {
   return {
     invalidateRoute,
     handleFix, // exported for tests and the replay tools
-    liveStatus: () => [...buses.values()].map((b) => ({
+    liveStatus: () => {
+      // forget buses that disconnected more than 15 minutes ago
+      buses.forEach((b, id) => { if (!b.connected && Date.now() - (b.lastSeen || b.connectedAt || 0) > 15 * 60 * 1000) buses.delete(id); });
+      return [...buses.values()].map((b) => ({
       busId: b.busId, registration: b.registration, routeId: b.routeId, driverName: b.driverName || null,
       connected: !!b.connected, onDuty: !!b.onDuty, lastSeen: b.lastSeen || null,
       lat: b.lastFix?.lat ?? null, lng: b.lastFix?.lng ?? null, speed: b.lastFix?.speed ?? null,
       tripId: b.trip?.tripId || null,
-    })),
+      }));
+    },
     metrics: () => ({
       uptimeSec: Math.round((Date.now() - metrics.startedAt) / 1000),
       store: store.kind,
