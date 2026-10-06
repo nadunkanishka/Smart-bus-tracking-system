@@ -123,6 +123,8 @@ function createRealtime(io, store) {
 
   // Trip history: segment traversal/dwell samples and predicted-vs-actual arrival logs.
   async function track(bus, route, eta, fix) {
+    // A bus waiting at the final stop after finishing is not on a trip until it is back near the start.
+    if (!bus.trip && eta.finished) return;
     if (!bus.trip || (eta.segIndex < bus.trip.segIndex && eta.distAlong < 200)) {
       // first fix, or the bus is back at the start of the route: a new trip begins
       if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date(fix.ts) });
@@ -154,6 +156,11 @@ function createRealtime(io, store) {
 
   async function goOffline(bus) {
     bus.onDuty = false;
+    // The next duty period starts fresh: no open trip, and no comparison with the last position of this one.
+    if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date() });
+    bus.trip = null;
+    bus.lastFix = null;
+    bus.distAlong = undefined;
     await store.remove(bus.busId);
     io.to(room(bus.routeId)).emit('bus:offline', { busId: bus.busId });
   }

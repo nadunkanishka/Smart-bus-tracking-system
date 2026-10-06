@@ -21,6 +21,7 @@ const SPEED = Number(arg('speed', 10)); // m/s
 const INTERVAL = Number(arg('interval', 3000));
 const DURATION = Number(arg('duration', 60)); // seconds
 const [OFF_FROM, OFF_TO] = String(arg('offline', '')).split(':').map(Number);
+const START = Number(arg('start', 0)); // 0..1: where along the route the first bus begins
 const QUIET = process.argv.includes('--quiet');
 
 if (!ROUTE) { console.error('Usage: npm run replay -- --route <routeId> [--buses N] [--offline from:to]'); process.exit(1); }
@@ -62,15 +63,16 @@ const pointAt = (line, cum, d) => {
   const drivers = Array.from({ length: BUSES }, (_, n) => {
     const busId = `SIM-${String(n + 1).padStart(2, '0')}`;
     const socket = io(URL, { transports: ['websocket'], auth: { token: signToken({ role: 'driver', busId, registration: busId, routeId: ROUTE, driverName: 'Simulator' }) } });
-    return { busId, socket, dist: (total / BUSES) * n * 0.6, queue: [], sent: 0, offline: false };
+    return { busId, socket, dist: total * START + (total / BUSES) * n * 0.6, queue: [], sent: 0, offline: false };
   });
 
   const started = Date.now();
   const tick = setInterval(() => {
     const elapsed = (Date.now() - started) / 1000;
     drivers.forEach((d, n) => {
-      // reach the end exactly once, then loop back to the start as a new trip
-      d.dist = d.dist >= total ? 0 : Math.min(total, d.dist + SPEED * (INTERVAL / 1000));
+      // reach the end exactly once, then go off duty and start again from the first stop as a new trip
+      if (d.dist >= total) { d.dist = 0; d.socket.emit('driver:duty', { onDuty: false }); }
+      else d.dist = Math.min(total, d.dist + SPEED * (INTERVAL / 1000));
       const [lat, lng] = pointAt(line, cum, d.dist);
       const fix = { lat, lng, speed: SPEED, heading: 0, ts: Date.now(), seq: d.sent += 1 };
 

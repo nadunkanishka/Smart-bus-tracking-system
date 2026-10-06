@@ -85,3 +85,5 @@ Passwords are stored as scrypt hashes. Login returns a JWT with a `role` claim (
 - The in-process bus state (trip progress, last fix) lives in one server process. Running several API instances would need that state moved into Redis and the Socket.IO Redis adapter.
 - A route that crosses or doubles back on itself is handled by searching near the bus's last position, which assumes fixes arrive regularly.
 - Background GPS needs an installed build (APK). Expo Go only tracks while the app is open.
+- A route is one direction of travel. A bus driving back along the same road is projected onto the outbound path, so its stop ETAs are wrong until it is near the first stop again. Model the return leg as its own route and assign the bus to it for the return trip.
+- Going off duty closes the open trip and resets the bus's position state. The next duty period starts a new trip.
