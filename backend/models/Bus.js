@@ -26,6 +26,11 @@ const busSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // driverId (e.g. DRV-001) of the driver assigned to this bus
+    assignedDriver: {
+      type: String,
+      default: '',
+    },
     status: {
       type: String,
       enum: ['Active', 'Idle', 'Maintenance'],
