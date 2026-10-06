@@ -173,7 +173,7 @@ function App() {
     if (user) {
       fetchBackendData();
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const updateClock = () => {
