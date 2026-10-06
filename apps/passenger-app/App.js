@@ -69,7 +69,9 @@ const NO_ROUTE = {
 
 // Which bus matters to this passenger: the next one still coming to the boarding stop; otherwise one that has
 // passed it and is heading to the destination; otherwise any live bus on the route.
-function pickBus(list, boardingIndex, destinationIndex) {
+function pickBus(all, boardingIndex, destinationIndex) {
+  const fresh = all.filter((b) => !b.stale);
+  const list = fresh.length ? fresh : all; // a bus that lost signal is only tracked when nothing else is live
   const eta = (bus, i) => (bus.stops?.[i]?.status === 'upcoming' ? bus.stops[i].etaSec : null);
   const nearest = (i) => list.filter((b) => eta(b, i) != null).sort((a, b) => eta(a, i) - eta(b, i))[0];
   const coming = nearest(boardingIndex);
@@ -173,8 +175,10 @@ export default function App() {
     socket.on('connect', () => setConn('connected'));
     socket.on('disconnect', () => setConn('disconnected'));
     socket.on('connect_error', () => setConn('disconnected'));
-    socket.on('route:snapshot', ({ buses: list }) => {
-      setBuses(Object.fromEntries(list.map((b) => [b.busId, { ...b, recvAt: Date.now() }])));
+    socket.on('route:snapshot', ({ buses: list, serverTs }) => {
+      // Cached fixes may already be a while old: keep their real age so stale buses are flagged straight away.
+      const at = Date.now();
+      setBuses(Object.fromEntries(list.map((b) => [b.busId, { ...b, recvAt: at - Math.max(0, serverTs - b.serverEmitTs) }])));
     });
     socket.on('bus:update', (b) => setBuses((prev) => ({ ...prev, [b.busId]: { ...b, recvAt: Date.now() } })));
     socket.on('bus:offline', ({ busId }) => setBuses((prev) => {
