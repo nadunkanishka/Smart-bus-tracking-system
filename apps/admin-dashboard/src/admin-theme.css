@@ -279,3 +279,32 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
   .modal-box { padding: var(--space-6); border-radius: var(--radius-xl); }
   .login-hero { padding-top: var(--space-5); }
 }
+
+/* ── Route map editor, live monitor, analytics ─────── */
+.modal-box.modal-wide { width: min(100%, 860px); }
+.route-editor { display: flex; flex-direction: column; gap: var(--space-3); }
+.route-editor-bar { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.btn-chip { min-height: 40px; padding: 0 var(--space-4); background: var(--surface-soft); color: var(--ink); }
+.btn-chip.on { background: var(--ink); color: #fff; }
+.route-editor-hint { font-size: var(--fs-small); line-height: var(--lh-small); color: var(--muted); }
+.route-editor-map { height: 340px; border-radius: var(--radius-md); overflow: hidden; background: var(--surface-soft); }
+.route-editor-map .leaflet-container, .live-map .leaflet-container { cursor: crosshair; font: inherit; }
+.live-map .leaflet-container { cursor: grab; }
+.map-stop-pin { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; border: 3px solid #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; box-shadow: var(--shadow-sm); }
+.map-stop-pin.static { flex-shrink: 0; border: 0; box-shadow: none; }
+.map-vertex { width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid var(--accent-text); }
+.map-bus-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--muted-light); border: 3px solid #fff; box-shadow: var(--shadow-sm); }
+.map-bus-dot.on { background: var(--accent); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.stat-card { background: var(--surface); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stat-card p { font-size: var(--fs-small); font-weight: 700; color: var(--muted); }
+.stat-card strong { font-size: var(--fs-h1); line-height: var(--lh-h1); font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat-card span { font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--muted); }
+.live-map { height: 320px; padding: 0; overflow: hidden; }
+.inline-field { min-width: 260px; }
+.histogram { display: flex; align-items: flex-end; gap: 3px; height: 36px; width: 96px; }
+.histogram span { flex: 1; background: var(--primary); border-radius: 3px 3px 0 0; }
+.histogram span.empty { background: var(--line); }
+@media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } .inline-field { min-width: 0; width: 100%; } .route-editor-map { height: 280px; } }
