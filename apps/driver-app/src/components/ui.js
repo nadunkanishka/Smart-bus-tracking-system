@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { COLORS, RADII, SHADOWS, TYPE } from '../constants/theme';
-import { PALETTE, SCENES, VEHICLES, resolve } from './vehicleShapes';
+import { PALETTE, SCENES, build, paint } from './vehicleShapes';
 
 // Plus Jakarta Sans on web; native keeps the system font (no font-loading dependency).
 export const FONT = Platform.OS === 'web' ? { fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" } : null;
@@ -35,20 +35,21 @@ const webRing = (focused, color = 'rgba(31,120,168,0.55)') =>
 // ─── Vehicles ───────────────────────────────────────────────────────────────
 const SHAPE = { rect: Rect, circle: Circle, path: Path, ellipse: Ellipse };
 
-export function VehicleShapes({ name, body }) {
-  const v = VEHICLES[name];
-  return v.shapes.map(([t, a, c], i) => {
-    const Tag = SHAPE[t];
-    return <Tag key={i} {...a} fill={resolve(c, body || v.body)} />;
+export function VehicleShapes({ name, body, accent, status }) {
+  const { v, shapes, palette } = build(name, status);
+  return shapes.map((s, i) => {
+    const Tag = SHAPE[s[0]];
+    return <Tag key={i} {...s[1]} {...paint(s, v, { body, accent, palette })} />;
   });
 }
 
-export function Vehicle({ name = 'bus', width = 160, body, label, style }) {
-  const v = VEHICLES[name];
+// status ('idle' | 'maint' | 'off') adds a prop above the city bus; always pair it with a text label.
+export function Vehicle({ name = 'bus', width = 160, body, accent, status, label, style }) {
+  const { box, label: auto } = build(name, status);
   return (
-    <View style={style} accessibilityRole="image" accessibilityLabel={label || v.label}>
-      <Svg width={width} height={width / 2} viewBox="0 0 240 120">
-        <VehicleShapes name={name} body={body} />
+    <View style={style} accessibilityRole="image" accessibilityLabel={label || auto}>
+      <Svg width={width} height={Math.round((width * box[3]) / box[2])} viewBox={box.join(' ')}>
+        <VehicleShapes name={name} body={body} accent={accent} status={status} />
       </Svg>
     </View>
   );
@@ -56,7 +57,7 @@ export function Vehicle({ name = 'bus', width = 160, body, label, style }) {
 
 const SKYLINE = [[10, 88, 26], [44, 70, 44], [92, 96, 18], [250, 84, 30], [290, 64, 40], [326, 92, 22]];
 
-export function RoadScene({ scene = 'login', height = 200, label = 'Vehicles driving along a road' }) {
+export function RoadScene({ scene = 'login', height = 200, label = 'Buses driving along a road' }) {
   return (
     <View accessibilityRole="image" accessibilityLabel={label}>
     <Svg width="100%" height={height} viewBox="0 0 360 200" preserveAspectRatio="xMidYMax meet">

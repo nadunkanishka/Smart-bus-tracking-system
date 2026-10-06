@@ -27,7 +27,7 @@ const html = () => `<!DOCTYPE html>
 </style></head><body><div id="map"></div><script>
   var map = L.map('map', { zoomControl: false }).setView([6.9, 79.87], 12);
   L.tileLayer('${TILE_URL}', { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-  var busSvg = ${JSON.stringify(vehicleSvgString('bus', { size: 52 }))};
+  var busSvg = ${JSON.stringify(vehicleSvgString('marker', { size: 44 }))};
   var routeLine = null, routeKey = '', stopLayer = L.layerGroup().addTo(map), buses = {}, pad = { top: 40, bottom: 40 };
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

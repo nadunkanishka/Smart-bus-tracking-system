@@ -3,6 +3,11 @@ import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COLORS, RADII, SPACE, TYPE, SHADOWS } from './tokens.js';
+import { SCENES, VEHICLES, vehicleSvgString } from './vehicleShapes.js';
+
+// Self-check: every scene points at a real bus and every colour key resolves.
+for (const [n] of Object.values(SCENES).flat()) if (!VEHICLES[n]) throw new Error(`SCENES uses unknown vehicle "${n}"`);
+for (const n of Object.keys(VEHICLES)) for (const status of [undefined, 'idle', 'maint', 'off']) if (/undefined|NaN/.test(vehicleSvgString(n, { status }))) throw new Error(`${n}: unresolved colour or attribute`);
 
 const here = dirname(fileURLToPath(import.meta.url));
 const apps = join(here, '..', 'apps');

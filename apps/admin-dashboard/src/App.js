@@ -416,7 +416,7 @@ function App() {
             </div>
             <span className="login-tagline">Fleet, drivers and routes in one place</span>
           </div>
-          <RoadScene scene="admin" className="login-scene" label="A metro train and a cargo truck on the road" />
+          <RoadScene scene="admin" className="login-scene" label="A coach and a double-decker bus on the road" />
         </section>
 
         <div className="login-card">
@@ -623,7 +623,7 @@ function App() {
                   subtitle="Active network routes"
                   icon="route"
                   tint="train"
-                  vehicle="train"
+                  vehicle="coach"
                 />
                 <KpiCard
                   label="Registered Buses"
@@ -639,7 +639,7 @@ function App() {
                   subtitle="Authorized drivers in system"
                   icon="drivers"
                   tint="taxi"
-                  vehicle="taxi"
+                  vehicle="minibus"
                 />
               </div>
 
@@ -732,7 +732,7 @@ function App() {
                     {drivers.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="taxi" width={140} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
+                          <div className="empty-state"><Vehicle name="minibus" width={120} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -795,7 +795,7 @@ function App() {
                     {buses.length === 0 ? (
                       <tr>
                         <td colSpan="8" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="bus" width={140} label="Nothing here yet" />No buses registered yet. Click "Add New Bus" to register a bus!</div>
+                          <div className="empty-state"><Vehicle name="bus" width={120} label="Nothing here yet" />No buses registered yet. Click "Add New Bus" to register a bus!</div>
                         </td>
                       </tr>
                     ) : (
@@ -865,7 +865,7 @@ function App() {
                     {routes.length === 0 ? (
                       <tr>
                         <td colSpan="10" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="train" width={140} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
+                          <div className="empty-state"><Vehicle name="coach" width={120} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -1190,7 +1190,7 @@ function TableShell({ children }) {
 function KpiCard({ label, value, subtitle, icon, tint, vehicle }) {
   return (
     <div className={`kpi-card tint-${tint}`}>
-      <Vehicle name={vehicle} width={150} className="kpi-art" label={`${vehicle} illustration`} />
+      <Vehicle name={vehicle} width={116} className="kpi-art" label={`${vehicle} illustration`} />
       <div className="kpi-topline">
         <p>{label}</p>
         <span className="kpi-icon">

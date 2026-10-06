@@ -812,20 +812,20 @@ function TrackingScreen({
           <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
         ) : !selectedRoute.id ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={130} label="No routes" />
+            <Vehicle name="bus" status={routesState === 'error' ? 'maint' : undefined} width={116} label="No routes" />
             <Text style={S.emptyStateTitle}>{routesState === 'error' ? 'Could not load routes' : 'No routes available yet'}</Text>
             <Text style={S.emptyStateSub}>{routesState === 'error' ? 'Check your connection and try again.' : 'Routes appear here once they are published.'}</Text>
             <Button title="Open routes" tone="ink" size="sm" full={false} onPress={onGoRoutes} style={S.emptyBtn} />
           </View>
         ) : !selectedRoute.trackable ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={130} label="No map data" />
+            <Vehicle name="bus" width={116} label="No map data" />
             <Text style={S.emptyStateTitle}>Live tracking is not set up for this route</Text>
             <Text style={S.emptyStateSub}>It has no map path or stop positions yet.</Text>
           </View>
         ) : !bus ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={130} label="No live bus" />
+            <Vehicle name="bus" status={conn === 'connected' ? 'idle' : 'off'} width={116} label="No live bus" />
             <Text style={S.emptyStateTitle}>{conn === 'connected' ? 'No bus is on this route right now' : 'Reconnecting…'}</Text>
             <Text style={S.emptyStateSub}>
               {conn === 'connected' ? 'It will appear here as soon as a driver goes on duty.' : 'Live positions will resume when the connection is back.'}
@@ -921,7 +921,7 @@ function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingSt
             <BellIcon color={COLORS.ink} size={20} hasBadge={!!bus} />
           </IconButton>
         </View>
-        <Vehicle name="bus" width={150} style={S.homeHeaderBus} label="Illustrated city bus" />
+        <Vehicle name="bus" width={120} style={S.homeHeaderBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet style={S.homeSheet}>
@@ -981,7 +981,7 @@ function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingSt
                     </View>
                   </View>
                 </View>
-                <Vehicle name="bus" width={132} style={S.journeyBus} label="Illustrated city bus" />
+                <Vehicle name="bus" width={112} style={S.journeyBus} label="Illustrated city bus" />
               </View>
 
               <View style={S.journeyTerminals}>
@@ -998,7 +998,7 @@ function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingSt
           </GradientCard>
         ) : (
           <View style={[S.routeSummaryCard, S.journeyCard, S.emptyState]}>
-            <Vehicle name="bus" width={120} label="No live bus" />
+            <Vehicle name="bus" status="idle" width={108} label="No live bus" />
             <Text style={S.emptyStateTitle}>No live bus right now</Text>
             <Text style={S.emptyStateSub}>{selectedRoute.id ? `Nothing is running on ${selectedRoute.shortName} at the moment.` : 'Pick a route to start tracking.'}</Text>
           </View>
@@ -1080,14 +1080,14 @@ function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteSearchQu
           <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
         ) : routesState === 'error' ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={140} label="Could not load routes" />
+            <Vehicle name="bus" status="maint" width={120} label="Could not load routes" />
             <Text style={S.emptyStateTitle}>Could not load routes</Text>
             <Text style={S.emptyStateSub}>Check your connection and try again.</Text>
             <Button title="Try again" tone="ink" size="sm" full={false} onPress={onRetry} style={S.emptyBtn} />
           </View>
         ) : filteredRoutes.length === 0 ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={140} label="No routes found" />
+            <Vehicle name="bus" width={120} label="No routes found" />
             <Text style={S.emptyStateTitle}>No routes found</Text>
             <Text style={S.emptyStateSub}>{routeSearchQuery ? 'Try a different search term' : 'Routes appear here once they are published.'}</Text>
           </View>
@@ -1381,7 +1381,7 @@ const S = StyleSheet.create({
   journeyCard: { marginBottom: 24 },
   journeyPress: { padding: 20 },
   journeyCardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 8 },
-  journeyBus: { marginTop: 8, marginRight: -28 },
+  journeyBus: { marginTop: 8, marginRight: -16 },
   journeyBusId: { ...type('h2'), color: COLORS.ink },
   journeyRouteName: { ...type('small'), color: COLORS.muted, marginTop: 2 },
   journeyKv: { flexDirection: 'row', gap: 24, marginTop: 12 },

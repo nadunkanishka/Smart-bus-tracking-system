@@ -423,7 +423,8 @@ function ShiftScreen({
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>{busRegistration}</Text>
         <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
-        <Vehicle name="bus" width={130} style={D.headerBus} label="Illustrated city bus" />
+        {/* CHANGED (illustration only): the bus shows a z while off duty; the toggle text still states the status. */}
+        <Vehicle name="bus" status={isOnShift ? undefined : 'idle'} width={112} style={D.headerBus} />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -504,7 +505,7 @@ function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, c
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Route Overview</Text>
         <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
-        <Vehicle name="bus" width={130} style={D.headerBus} label="Illustrated city bus" />
+        <Vehicle name="bus" width={112} style={D.headerBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -539,7 +540,7 @@ function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, c
         <View style={D.timelineCard}>
           {routeStops.length === 0 ? (
             <View style={D.emptyLogBox}>
-              <Vehicle name="bus" width={110} label="No route assigned" />
+              <Vehicle name="bus" width={100} label="No route assigned" />
               <Text style={D.emptyLog}>No route is assigned to this bus yet.</Text>
             </View>
           ) : routeStops.map((stop, idx) => {
@@ -590,7 +591,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Telemetry</Text>
         <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
-        <Vehicle name="van" width={120} style={D.headerBus} label="Illustrated delivery van" />
+        <Vehicle name="minibus" width={112} style={D.headerBus} label="Illustrated minibus" />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -625,7 +626,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
         <View style={D.logCard}>
           {logs.length === 0 ? (
             <View style={D.emptyLogBox}>
-              <Vehicle name="bus" width={110} label="No GPS fixes yet" />
+              <Vehicle name="bus" status="idle" width={100} label="No GPS fixes yet" />
               <Text style={D.emptyLog}>No fixes recorded. Go on duty to broadcast.</Text>
             </View>
           ) : (

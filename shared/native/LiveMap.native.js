@@ -17,7 +17,7 @@ function BusMarker({ bus }) {
   return (
     <MarkerAnimated coordinate={position} anchor={{ x: 0.5, y: 0.5 }} title={bus.label || bus.id}>
       <View style={[styles.bus, bus.stale && styles.stale]}>
-        <Vehicle name="bus" width={48} label="Bus" />
+        <Vehicle name="marker" width={44} label="Bus" />
       </View>
     </MarkerAnimated>
   );

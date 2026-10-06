@@ -94,7 +94,7 @@ export default function LiveMonitor({ api, routes }) {
             {live.buses.length === 0 ? (
               <tr>
                 <td colSpan="7" className="cell-empty">
-                  <div className="empty-state"><Vehicle name="bus" width={140} label="No drivers connected" />No driver has connected since the server started.</div>
+                  <div className="empty-state"><Vehicle name="bus" status="off" width={120} label="No drivers connected" />No driver has connected since the server started.</div>
                 </td>
               </tr>
             ) : live.buses.map((b) => (

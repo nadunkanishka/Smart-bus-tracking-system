@@ -1,24 +1,24 @@
 import React from 'react';
-import { VEHICLES, SCENES, PALETTE, resolve } from './vehicleShapes';
+import { SCENES, PALETTE, build, paint } from './vehicleShapes';
 
-// Inline-SVG vehicles for DOM apps (admin dashboard). Colours come from PALETTE so tokens and art never drift.
-export function VehicleShapes({ name, body }) {
-  const v = VEHICLES[name];
-  return v.shapes.map(([t, a, c], i) => React.createElement(t, { key: i, ...a, fill: resolve(c, body || v.body) }));
+// Inline-SVG buses for DOM apps (admin dashboard). Colours come from PALETTE so tokens and art never drift.
+export function VehicleShapes({ name, body, accent, status }) {
+  const { v, shapes, palette } = build(name, status);
+  return shapes.map((s, i) => React.createElement(s[0], { key: i, ...s[1], ...paint(s, v, { body, accent, palette }) }));
 }
 
-export function Vehicle({ name = 'bus', width = 160, body, label, className, style }) {
-  const v = VEHICLES[name];
+export function Vehicle({ name = 'bus', width = 160, body, accent, status, label, className, style }) {
+  const { box, label: auto } = build(name, status);
   return (
-    <svg className={className} style={style} width={width} height={width / 2} viewBox="0 0 240 120" role="img" aria-label={label || v.label}>
-      <VehicleShapes name={name} body={body} />
+    <svg className={className} style={style} width={width} height={Math.round((width * box[3]) / box[2])} viewBox={box.join(' ')} role="img" aria-label={label || auto}>
+      <VehicleShapes name={name} body={body} accent={accent} status={status} />
     </svg>
   );
 }
 
 const SKYLINE = [[10, 88, 26], [44, 70, 44], [92, 96, 18], [250, 84, 30], [290, 64, 40], [326, 92, 22]];
 
-export function RoadScene({ scene = 'login', label = 'Vehicles driving along a road', className }) {
+export function RoadScene({ scene = 'login', label = 'Buses driving along a road', className }) {
   return (
     <svg className={className} viewBox="0 0 360 200" preserveAspectRatio="xMidYMax meet" role="img" aria-label={label}>
       <ellipse cx="60" cy="38" rx="30" ry="10" fill="#fff" opacity=".22" />
