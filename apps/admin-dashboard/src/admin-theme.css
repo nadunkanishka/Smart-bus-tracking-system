@@ -392,3 +392,11 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .sidebar { width: 268px; }
 .sidebar.collapsed { width: 80px; }
 .brand-copy { min-width: 0; } .brand-title { white-space: nowrap; }
+
+/* Each admin page gets its own bus in the banner */
+[data-page="dashboard"] .section-header::after { background-image: url(design/buses/bus-purple-idle.webp); }
+[data-page="drivers"] .section-header::after { background-image: url(design/buses/minibus-mint-idle.webp); }
+[data-page="buses"] .section-header::after { background-image: url(design/buses/bus-navy-idle.webp); }
+[data-page="routes"] .section-header::after { background-image: url(design/buses/bus-teal-idle.webp); }
+[data-page="live"] .section-header::after { background-image: url(design/buses/bus-green-running.webp); }
+[data-page="analytics"] .section-header::after { background-image: url(design/buses/bus-cream-idle.webp); }

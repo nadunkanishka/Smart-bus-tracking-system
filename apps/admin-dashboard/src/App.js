@@ -599,7 +599,7 @@ function App() {
 
         <main className="page-scroll">
           {activePage === 'dashboard' && (
-            <section className="page-section">
+            <section className="page-section" data-page="dashboard">
               <div className="section-header">
                 <div>
                   <h1>System Dashboard</h1>
@@ -704,7 +704,7 @@ function App() {
           {activePage === 'analytics' && <Analytics api={api} routes={routes} />}
 
           {activePage === 'drivers' && (
-            <section className="page-section">
+            <section className="page-section" data-page="drivers">
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
@@ -762,7 +762,7 @@ function App() {
           )}
 
           {activePage === 'buses' && (
-            <section className="page-section">
+            <section className="page-section" data-page="buses">
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
@@ -826,7 +826,7 @@ function App() {
           )}
 
           {activePage === 'routes' && (
-            <section className="page-section">
+            <section className="page-section" data-page="routes">
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>

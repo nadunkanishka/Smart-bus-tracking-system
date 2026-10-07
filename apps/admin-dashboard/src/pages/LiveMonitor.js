@@ -43,7 +43,7 @@ export default function LiveMonitor({ api, routes }) {
   const lat = metrics?.latencyMs;
 
   return (
-    <section className="page-section">
+    <section className="page-section" data-page="live">
       <div className="section-header">
         <div>
           <h1>Live Monitor</h1>

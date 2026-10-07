@@ -495,7 +495,7 @@ function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, c
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Route Overview</Text>
         <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
-        <Vehicle name="bus" livery="purple" width={124} style={D.headerBus} label="Illustrated city bus" />
+        <Vehicle name="bus" livery="navy" width={124} style={D.headerBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet>
