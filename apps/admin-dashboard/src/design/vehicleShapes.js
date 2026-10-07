@@ -3,9 +3,10 @@
 // this file is the small, renderer-free lookup shared by the native, web and Leaflet layers.
 
 export const VEHICLES = ['bus', 'coach', 'minibus', 'school', 'decker'];
-// The city bus is baked in every colour; the other types come in one colour each.
+// The city bus is baked in every colour; the other types only in the colours listed (first = default).
+// Keep in step with TYPES[...].themes in shared/buses/clay.js; sync.js fails if an image is missing.
 export const LIVERIES = ['green', 'teal', 'coral', 'yellow', 'orange', 'purple', 'navy', 'red', 'mint', 'cream'];
-const DEFAULT_LIVERY = { bus: 'teal', coach: 'coral', minibus: 'mint', school: 'yellow', decker: 'red' };
+const BAKED = { bus: ['teal', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'] };
 const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus' };
 export const SCENES = ['login', 'register', 'driver', 'admin'];
 export const ASPECT = 400 / 480; // every bus image is 6:5, so states never resize the art
@@ -26,7 +27,7 @@ export function pick(name, { livery, status, running } = {}) {
   const badge = STATUS[status] || null;
   const label = badge ? `${LABEL[type]}, ${badge.label}` : LABEL[type];
   if (status === 'off') return { key: 'bus-off', label, badge }; // one grey bus stands in for every type
-  const theme = type === 'bus' && LIVERIES.includes(livery) ? livery : DEFAULT_LIVERY[type];
+  const theme = BAKED[type].includes(livery) ? livery : BAKED[type][0];
   // Off duty / needs attention: parked with lights off (city bus) or simply standing (other types).
   const pose = badge ? (type === 'bus' ? 'parked' : 'idle') : running ? 'running' : 'idle';
   return { key: `${type}-${theme}-${pose}`, label, badge };

@@ -28,8 +28,8 @@
 
   const TYPES = {
     bus: { theme: 'teal', length: 7, width: 2.5, height: 2.75, cab: 1.9, windows: 4, wheels: [-2, 2], doors: [0.375, -0.125], roof: 'vents' },
-    coach: { theme: 'coral', length: 8.2, width: 2.5, height: 3.05, cab: 1.9, windows: 5, wheels: [-2.5, 2.6], doors: [0.4], roof: 'ac', luggage: true },
-    minibus: { theme: 'mint', length: 5, width: 2.3, height: 2.45, cab: 1.7, windows: 3, wheels: [-1.4, 1.45], doors: [0.333], roof: 'none' },
+    coach: { theme: 'coral', themes: ['coral', 'mint'], length: 8.2, width: 2.5, height: 3.05, cab: 1.9, windows: 5, wheels: [-2.5, 2.6], doors: [0.4], roof: 'ac', luggage: true },
+    minibus: { theme: 'mint', themes: ['mint', 'coral'], length: 5, width: 2.3, height: 2.45, cab: 1.7, windows: 3, wheels: [-1.4, 1.45], doors: [0.333], roof: 'none' },
     school: { theme: 'yellow', length: 6.2, width: 2.5, height: 2.6, cab: 1.9, windows: 4, wheels: [-1.8, 1.8], doors: [0.375], roof: 'beacon', stripe: TRIM.dark },
     decker: { theme: 'red', length: 7, width: 2.5, height: 4.1, cab: 1.9, windows: 4, decks: 2, wheels: [-2, 2], doors: [0.375, -0.125], roof: 'vents' },
   };
@@ -194,7 +194,7 @@
     const hero = [];
     for (const theme of Object.keys(THEMES).filter((t) => t !== 'off')) for (const state of ['running', 'idle', 'parked']) hero.push({ name: `bus-${theme}-${state}`, type: 'bus', theme, state });
     hero.push({ name: 'bus-off', type: 'bus', theme: 'off', state: 'parked' });
-    for (const type of Object.keys(TYPES).filter((t) => t !== 'bus')) for (const state of ['running', 'idle']) hero.push({ name: `${type}-${TYPES[type].theme}-${state}`, type, theme: TYPES[type].theme, state });
+    for (const type of Object.keys(TYPES).filter((t) => t !== 'bus')) for (const theme of TYPES[type].themes || [TYPES[type].theme]) for (const state of ['running', 'idle']) hero.push({ name: `${type}-${theme}-${state}`, type, theme, state });
     return { hero, scenes: Object.keys(SCENES), markers: [0, 1, 2, 3, 4, 5, 6, 7] };
   }
 

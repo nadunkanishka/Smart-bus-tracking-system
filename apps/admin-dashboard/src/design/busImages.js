@@ -32,8 +32,12 @@ import busCreamParked from './buses/bus-cream-parked.webp';
 import busOff from './buses/bus-off.webp';
 import coachCoralRunning from './buses/coach-coral-running.webp';
 import coachCoralIdle from './buses/coach-coral-idle.webp';
+import coachMintRunning from './buses/coach-mint-running.webp';
+import coachMintIdle from './buses/coach-mint-idle.webp';
 import minibusMintRunning from './buses/minibus-mint-running.webp';
 import minibusMintIdle from './buses/minibus-mint-idle.webp';
+import minibusCoralRunning from './buses/minibus-coral-running.webp';
+import minibusCoralIdle from './buses/minibus-coral-idle.webp';
 import schoolYellowRunning from './buses/school-yellow-running.webp';
 import schoolYellowIdle from './buses/school-yellow-idle.webp';
 import deckerRedRunning from './buses/decker-red-running.webp';
@@ -77,8 +81,12 @@ export const IMAGES = {
   'bus-off': busOff,
   'coach-coral-running': coachCoralRunning,
   'coach-coral-idle': coachCoralIdle,
+  'coach-mint-running': coachMintRunning,
+  'coach-mint-idle': coachMintIdle,
   'minibus-mint-running': minibusMintRunning,
   'minibus-mint-idle': minibusMintIdle,
+  'minibus-coral-running': minibusCoralRunning,
+  'minibus-coral-idle': minibusCoralIdle,
   'school-yellow-running': schoolYellowRunning,
   'school-yellow-idle': schoolYellowIdle,
   'decker-red-running': deckerRedRunning,

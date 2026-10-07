@@ -144,7 +144,8 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .kpi-card strong { font-size: var(--fs-display); line-height: var(--lh-display); font-weight: 800; letter-spacing: -0.6px; }
 .kpi-card > span:not(.kpi-art) { font-size: var(--fs-caption); line-height: var(--lh-caption); font-weight: 600; color: var(--ink-soft); max-width: 60%; }
 .kpi-card > :not(.kpi-art) { position: relative; z-index: 1; }
-.kpi-art { position: absolute; right: 4px; bottom: -6px; pointer-events: none; }
+.kpi-art { position: absolute; right: -34px; bottom: -26px; pointer-events: none; transform-origin: 100% 100%; }
+@media (min-width: 1101px) and (max-width: 1320px) { .kpi-art { transform: scale(0.8); } }
 
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); }
 .chart-layout { display: flex; align-items: center; gap: var(--space-8); margin-top: var(--space-5); flex-wrap: wrap; }
