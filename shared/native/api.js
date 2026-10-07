@@ -20,7 +20,8 @@ export async function request(path, { method = 'GET', body, token, timeoutMs = 8
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
   } catch (err) {
-    if (err.name === 'AbortError' || err instanceof TypeError) throw new Error('Cannot reach the server. Check your connection and try again.');
+    // Expo's fetch reports a timeout as a plain Error ("Fetch request has been canceled"), so match on the message too.
+    if (err.name === 'AbortError' || err instanceof TypeError || /fetch|network|cancel|abort/i.test(err.message || '')) throw new Error('Cannot reach the server. Check your connection and try again.');
     throw err;
   } finally {
     clearTimeout(timer);
