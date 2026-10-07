@@ -46,7 +46,7 @@ export default function Analytics({ api, routes }) {
   const total = data ? data.segments.reduce((n, s) => n + s.samples, 0) : 0;
 
   return (
-    <section className="page-section">
+    <section className="page-section" data-page="analytics">
       <div className="section-header">
         <div>
           <h1>Trip Analytics</h1>

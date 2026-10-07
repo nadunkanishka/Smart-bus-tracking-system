@@ -31,6 +31,8 @@ import {
   TextField,
   Toast,
   Vehicle,
+  NotchStat,
+  NavIcon,
 } from './src/components/ui';
 import {
   ArrowRightIcon,
@@ -424,7 +426,7 @@ function ShiftScreen({
         <Text style={D.screenTitle}>{busRegistration}</Text>
         <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
         {/* CHANGED (illustration only): the bus shows a z while off duty; the toggle text still states the status. */}
-        <Vehicle name="bus" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
+        <Vehicle name="bus" livery="purple" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -455,23 +457,11 @@ function ShiftScreen({
         </Pressable>
 
         {/* Three-column status panel */}
+        {/* CHANGED (visual only): same three values, shown as notch stat cards */}
         <View style={D.specsRow}>
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>Server</Text>
-            <Text style={[D.specVal, { color: connected ? COLORS.success : COLORS.danger }]}>{connected ? 'Connected' : 'Offline'}</Text>
-          </View>
-          <View style={D.specDivider} />
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>GPS</Text>
-            <Text style={[D.specVal, { color: gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted }]}>
-              {isOnShift ? gpsStatus : 'Off'}
-            </Text>
-          </View>
-          <View style={D.specDivider} />
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>Buffered</Text>
-            <Text style={[D.specVal, { color: queued ? COLORS.warning : COLORS.ink }]}>{queued}</Text>
-          </View>
+          <NotchStat label="Server" tone="orange" icon={(c) => <RouteIcon color={c} size={14} />} value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
+          <NotchStat label="GPS" tone="purple" icon={(c) => <NavigationArrowIcon color={c} size={14} />} value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
+          <NotchStat label="Buffered" tone="orange" icon={(c) => <BusIcon color={c} size={14} />} value={String(queued)} valueColor={queued ? COLORS.warning : COLORS.ink} />
         </View>
 
         {queued > 0 ? (
@@ -505,7 +495,7 @@ function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, c
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Route Overview</Text>
         <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
-        <Vehicle name="bus" width={124} style={D.headerBus} label="Illustrated city bus" />
+        <Vehicle name="bus" livery="navy" width={124} style={D.headerBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -713,12 +703,13 @@ function PRow({ label, value, accent, last }) {
 // ─── Driver Bottom Dock ───────────────────────────────────────────────────────
 
 function DriverDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (a) => <Cmp color={a ? COLORS.ink : '#C9D3DD'} size={size} />;
+  // CHANGED (visual only): filled two-tone nav icons, shared with the admin sidebar
+  const icon = (name) => (a) => <NavIcon name={name} active={a} />;
   const items = [
-    { id: 'shift', label: 'Duty', icon: icon(NavigationArrowIcon, 18) },
-    { id: 'route', label: 'Route', icon: icon(RouteIcon, 19) },
-    { id: 'diagnostics', label: 'Telemetry', icon: icon(SpeedometerIcon, 19) },
-    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
+    { id: 'shift', label: 'Duty', icon: icon('arrow') },
+    { id: 'route', label: 'Route', icon: icon('route') },
+    { id: 'diagnostics', label: 'Telemetry', icon: icon('gauge') },
+    { id: 'profile', label: 'Profile', icon: icon('user') },
   ];
   return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }
@@ -750,14 +741,7 @@ const D = StyleSheet.create({
   dutyNote: { ...type('small'), color: COLORS.warning, marginBottom: 16 },
   mapCard: { height: 260, borderRadius: RADII.lg, overflow: 'hidden', marginTop: 16, backgroundColor: COLORS.surfaceSoft, ...SHADOWS.sm },
 
-  specsRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.surface, borderRadius: RADII.lg, paddingVertical: 16, marginBottom: 16, ...SHADOWS.sm,
-  },
-  specBlock: { flex: 1, alignItems: 'center', gap: 4 },
-  specDivider: { width: 1, height: 32, backgroundColor: COLORS.line },
-  specLabel: { ...type('caption'), color: COLORS.muted },
-  specVal: { ...type('bodyBold'), color: COLORS.ink, textAlign: 'center' },
+  specsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
 
   dispatchCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -776,7 +760,7 @@ const D = StyleSheet.create({
 
   // ─── Route / Telemetry / Profile ─────────────────────────
   routeScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('h1'), color: COLORS.white, paddingTop: TOP_INSET },
+  screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
   screenSubHeader: { ...type('small'), color: COLORS.ink, marginTop: 4, maxWidth: '60%' },
   headerBus: { position: 'absolute', right: 12, bottom: 34 },
 
@@ -837,7 +821,7 @@ const D = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
   },
   profileAvatarText: { ...type('h1'), color: COLORS.primaryDeep },
-  profileName: { ...type('h1'), color: COLORS.white },
+  profileName: { ...type('h1'), color: COLORS.ink },
   profileSub: { ...type('small'), color: COLORS.ink, marginTop: 4 },
   profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
   profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 4 },

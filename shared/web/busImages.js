@@ -43,7 +43,7 @@ import schoolYellowIdle from './buses/school-yellow-idle.webp';
 import deckerRedRunning from './buses/decker-red-running.webp';
 import deckerRedIdle from './buses/decker-red-idle.webp';
 import driverCoralIdle from './buses/driver-coral-idle.webp';
-import routeMintIdle from './buses/route-mint-idle.webp';
+import routeOrangeIdle from './buses/route-orange-idle.webp';
 import sceneLogin from './buses/scene-login.webp';
 import sceneRegister from './buses/scene-register.webp';
 import sceneDriver from './buses/scene-driver.webp';
@@ -94,7 +94,7 @@ export const IMAGES = {
   'decker-red-running': deckerRedRunning,
   'decker-red-idle': deckerRedIdle,
   'driver-coral-idle': driverCoralIdle,
-  'route-mint-idle': routeMintIdle,
+  'route-orange-idle': routeOrangeIdle,
   'scene-login': sceneLogin,
   'scene-register': sceneRegister,
   'scene-driver': sceneDriver,

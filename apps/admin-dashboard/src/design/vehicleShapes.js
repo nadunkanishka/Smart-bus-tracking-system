@@ -7,7 +7,7 @@ const PROPS = ['driver', 'route']; // not buses: one image each, no states
 // The city bus is baked in every colour; the other types only in the colours listed (first = default).
 // Keep in step with TYPES[...].themes in shared/buses/clay.js; sync.js fails if an image is missing.
 export const LIVERIES = ['green', 'teal', 'coral', 'yellow', 'orange', 'purple', 'navy', 'red', 'mint', 'cream'];
-const BAKED = { bus: ['teal', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['mint'] };
+const BAKED = { bus: ['cream', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['orange'] };
 const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus', driver: 'Bus driver', route: 'Route with stops' };
 export const SCENES = ['login', 'register', 'driver', 'admin'];
 export const ASPECT = 400 / 480; // every bus image is 6:5, so states never resize the art
