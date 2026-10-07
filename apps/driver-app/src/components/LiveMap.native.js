@@ -43,7 +43,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
         toolbarEnabled={false}
       >
         <UrlTile urlTemplate={TILE_URL} maximumZ={19} flipY={false} />
-        {line.length > 1 ? <Polyline coordinates={line} strokeColor="#F26B85" strokeWidth={6} lineCap="round" lineJoin="round" /> : null}
+        {line.length > 1 ? <Polyline coordinates={line} strokeColor="#F0803C" strokeWidth={6} lineCap="round" lineJoin="round" /> : null}
         {(stops || []).map((s, i) => (
           <Marker key={`${s.name}-${i}`} coordinate={{ latitude: s.lat, longitude: s.lng }} title={s.name} anchor={{ x: 0.5, y: 0.5 }}>
             <View style={[styles.stop, i === highlightStop && styles.stopOn]} />
@@ -56,11 +56,11 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
 }
 
 const styles = StyleSheet.create({
-  fill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#EEF2F7' },
+  fill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#F3F4F9' },
   bus: {
     width: 52, height: 52, alignItems: 'center', justifyContent: 'center',
   },
   stale: { opacity: 0.55 },
-  stop: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#0F1419', borderWidth: 3, borderColor: '#FFFFFF' },
-  stopOn: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#F26B85' },
+  stop: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#26262B', borderWidth: 3, borderColor: '#FFFFFF' },
+  stopOn: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#F0803C' },
 });

@@ -1222,7 +1222,7 @@ function ProfileRow({ label, value, accent, last }) {
 }
 
 function BottomDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.ink : '#C9D3DD'} size={size} />;
+  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.ink : '#C9CBD2'} size={size} />;
   const items = [
     { id: 'home', label: 'Home', icon: icon(MapIcon, 19) },
     { id: 'tracking', label: 'Track', icon: icon(NavigationArrowIcon, 18) },

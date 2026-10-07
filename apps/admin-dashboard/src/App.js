@@ -242,7 +242,7 @@ function App() {
   const fleetChartStyle = {
     background: `conic-gradient(
       var(--primary) 0deg ${activePct}deg,
-      #C4CFDA ${activePct}deg ${idlePct}deg,
+      #D1D1D1 ${activePct}deg ${idlePct}deg,
       var(--accent) ${idlePct}deg 360deg
     )`,
   };
@@ -630,7 +630,7 @@ function App() {
                   subtitle={`${summary.fleetDistribution?.active || 0} Active / ${summary.fleetDistribution?.maintenance || 0} Maintenance`}
                   tint="bus"
                   vehicle="bus"
-                  livery="teal"
+                  livery="purple"
                 />
                 <KpiCard
                   label="Active Drivers"

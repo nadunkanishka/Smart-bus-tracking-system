@@ -713,7 +713,7 @@ function PRow({ label, value, accent, last }) {
 // ─── Driver Bottom Dock ───────────────────────────────────────────────────────
 
 function DriverDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (a) => <Cmp color={a ? COLORS.ink : '#C9D3DD'} size={size} />;
+  const icon = (Cmp, size) => (a) => <Cmp color={a ? COLORS.ink : '#C9CBD2'} size={size} />;
   const items = [
     { id: 'shift', label: 'Duty', icon: icon(NavigationArrowIcon, 18) },
     { id: 'route', label: 'Route', icon: icon(RouteIcon, 19) },

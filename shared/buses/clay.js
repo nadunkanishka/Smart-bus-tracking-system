@@ -16,7 +16,7 @@
     navy: { light: '#5B7CC9', main: '#2F4F9E', deep: '#1E3470', driverTop: '#FF8A3D', skin: '#C68B6A' },
     red: { light: '#FF8A80', main: '#E8534A', deep: '#B83A33', driverTop: '#FBF6EA', skin: '#8D5B43' },
     mint: { light: '#B5F0D8', main: '#6FD4B0', deep: '#46A98A', driverTop: '#F26B85', skin: '#EBC2A0' },
-    cream: { light: '#3A9BC9', main: '#FBF6EA', deep: '#CFC8B8', driverTop: '#F26B85', skin: '#C68B6A' }, // cream body, brand stripe
+    cream: { light: '#FFA265', main: '#FBF6EA', deep: '#CFC8B8', driverTop: '#6C6BC6', skin: '#C68B6A' }, // cream body, brand orange stripe
     off: { light: '#D3D8DE', main: '#B9C0C8', deep: '#8E97A1' }, // offline: no colour, no driver
   };
   // Add a brand colour with one line: THEMES.lime = tones('#9BD63F').
@@ -188,9 +188,9 @@
   // A two-lane road with buses on it: [type, theme, x, lane] where lane -1 is the near (kerb-side) lane heading +x.
   function buildScene(list) {
     const g = new THREE.Group();
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(400, 9.4), mat('#2C7FAB', { roughness: 0.9 }));
-    road.rotation.x = -Math.PI / 2; road.position.y = 0.01; road.receiveShadow = true; g.add(road);
-    for (let x = -90; x < 92; x += 3.6) { const dash = rbox(1.7, 0.03, 0.2, 0.01, mat('#FFFFFF', { roughness: 0.9 }), [x, 0.03, 0]); dash.castShadow = false; g.add(dash); }
+    // A finite slab with rounded ends that sits wholly inside the frame, like a toy road tile (no hard cut at the image edge).
+    const road = rbox(31, 0.3, 9.6, 0.5, mat('#5150A6', { roughness: 0.9 }), [1.5, -0.13, 0]); road.castShadow = false; g.add(road);
+    for (let x = -11.5; x < 15; x += 3.6) { const dash = rbox(1.7, 0.03, 0.2, 0.01, mat('#FFFFFF', { roughness: 0.9 }), [x, 0.035, 0]); dash.castShadow = false; g.add(dash); }
     for (const [type, theme, x, lane] of list) {
       const bus = buildBus({ type, theme, state: 'idle' });
       bus.position.set(x, 0, lane * 2.35); if (lane > 0) bus.rotation.y = Math.PI;
@@ -199,10 +199,10 @@
     return g;
   }
   const SCENES = {
-    login: [['bus', 'teal', 2, -1], ['minibus', 'mint', 10.5, -1], ['coach', 'coral', -7.5, 1]],
+    login: [['bus', 'cream', 2, -1], ['minibus', 'mint', 10.5, -1], ['coach', 'coral', -7.5, 1]],
     register: [['decker', 'red', 2, -1], ['school', 'yellow', 10.8, -1], ['minibus', 'purple', -6.5, 1]],
-    driver: [['bus', 'teal', 4.5, -1], ['minibus', 'orange', -5, 1]],
-    admin: [['coach', 'navy', 1.5, -1], ['bus', 'teal', 11, -1], ['decker', 'red', -7.5, 1]],
+    driver: [['bus', 'cream', 4.5, -1], ['minibus', 'mint', -5, 1]],
+    admin: [['coach', 'orange', 1.5, -1], ['bus', 'cream', 11, -1], ['decker', 'red', -7.5, 1]],
   };
 
   // Fixed studio: one camera recipe and one light rig for every shot. Negative azimuth = seen from the kerb side;
@@ -242,7 +242,7 @@
     for (const type of Object.keys(TYPES).filter((t) => t !== 'bus')) for (const theme of TYPES[type].themes || [TYPES[type].theme]) for (const state of ['running', 'idle']) hero.push({ name: `${type}-${theme}-${state}`, type, theme, state });
     // Props are framed closer and off-centre (toward the right) so a card corner crops into them.
     hero.push({ name: 'driver-coral-idle', prop: 'driver', theme: 'coral', shot: { distance: 13, target: [1.0, 3.9, 0.98] } },
-      { name: 'route-mint-idle', prop: 'route', theme: 'mint', shot: { distance: 21, target: [0.2, 1.1, 0.2] } });
+      { name: 'route-orange-idle', prop: 'route', theme: 'orange', shot: { distance: 21, target: [0.2, 1.1, 0.2] } });
     return { hero, scenes: Object.keys(SCENES), markers: [0, 1, 2, 3, 4, 5, 6, 7] };
   }
 

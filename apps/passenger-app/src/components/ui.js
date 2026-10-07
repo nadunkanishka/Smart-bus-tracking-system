@@ -11,12 +11,12 @@ import { ASPECT, markerIndex, pick } from './vehicleShapes';
 import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
-// Plus Jakarta Sans on web; native keeps the system font (no font-loading dependency).
-export const FONT = Platform.OS === 'web' ? { fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" } : null;
+// Outfit on web; native keeps the system font (no font-loading dependency).
+export const FONT = Platform.OS === 'web' ? { fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" } : null;
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
   l.id = 'sb-font'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap';
+  l.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap';
   document.head.appendChild(l);
 }
 
@@ -31,7 +31,7 @@ export function useReducedMotion() {
   return reduced;
 }
 
-const webRing = (focused, color = 'rgba(31,120,168,0.55)') =>
+const webRing = (focused, color = 'rgba(94,95,174,0.6)') =>
   (Platform.OS === 'web' && focused ? { boxShadow: `0 0 0 3px ${color}` } : null);
 
 // ─── Vehicles ───────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ export function GradientCard({ tint = 'bus', style, children, id }) {
   const [a, b] = COLORS.tints[tint];
   const gid = id || `g-${tint}`;
   return (
-    <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', ...SHADOWS.sm }, style]}>
+    <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', borderWidth: 1.5, borderColor: COLORS.tintLines[tint], ...SHADOWS.sm }, style]}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <LinearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
@@ -335,7 +335,7 @@ export function OverlapSheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.bg, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 20, paddingTop: 24 }, style]}>{children}</View>;
 }
 
-// Floating dark pill navigation with a coral active circle (Reference 1). items: [{id,label,icon(active)}]
+// Floating dark pill navigation; the active item is an orange pill with ink content. items: [{id,label,icon(active)}]
 export function FloatingDock({ items, active, onChange }) {
   return (
     <View style={{ position: 'absolute', left: 0, right: 0, bottom: Platform.OS === 'ios' ? 24 : 16, alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
@@ -352,7 +352,7 @@ export function FloatingDock({ items, active, onChange }) {
               style={({ pressed, focused }) => [{ flex: 1, minHeight: 48, borderRadius: RADII.pill, backgroundColor: on ? COLORS.accent : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] }, webRing(focused, 'rgba(255,255,255,0.7)')]}
             >
               {item.icon(on)}
-              <Text style={{ ...TYPE.caption, ...FONT, marginTop: 2, color: on ? COLORS.ink : '#C9D3DD' }} numberOfLines={1}>{item.label}</Text>
+              <Text style={{ ...TYPE.caption, ...FONT, marginTop: 2, color: on ? COLORS.ink : '#C9CBD2' }} numberOfLines={1}>{item.label}</Text>
             </Pressable>
           );
         })}

@@ -17,12 +17,12 @@ const html = () => `<!DOCTYPE html>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  html, body, #map { width: 100%; height: 100%; margin: 0; background: #EEF2F7; }
+  html, body, #map { width: 100%; height: 100%; margin: 0; background: #F3F4F9; }
   .leaflet-tile-pane { filter: grayscale(1) brightness(1.1) contrast(0.78); }
   .sb-bus { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
   .sb-bus.stale { opacity: .55; }
-  .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: #0F1419; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(15,20,25,.3); }
-  .sb-stop.on { width: 18px; height: 18px; background: #F26B85; }
+  .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: #26262B; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(15,20,25,.3); }
+  .sb-stop.on { width: 18px; height: 18px; background: #F0803C; }
   .sb-route { stroke-dasharray: 6000; stroke-dashoffset: 6000; animation: draw 1.4s cubic-bezier(.23,1,.32,1) forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @media (prefers-reduced-motion: reduce) { .sb-route { animation: none; stroke-dashoffset: 0; } }
@@ -57,7 +57,7 @@ const html = () => `<!DOCTYPE html>
     if (key !== routeKey) {
       routeKey = key;
       if (routeLine) map.removeLayer(routeLine);
-      routeLine = d.path && d.path.length > 1 ? L.polyline(d.path, { color: '#F26B85', weight: 6, lineCap: 'round', lineJoin: 'round', className: 'sb-route' }).addTo(map) : null;
+      routeLine = d.path && d.path.length > 1 ? L.polyline(d.path, { color: '#F0803C', weight: 6, lineCap: 'round', lineJoin: 'round', className: 'sb-route' }).addTo(map) : null;
       fit();
     }
     stopLayer.clearLayers();
@@ -103,6 +103,6 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
 }
 
 const styles = StyleSheet.create({
-  fill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#EEF2F7' },
+  fill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#F3F4F9' },
   frame: { width: '100%', height: '100%', border: 'none' },
 });
