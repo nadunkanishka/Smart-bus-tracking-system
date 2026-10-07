@@ -17,7 +17,7 @@ Ignore the Vite files at the very top of the repository (`index.html`, `src/`, t
 
 1. **Node.js 20 or newer.** Download from <https://nodejs.org>. Check it with `node -v`.
 2. **MongoDB Community Server.** Download from <https://www.mongodb.com/try/download/community>, install it with the default settings and let it run as a service. It listens on `127.0.0.1:27017`, which is where the backend looks. (MongoDB Compass, the visual tool, is optional.)
-3. **Expo Go** on your phone, only if you want to try the apps on a real phone. Install it from the Play Store or App Store.
+3. **Expo Go** on your phone, only if you want to try the apps on a real phone. Install it from the Play Store or App Store. The apps use **Expo SDK 57**, so keep Expo Go up to date: the store version only opens projects on its own SDK.
 
 You do not need Redis or Docker. Without Redis the backend keeps the latest bus positions in memory, which is fine for development.
 
@@ -157,7 +157,7 @@ The Android emulator needs nothing extra. It reaches your computer at `10.0.2.2`
 | Driver app says the bus has no route with a map path and stops | Run `npm run seed` in `backend`, then assign the bus to Route 138 in the dashboard. |
 | Expo crashes at start with `ENOENT … native-modules-cache` | Two Expo apps started at the same moment. Start them one at a time. If it keeps happening, delete the folder `native-modules-cache` inside `.expo` in your user folder. |
 | Expo says port 8081 or 8082 is already in use | An old copy is still running. Close its terminal, or use another port, for example `--port 8083`. |
-| Expo warns that package versions do not match | The browser still works. On a phone with Expo Go it can crash the app. Run `npx expo install --fix` in the app folder, then `npx expo start -c`. |
+| Expo Go says the project is incompatible, or asks for a different SDK | The app and Expo Go are on different SDK versions. The apps are on SDK 57: update Expo Go from the store. If you change the SDK later, run `npx expo install expo@^NN.0.0` then `npx expo install --fix` in both app folders. |
 | Phone cannot load the app at all | Phone and computer must be on the same Wi-Fi. Corporate and guest Wi-Fi often block this; use your phone's hotspot instead. |
 | `Missing script: "dev"` in the admin dashboard | Use `npm start`. |
 | Buses on the map seem stuck | The driver must be **On Duty** with GPS allowed. In a desktop browser the position only changes if you move or use the simulator below. |
