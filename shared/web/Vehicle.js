@@ -10,11 +10,13 @@ export function Vehicle({ name = 'bus', width = 160, livery, status, heading, ru
   const { key, label: auto, badge } = pick(name, { livery, status, running });
   const size = Math.max(16, Math.round(width * 0.2));
   return (
-    <span className={className} style={{ display: 'inline-block', position: 'relative', width, height: Math.round(width * ASPECT), lineHeight: 0, ...style }} role="img" aria-label={label || auto}>
-      <img src={IMAGES[key]} width={width} height={Math.round(width * ASPECT)} alt="" style={{ display: 'block' }} />
-      {badge ? (
-        <span aria-hidden="true" style={{ position: 'absolute', top: 0, right: Math.round(width * 0.14), width: size, height: size, borderRadius: size, background: badge.bg, color: badge.fg, display: 'grid', placeItems: 'center', font: `800 ${Math.round(size * 0.68)}px/1 system-ui, sans-serif`, boxShadow: '0 1px 3px rgba(15,20,25,.25)' }}>{badge.glyph}</span>
-      ) : null}
+    <span className={className} style={{ display: 'inline-block', lineHeight: 0, ...style }} role="img" aria-label={label || auto}>
+      <span style={{ display: 'block', position: 'relative', width, height: Math.round(width * ASPECT) }}>
+        <img src={IMAGES[key]} width={width} height={Math.round(width * ASPECT)} alt="" style={{ display: 'block' }} />
+        {badge ? (
+          <span aria-hidden="true" style={{ position: 'absolute', top: 0, right: Math.round(width * 0.14), width: size, height: size, borderRadius: size, background: badge.bg, color: badge.fg, display: 'grid', placeItems: 'center', font: `800 ${Math.round(size * 0.68)}px/1 system-ui, sans-serif`, boxShadow: '0 1px 3px rgba(15,20,25,.25)' }}>{badge.glyph}</span>
+        ) : null}
+      </span>
     </span>
   );
 }

@@ -1190,7 +1190,7 @@ function TableShell({ children }) {
 function KpiCard({ label, value, subtitle, icon, tint, vehicle }) {
   return (
     <div className={`kpi-card tint-${tint}`}>
-      <Vehicle name={vehicle} width={124} className="kpi-art" label={`${vehicle} illustration`} />
+      <Vehicle name={vehicle} width={120} className="kpi-art" label={`${vehicle} illustration`} />
       <div className="kpi-topline">
         <p>{label}</p>
         <span className="kpi-icon">

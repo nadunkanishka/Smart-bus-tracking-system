@@ -142,8 +142,9 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .kpi-topline p { font-size: var(--fs-small); font-weight: 700; color: var(--inkSoft, var(--ink-soft)); }
 .kpi-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.75); display: grid; place-items: center; padding: 8px; color: var(--primary-deep); }
 .kpi-card strong { font-size: var(--fs-display); line-height: var(--lh-display); font-weight: 800; letter-spacing: -0.6px; }
-.kpi-card > span { font-size: var(--fs-caption); line-height: var(--lh-caption); font-weight: 600; color: var(--ink-soft); max-width: 60%; }
-.kpi-art { position: absolute; right: -10px; bottom: 8px; pointer-events: none; }
+.kpi-card > span:not(.kpi-art) { font-size: var(--fs-caption); line-height: var(--lh-caption); font-weight: 600; color: var(--ink-soft); max-width: 60%; }
+.kpi-card > :not(.kpi-art) { position: relative; z-index: 1; }
+.kpi-art { position: absolute; right: 4px; bottom: -6px; pointer-events: none; }
 
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); }
 .chart-layout { display: flex; align-items: center; gap: var(--space-8); margin-top: var(--space-5); flex-wrap: wrap; }
