@@ -1,21 +1,40 @@
 // Copies the design system into every app and generates the admin's CSS tokens.  Run: node shared/sync.js
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COLORS, RADII, SPACE, TYPE, SHADOWS } from './tokens.js';
+import { LIVERIES, SCENES, VEHICLES, pick } from './vehicleShapes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const apps = join(here, '..', 'apps');
 const put = (from, to) => { mkdirSync(dirname(to), { recursive: true }); copyFileSync(join(here, from), to); console.log('→', to.replace(join(here, '..'), '')); };
 
+// Self-check: every image the lookup can ask for was baked (run `node shared/buses/export.mjs` if this fails).
+const baked = join(here, 'buses/out');
+const wanted = new Set(SCENES.map((sc) => `scene-${sc}`));
+for (const name of VEHICLES) for (const livery of LIVERIES) for (const status of [undefined, 'idle', 'maint', 'off']) for (const running of [false, true]) wanted.add(pick(name, { livery, status, running }).key);
+for (const key of wanted) if (!existsSync(join(baked, `${key}.webp`))) throw new Error(`Missing baked image "${key}.webp"`);
+const copyImages = (to) => { rmSync(to, { recursive: true, force: true }); mkdirSync(to, { recursive: true }); for (const f of readdirSync(baked)) copyFileSync(join(baked, f), join(to, f)); console.log('→', to.replace(join(here, '..'), ''), `(${readdirSync(baked).length} images)`); };
+
 for (const app of ['passenger-app', 'driver-app']) {
+  copyImages(join(apps, app, 'assets/buses'));
+  put('native/busImages.js', join(apps, app, 'src/components/busImages.js'));
+  put('busMarkers.js', join(apps, app, 'src/components/busMarkers.js'));
   put('tokens.js', join(apps, app, 'src/constants/theme.js'));
+  put('navIcons.js', join(apps, app, 'src/components/navIcons.js'));
   put('vehicleShapes.js', join(apps, app, 'src/components/vehicleShapes.js'));
   put('native/ui.js', join(apps, app, 'src/components/ui.js'));
+  put('native/LiveMap.js', join(apps, app, 'src/components/LiveMap.js'));
+  put('native/LiveMap.native.js', join(apps, app, 'src/components/LiveMap.native.js'));
+  put('native/api.js', join(apps, app, 'src/api.js'));
 }
 const admin = join(apps, 'admin-dashboard/src/design');
 put('vehicleShapes.js', join(admin, 'vehicleShapes.js'));
 put('web/Vehicle.js', join(admin, 'Vehicle.js'));
+put('web/busImages.js', join(admin, 'busImages.js'));
+put('navIcons.js', join(admin, 'navIcons.js'));
+put('busMarkers.js', join(admin, 'busMarkers.js'));
+copyImages(join(admin, 'buses'));
 
 const kebab = (s) => s.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 const shadow = (s) => `0 ${s.shadowOffset.height}px ${s.shadowRadius}px rgba(31, 58, 86, ${s.shadowOpacity})`;

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -11,14 +11,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import OpenStreetMapContainer from './src/components/OpenStreetMapContainer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { io } from 'socket.io-client';
+import LiveMap from './src/components/LiveMap';
+import { API_URL, request, toRoute } from './src/api';
 import { COLORS, RADII, SHADOWS, TYPE } from './src/constants/theme';
-// CHANGED (visual only): shared SmartBus design-system kit.
 import {
   Avatar,
   AuthLayout,
+  Banner,
   Button,
   Checkbox,
   Chip,
@@ -33,7 +35,10 @@ import {
   TextField,
   Toast,
   Vehicle,
+  VehicleLoader,
+  NavIcon,
 } from './src/components/ui';
+import { liveryFor } from './src/components/vehicleShapes';
 import {
   ArrowRightIcon,
   BellIcon,
@@ -51,92 +56,65 @@ import {
   UserIcon,
 } from './src/components/VectorIcons';
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const ROUTE_DATABASE = [
-  {
-    id: '138',
-    name: 'Route 138: Pettah ➔ Maharagama',
-    shortName: 'Route 138',
-    startTerminal: 'Pettah Main Stand',
-    endTerminal: 'Maharagama Depot',
-    stops: ['Pettah', 'Borella Junction', 'Nugegoda Supermarket', 'High Level Stop', 'Maharagama'],
-    duration: '38 min',
-    activeBuses: 4,
-  },
-  {
-    id: '100',
-    name: 'Route 100: Panadura ➔ Colombo Fort',
-    shortName: 'Route 100',
-    startTerminal: 'Panadura Bus Stand',
-    endTerminal: 'Colombo Fort Station',
-    stops: ['Panadura', 'Moratuwa Town', 'Ratmalana Stop', 'Kollupitiya', 'Colombo Fort'],
-    duration: '45 min',
-    activeBuses: 3,
-  },
-  {
-    id: '177',
-    name: 'Route 177: Kaduwela ➔ Kollupitiya',
-    shortName: 'Route 177',
-    startTerminal: 'Kaduwela Clock Tower',
-    endTerminal: 'Kollupitiya Station',
-    stops: ['Kaduwela', 'Malabe Junction', 'Battaramulla', 'Rajagiriya', 'Kollupitiya'],
-    duration: '52 min',
-    activeBuses: 5,
-  },
-];
+const SESSION_KEY = 'smartbus:session';
+const STALE_MS = 15000; // no update for this long: the bus is shown as "signal lost"
+const GONE_MS = 60000; // no update for this long: the bus is removed from the map
+const MAP_PADDING = { top: 170, bottom: 400 };
+const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
 
-const INITIAL_BUS_LOCATION = {
-  id: 'NB-4712',
-  bookingId: 'H314315796',
-  driverName: 'Sunil Perera',
-  driverPhone: '+94 77 982 1104',
-  latitude: 6.915,
-  longitude: 79.875,
-  speed: 28,
-  etaMinutes: 4,
+const NO_ROUTE = {
+  id: null, number: '–', name: 'No routes yet', shortName: '—', startTerminal: '—', endTerminal: '—',
+  distanceKm: 0, stops: [], stopPoints: [], path: [], trackable: false,
 };
 
-const PASSENGER_COORDINATE = { latitude: 6.89, longitude: 79.875 };
-
-const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
+// Which bus matters to this passenger: the next one still coming to the boarding stop; otherwise one that has
+// passed it and is heading to the destination; otherwise any live bus on the route.
+function pickBus(all, boardingIndex, destinationIndex) {
+  const fresh = all.filter((b) => !b.stale);
+  const list = fresh.length ? fresh : all; // a bus that lost signal is only tracked when nothing else is live
+  const eta = (bus, i) => (bus.stops?.[i]?.status === 'upcoming' ? bus.stops[i].etaSec : null);
+  const nearest = (i) => list.filter((b) => eta(b, i) != null).sort((a, b) => eta(a, i) - eta(b, i))[0];
+  const coming = nearest(boardingIndex);
+  if (coming) return { bus: coming, phase: 'coming', etaMin: coming.stops[boardingIndex].etaMin };
+  const riding = nearest(destinationIndex);
+  if (riding) return { bus: riding, phase: 'passed', etaMin: riding.stops[destinationIndex].etaMin };
+  return list[0] ? { bus: list[0], phase: 'done', etaMin: null } : null;
+}
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 // 'home' | 'tracking' | 'routes' | 'profile'
 
 export default function App() {
-  // Auth state (login/register screen present, but allows instant access without credentials)
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Account session ({ token, user }) from the backend
+  const [booting, setBooting] = useState(true);
+  const [session, setSession] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [regFullName, setRegFullName] = useState('');
   const [regUsername, setRegUsername] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  // CHANGED (UI-only state for the redesigned auth screens; never sent anywhere)
   const [regConfirm, setRegConfirm] = useState('');
   const [regTerms, setRegTerms] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true); // HOOK: persist session when real auth lands
-
-  // Commuter Profile
-  const [userProfile, setUserProfile] = useState({
-    name: 'Colombo Passenger',
-    phone: '+94 77 123 4567',
-    type: 'Daily Commuter',
-  });
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Navigation
   const [activeTab, setActiveTab] = useState('tracking');
   const [isBoardingExpanded, setIsBoardingExpanded] = useState(false);
   const [isDestExpanded, setIsDestExpanded] = useState(false);
 
-  // Route / stop selection
+  // Routes (from the backend) and stop selection
+  const [routes, setRoutes] = useState([]);
+  const [routesState, setRoutesState] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [routeSearchQuery, setRouteSearchQuery] = useState('');
-  const [selectedRoute, setSelectedRoute] = useState(ROUTE_DATABASE[0]);
-  const [boardingStop, setBoardingStop] = useState(ROUTE_DATABASE[0].stops[1]);
-  const [destinationStop, setDestinationStop] = useState(ROUTE_DATABASE[0].stops[4]);
+  const [selectedRouteId, setSelectedRouteId] = useState(null);
+  const [boardingStop, setBoardingStop] = useState(null);
+  const [destinationStop, setDestinationStop] = useState(null);
 
   // UI overlays
   const [isStopModalOpen, setIsStopModalOpen] = useState(false);
@@ -144,31 +122,86 @@ export default function App() {
   const [isDestOpen, setIsDestOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
-  // Live bus simulation
-  const [liveBus, setLiveBus] = useState(INITIAL_BUS_LOCATION);
+  // Live data pushed over Socket.IO for the selected route
+  const [buses, setBuses] = useState({}); // busId -> last update (+ recvAt)
+  const [conn, setConn] = useState('connecting'); // 'connecting' | 'connected' | 'disconnected'
+  const [now, setNow] = useState(Date.now());
+  const socketRef = useRef(null);
+
+  const isAuthenticated = !!session;
+  const userProfile = session?.user;
 
   // ─── Derived ────────────────────────────────────────────────────────────────
+  const selectedRoute = routes.find((r) => r.id === selectedRouteId) || NO_ROUTE;
+
   const filteredRoutes = useMemo(() => {
-    if (!routeSearchQuery.trim()) return ROUTE_DATABASE;
+    if (!routeSearchQuery.trim()) return routes;
     const q = routeSearchQuery.toLowerCase();
-    return ROUTE_DATABASE.filter(r => r.id.includes(q) || r.name.toLowerCase().includes(q));
-  }, [routeSearchQuery]);
+    return routes.filter((r) => String(r.number).toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.stops.some((s) => s.toLowerCase().includes(q)));
+  }, [routeSearchQuery, routes]);
 
   const boardingIndex = selectedRoute.stops.indexOf(boardingStop);
   const destinationIndex = selectedRoute.stops.indexOf(destinationStop);
 
+  const liveBuses = useMemo(
+    () => Object.values(buses)
+      .filter((b) => b.routeId === selectedRoute.id && now - b.recvAt < GONE_MS)
+      .map((b) => ({ ...b, stale: now - b.recvAt > STALE_MS })),
+    [buses, now, selectedRoute.id],
+  );
+  const tracked = useMemo(() => pickBus(liveBuses, boardingIndex, destinationIndex), [liveBuses, boardingIndex, destinationIndex]);
+  const mapBuses = useMemo(
+    () => liveBuses.map((b) => ({ id: b.busId, lat: b.lat, lng: b.lng, label: b.registration, stale: b.stale, heading: b.heading })),
+    [liveBuses],
+  );
+
   // ─── Effects ────────────────────────────────────────────────────────────────
+
+  // Restore a remembered session
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveBus(prev => ({
-        ...prev,
-        latitude: prev.latitude + (Math.random() - 0.2) * 0.0004,
-        longitude: prev.longitude + (Math.random() - 0.2) * 0.0004,
-        speed: Math.max(16, prev.speed + Math.floor((Math.random() - 0.5) * 6)),
-        etaMinutes: Math.max(1, prev.etaMinutes - (Math.random() > 0.75 ? 1 : 0)),
-      }));
-    }, 3000);
-    return () => clearInterval(interval);
+    AsyncStorage.getItem(SESSION_KEY)
+      .then((raw) => { if (raw) setSession(JSON.parse(raw)); })
+      .catch(() => {})
+      .finally(() => setBooting(false));
+  }, []);
+
+  // Load routes once signed in
+  useEffect(() => { if (session) loadRoutes(); }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // One socket per session
+  useEffect(() => {
+    if (!session) return undefined;
+    const socket = io(API_URL, { auth: { token: session.token }, transports: ['websocket'] });
+    socketRef.current = socket;
+    setConn('connecting');
+    socket.on('connect', () => setConn('connected'));
+    socket.on('disconnect', () => setConn('disconnected'));
+    socket.on('connect_error', () => setConn('disconnected'));
+    socket.on('route:snapshot', ({ buses: list, serverTs }) => {
+      // Cached fixes may already be a while old: keep their real age so stale buses are flagged straight away.
+      const at = Date.now();
+      setBuses(Object.fromEntries(list.map((b) => [b.busId, { ...b, recvAt: at - Math.max(0, serverTs - b.serverEmitTs) }])));
+    });
+    socket.on('bus:update', (b) => setBuses((prev) => ({ ...prev, [b.busId]: { ...b, recvAt: Date.now() } })));
+    socket.on('bus:offline', ({ busId }) => setBuses((prev) => {
+      const next = { ...prev };
+      delete next[busId];
+      return next;
+    }));
+    return () => { socket.close(); socketRef.current = null; };
+  }, [session]);
+
+  // Join the selected route's room (the server leaves the previous one), also after every reconnect
+  useEffect(() => {
+    if (conn !== 'connected' || !selectedRouteId) return;
+    setBuses({});
+    socketRef.current?.emit('route:subscribe', { routeId: selectedRouteId });
+  }, [selectedRouteId, conn]);
+
+  // Clock for "signal lost" / removal of buses that stopped reporting
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(t);
   }, []);
 
   // Auto-dismiss toast
@@ -179,58 +212,86 @@ export default function App() {
   }, [toastMsg]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
-  function handleLogin() {
-    setAuthLoading(true);
-    setTimeout(() => {
-      const username = loginUsername.trim() || 'Passenger';
-      setUserProfile({
-        name: username,
-        username: username.toLowerCase().replace(/\s+/g, '_'),
-        phone: '+94 77 123 4567',
-        type: 'Commuter',
-      });
-      setIsAuthenticated(true);
-      setActiveTab('tracking');
-      setAuthLoading(false);
-      showToast(`Welcome, ${username}!`);
-    }, 200);
+
+  function selectRoute(route) {
+    setSelectedRouteId(route.id);
+    setBoardingStop(route.stops[0] || null);
+    setDestinationStop(route.stops[route.stops.length - 1] || null);
   }
 
-  function handleRegister() {
+  async function loadRoutes() {
+    setRoutesState('loading');
+    try {
+      const list = (await request('/routes')).filter((r) => r.status === 'Active').map(toRoute);
+      setRoutes(list);
+      setRoutesState('ready');
+      if (!list.some((r) => r.id === selectedRouteId) && list.length) selectRoute(list.find((r) => r.trackable) || list[0]);
+    } catch (err) {
+      setRoutesState('error');
+      showToast(err.message);
+    }
+  }
+
+  function startSession(data, message) {
+    const next = { token: data.token, user: data.user };
+    setSession(next);
+    if (rememberMe) AsyncStorage.setItem(SESSION_KEY, JSON.stringify(next)).catch(() => {});
+    setLoginPassword('');
+    setRegPassword('');
+    setRegConfirm('');
+    setActiveTab('tracking');
+    showToast(message);
+  }
+
+  async function handleLogin() {
+    setAuthError('');
+    if (!loginUsername.trim() || !loginPassword) {
+      setAuthError('Enter your username and password.');
+      return;
+    }
     setAuthLoading(true);
-    setTimeout(() => {
-      const name = regFullName.trim() || regUsername.trim() || 'Passenger';
-      setUserProfile({
-        name: name,
-        username: (regUsername.trim() || 'passenger').toLowerCase().replace(/\s+/g, '_'),
-        phone: regPhone.trim() || '+94 77 123 4567',
-        type: 'Registered Commuter',
-      });
-      setIsAuthenticated(true);
-      setActiveTab('tracking');
+    try {
+      const data = await request('/passengers/login', { method: 'POST', body: { username: loginUsername.trim(), password: loginPassword } });
+      startSession(data, `Welcome back, ${data.user.name}!`);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
       setAuthLoading(false);
-      showToast(`Account created! Welcome, ${name}.`);
-    }, 200);
+    }
+  }
+
+  async function handleRegister() {
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      const data = await request('/passengers/register', {
+        method: 'POST',
+        body: { name: regFullName.trim(), username: regUsername.trim(), phone: regPhone.trim(), password: regPassword },
+      });
+      startSession(data, `Account created! Welcome, ${data.user.name}.`);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   function handleLogout() {
-    setIsAuthenticated(false);
-    setLoginUsername('');
-    setLoginPassword('');
+    AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
+    setSession(null);
+    setBuses({});
     setActiveTab('tracking');
   }
 
   function handleSelectRoute(route) {
-    setSelectedRoute(route);
-    setBoardingStop(route.stops[0]);
-    setDestinationStop(route.stops[route.stops.length - 1]);
+    selectRoute(route);
     setRouteSearchQuery('');
     setActiveTab('tracking');
   }
 
   function handleResetDefaults() {
-    setBoardingStop(selectedRoute.stops[0]);
-    setDestinationStop(selectedRoute.stops[selectedRoute.stops.length - 1]);
+    setBoardingStop(selectedRoute.stops[0] || null);
+    setDestinationStop(selectedRoute.stops[selectedRoute.stops.length - 1] || null);
     showToast('Reset stops to route terminals.');
   }
 
@@ -238,9 +299,14 @@ export default function App() {
     setToastMsg(msg);
   }
 
-  // CHANGED: UI-layer gating for the new register fields only (handleRegister itself is untouched).
+  function switchAuthMode(mode) {
+    setAuthError('');
+    setAuthMode(mode);
+  }
+
   const confirmMismatch = regConfirm.length > 0 && regConfirm !== regPassword;
-  const registerBlocked = confirmMismatch || !regTerms;
+  const passwordTooShort = regPassword.length > 0 && regPassword.length < 6;
+  const registerBlocked = confirmMismatch || !regTerms || !regFullName.trim() || !regUsername.trim() || regPassword.length < 6 || regConfirm !== regPassword;
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -254,9 +320,11 @@ export default function App() {
       {/* ─── Toast ─────────────────────────────────────── */}
       <Toast message={toastMsg} />
 
-      {!isAuthenticated ? (
+      {booting ? (
+        <View style={S.centerFill}><VehicleLoader label="Loading SmartBus" /></View>
+      ) : !isAuthenticated ? (
         /* ═══════════════════════════════════════════════════
-            PASSENGER LOGIN / REGISTER  (CHANGED: new hero + curved panel layout)
+            PASSENGER LOGIN / REGISTER (real accounts stored in MongoDB)
         ═══════════════════════════════════════════════════ */
         authMode === 'login' ? (
           <AuthLayout
@@ -267,21 +335,22 @@ export default function App() {
             footer={
               <Text style={S.authSwitch}>
                 New here?{' '}
-                <Text style={S.authSwitchLink} accessibilityRole="link" onPress={() => setAuthMode('register')}>
+                <Text style={S.authSwitchLink} accessibilityRole="link" onPress={() => switchAuthMode('register')}>
                   Create an account
                 </Text>
               </Text>
             }
           >
+            {authError ? <Banner tone="danger">{authError}</Banner> : null}
             <TextField
-              label="Name or username"
+              label="Username"
               icon={<UserIcon color={COLORS.muted} size={20} />}
               value={loginUsername}
               onChangeText={setLoginUsername}
-              placeholder="Enter name (or leave blank to continue)"
+              placeholder="e.g. kasun_p"
               autoCapitalize="none"
-              returnKeyType="go"
-              onSubmitEditing={handleLogin}
+              autoCorrect={false}
+              returnKeyType="next"
             />
             <TextField
               label="Password"
@@ -289,15 +358,14 @@ export default function App() {
               secure
               value={loginPassword}
               onChangeText={setLoginPassword}
-              placeholder="Optional password"
+              placeholder="Your password"
               returnKeyType="go"
               onSubmitEditing={handleLogin}
             />
             <View style={S.authRow}>
               <Checkbox checked={rememberMe} onChange={setRememberMe}>Remember me</Checkbox>
-              {/* HOOK: wire to a reset flow when passwords are enforced */}
               <Pressable
-                onPress={() => showToast('Password reset is not available yet. Passwords are optional for now.')}
+                onPress={() => showToast('Password reset is not available yet.')}
                 accessibilityRole="link"
                 style={S.linkTap}
               >
@@ -315,12 +383,13 @@ export default function App() {
             footer={
               <Text style={S.authSwitch}>
                 Already have an account?{' '}
-                <Text style={S.authSwitchLink} accessibilityRole="link" onPress={() => setAuthMode('login')}>
+                <Text style={S.authSwitchLink} accessibilityRole="link" onPress={() => switchAuthMode('login')}>
                   Log in
                 </Text>
               </Text>
             }
           >
+            {authError ? <Banner tone="danger">{authError}</Banner> : null}
             <TextField
               label="Full name"
               icon={<UserIcon color={COLORS.muted} size={20} />}
@@ -335,11 +404,13 @@ export default function App() {
               value={regUsername}
               onChangeText={setRegUsername}
               placeholder="e.g. kasun_p"
+              hint="3-30 letters, numbers, dots or underscores"
               autoCapitalize="none"
+              autoCorrect={false}
               returnKeyType="next"
             />
             <TextField
-              label="Phone number"
+              label="Phone number (optional)"
               icon={<PhoneCallIcon color={COLORS.muted} size={20} />}
               value={regPhone}
               onChangeText={setRegPhone}
@@ -353,7 +424,8 @@ export default function App() {
               secure
               value={regPassword}
               onChangeText={setRegPassword}
-              placeholder="Optional password"
+              placeholder="At least 6 characters"
+              error={passwordTooShort ? 'Use at least 6 characters.' : undefined}
               returnKeyType="next"
             />
             <StrengthMeter password={regPassword} />
@@ -371,20 +443,24 @@ export default function App() {
             <Checkbox checked={regTerms} onChange={setRegTerms}>
               I agree to the Terms of Service and Privacy Policy
             </Checkbox>
-            <View style={{ height: 16 }} />
+            <View style={S.gap16} />
             <Button title="Create account" onPress={handleRegister} loading={authLoading} disabled={registerBlocked} />
           </AuthLayout>
         )
       ) : (
         /* ═══════════════════════════════════════════════════
-            APPLICATION SHELL  (CHANGED: centred, width-constrained on desktop)
+            APPLICATION SHELL
         ═══════════════════════════════════════════════════ */
         <View style={S.appShell}>
           {/* ─── SCREEN AREA ──────────────────────────── */}
           <View style={S.flex}>
             {activeTab === 'tracking' ? (
               <TrackingScreen
-                liveBus={liveBus}
+                conn={conn}
+                routesState={routesState}
+                tracked={tracked}
+                liveCount={liveBuses.length}
+                mapBuses={mapBuses}
                 selectedRoute={selectedRoute}
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
@@ -398,12 +474,14 @@ export default function App() {
                 setBoardingStop={setBoardingStop}
                 setDestinationStop={setDestinationStop}
                 onOpenStops={() => setIsStopModalOpen(true)}
+                onGoRoutes={() => setActiveTab('routes')}
               />
             ) : activeTab === 'home' ? (
               <HomeScreen
                 userProfile={userProfile}
                 selectedRoute={selectedRoute}
-                liveBus={liveBus}
+                tracked={tracked}
+                liveCount={liveBuses.length}
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
                 onGoTracking={() => setActiveTab('tracking')}
@@ -413,6 +491,8 @@ export default function App() {
               />
             ) : activeTab === 'routes' ? (
               <RoutesScreen
+                routesState={routesState}
+                onRetry={loadRoutes}
                 routeSearchQuery={routeSearchQuery}
                 setRouteSearchQuery={setRouteSearchQuery}
                 filteredRoutes={filteredRoutes}
@@ -450,7 +530,6 @@ export default function App() {
                 accessibilityLabel="Close stop selector"
               />
               <Sheet>
-                {/* Handle */}
                 <View style={S.modalHandleRow}>
                   <View style={S.modalHandle} />
                 </View>
@@ -464,16 +543,14 @@ export default function App() {
                   {/* Route selector */}
                   <Text style={S.modalSectionLabel}>Active route</Text>
                   <View style={S.routeChipsRow}>
-                    {ROUTE_DATABASE.map(r => (
+                    {routes.map(r => (
                       <Chip
                         key={r.id}
                         label={r.shortName}
                         selected={selectedRoute.id === r.id}
                         tone="ink"
                         onPress={() => {
-                          setSelectedRoute(r);
-                          setBoardingStop(r.stops[0]);
-                          setDestinationStop(r.stops[r.stops.length - 1]);
+                          selectRoute(r);
                           setIsBoardingOpen(false);
                           setIsDestOpen(false);
                         }}
@@ -490,7 +567,7 @@ export default function App() {
                   >
                     <View style={S.dropdownTriggerLeft}>
                       <MapPinIcon color={COLORS.accent} size={18} />
-                      <Text style={S.dropdownTriggerText}>{boardingStop}</Text>
+                      <Text style={S.dropdownTriggerText}>{boardingStop || '—'}</Text>
                     </View>
                     <ChevronDownIcon color={COLORS.muted} size={16} />
                   </TouchableOpacity>
@@ -520,7 +597,7 @@ export default function App() {
                   >
                     <View style={S.dropdownTriggerLeft}>
                       <FlagIcon color={COLORS.accent} size={18} />
-                      <Text style={S.dropdownTriggerText}>{destinationStop}</Text>
+                      <Text style={S.dropdownTriggerText}>{destinationStop || '—'}</Text>
                     </View>
                     <ChevronDownIcon color={COLORS.muted} size={16} />
                   </TouchableOpacity>
@@ -541,11 +618,12 @@ export default function App() {
                     </View>
                   )}
 
-                  {/* Timeline */}
+                  {/* Timeline: live arrival time at every stop for the tracked bus */}
                   <Text style={[S.modalSectionLabel, S.modalSectionGapLg]}>Route timeline</Text>
                   <View style={S.timelineContainer}>
                     {selectedRoute.stops.map((stop, idx) => {
-                      const isPassed = idx < boardingIndex;
+                      const live = tracked?.bus.stops?.[idx];
+                      const isPassed = live ? live.status === 'passed' : false;
                       const isBoarding = idx === boardingIndex;
                       const isDestination = idx === destinationIndex;
                       const isActive = idx > boardingIndex && idx <= destinationIndex;
@@ -573,7 +651,8 @@ export default function App() {
                               {stop}
                             </Text>
                             <Text style={S.timelineTag}>
-                              {isPassed ? 'Passed' : isBoarding ? 'Boarding Stop' : isDestination ? 'Destination' : 'Upcoming'}
+                              {isBoarding ? 'Boarding stop · ' : isDestination ? 'Destination · ' : ''}
+                              {!live ? 'No live bus' : isPassed ? 'Bus passed' : `Bus in ${live.etaMin} min`}
                             </Text>
                           </View>
                         </View>
@@ -593,7 +672,6 @@ export default function App() {
 
 // ─── Screen Components ────────────────────────────────────────────────────────
 
-// Small stop picker used inside the floating route card. (Markup moved into a helper; handlers unchanged.)
 function StopPicker({ label, dotStyle, value, expanded, onToggle, stops, onPick, alignRight }) {
   return (
     <View style={S.stopSelectorCol}>
@@ -606,9 +684,9 @@ function StopPicker({ label, dotStyle, value, expanded, onToggle, stops, onPick,
         onPress={onToggle}
         activeOpacity={0.8}
         accessibilityRole="button"
-        accessibilityLabel={`${label} stop: ${value}`}
+        accessibilityLabel={`${label} stop: ${value || 'none'}`}
       >
-        <Text style={S.stopSelectorValue} numberOfLines={1}>{value}</Text>
+        <Text style={S.stopSelectorValue} numberOfLines={1}>{value || '—'}</Text>
         <ChevronDownIcon color={COLORS.accentText} size={14} />
       </TouchableOpacity>
       {expanded && (
@@ -630,8 +708,31 @@ function StopPicker({ label, dotStyle, value, expanded, onToggle, stops, onPick,
   );
 }
 
+// What the tracked bus means for this passenger, in one line.
+function trackedSummary(tracked, boardingStop, destinationStop) {
+  if (!tracked) return '';
+  if (tracked.bus.stale) return 'Signal lost. Showing the last known position.';
+  if (tracked.phase === 'coming') return `Arrives at ${boardingStop} in ${tracked.etaMin} min`;
+  if (tracked.phase === 'passed') return `Passed ${boardingStop}. ${tracked.etaMin} min to ${destinationStop}`;
+  return 'This bus has passed your stops.';
+}
+
+function ConnectionChip({ conn }) {
+  const live = conn === 'connected';
+  return (
+    <View style={[S.liveChip, !live && S.liveChipOff]} accessibilityLabel={live ? 'Live connection' : conn === 'connecting' ? 'Connecting' : 'Disconnected'}>
+      <View style={[S.liveDot, !live && S.liveDotOff]} />
+      <Text style={S.liveText}>{live ? 'LIVE' : conn === 'connecting' ? 'CONNECTING' : 'OFFLINE'}</Text>
+    </View>
+  );
+}
+
 function TrackingScreen({
-  liveBus,
+  conn,
+  routesState,
+  tracked,
+  liveCount,
+  mapBuses,
   selectedRoute,
   boardingStop,
   destinationStop,
@@ -645,19 +746,24 @@ function TrackingScreen({
   setBoardingStop,
   setDestinationStop,
   onOpenStops,
+  onGoRoutes,
 }) {
-  // CHANGED (visual): progress derived from the existing live ETA so the arrow head moves with the bus.
-  const progress = Math.min(0.92, Math.max(0.12, 1 - liveBus.etaMinutes / 10));
+  const bus = tracked?.bus;
+  // How far along the route the tracked bus is (by segment), for the progress bar.
+  const progress = bus?.segIndex != null && routeStops.length > 1
+    ? Math.min(0.94, Math.max(0.06, (bus.segIndex + 0.5) / (routeStops.length - 1)))
+    : 0.06;
 
   return (
     <View style={S.flex}>
       {/* Map fills the whole screen; cards float on top */}
       <View style={S.mapCanvas}>
-        <OpenStreetMapContainer
-          busLocationName={boardingStop}
-          etaMins={liveBus.etaMinutes}
-          busCoordinate={{ latitude: liveBus.latitude, longitude: liveBus.longitude }}
-          passengerCoordinate={PASSENGER_COORDINATE}
+        <LiveMap
+          path={selectedRoute.path}
+          stops={selectedRoute.stopPoints}
+          buses={mapBuses}
+          highlightStop={boardingIndex}
+          padding={MAP_PADDING}
         />
       </View>
 
@@ -665,11 +771,8 @@ function TrackingScreen({
       <View style={S.mapHeader} pointerEvents="box-none">
         <View style={S.mapHeaderInner}>
           <View style={S.mapHeaderLeft}>
-            <View style={S.liveChip}>
-              <View style={S.liveDot} />
-              <Text style={S.liveText}>LIVE</Text>
-            </View>
-            <Text style={S.mapHeaderTitle}>Bus Tracker</Text>
+            <ConnectionChip conn={conn} />
+            <Text style={S.mapHeaderTitle} numberOfLines={1}>{selectedRoute.shortName}</Text>
           </View>
           <IconButton label="Change stops" onPress={onOpenStops} tone="soft" size={44}>
             <MoreVerticalIcon color={COLORS.ink} size={18} />
@@ -678,98 +781,127 @@ function TrackingScreen({
       </View>
 
       {/* ── INLINE STOP SELECTOR (floating card) ─────────────────── */}
-      <View style={S.stopSelectorBar}>
-        <StopPicker
-          label="BOARDING"
-          dotStyle={S.stopDotGreen}
-          value={boardingStop}
-          expanded={isBoardingExpanded}
-          onToggle={() => { setIsBoardingExpanded(p => !p); setIsDestExpanded(false); }}
-          stops={routeStops}
-          onPick={(stop) => { setBoardingStop(stop); setIsBoardingExpanded(false); }}
-        />
-        <View style={S.stopSelectorDivider}>
-          <ArrowRightIcon color={COLORS.accent} size={16} />
+      {routeStops.length > 0 ? (
+        <View style={S.stopSelectorBar}>
+          <StopPicker
+            label="BOARDING"
+            dotStyle={S.stopDotGreen}
+            value={boardingStop}
+            expanded={isBoardingExpanded}
+            onToggle={() => { setIsBoardingExpanded(p => !p); setIsDestExpanded(false); }}
+            stops={routeStops}
+            onPick={(stop) => { setBoardingStop(stop); setIsBoardingExpanded(false); }}
+          />
+          <View style={S.stopSelectorDivider}>
+            <ArrowRightIcon color={COLORS.accent} size={16} />
+          </View>
+          <StopPicker
+            label="DESTINATION"
+            dotStyle={S.stopDotOrange}
+            value={destinationStop}
+            expanded={isDestExpanded}
+            onToggle={() => { setIsDestExpanded(p => !p); setIsBoardingExpanded(false); }}
+            stops={routeStops}
+            onPick={(stop) => { setDestinationStop(stop); setIsDestExpanded(false); }}
+            alignRight
+          />
         </View>
-        <StopPicker
-          label="DESTINATION"
-          dotStyle={S.stopDotOrange}
-          value={destinationStop}
-          expanded={isDestExpanded}
-          onToggle={() => { setIsDestExpanded(p => !p); setIsBoardingExpanded(false); }}
-          stops={routeStops}
-          onPick={(stop) => { setDestinationStop(stop); setIsDestExpanded(false); }}
-          alignRight
-        />
-      </View>
+      ) : null}
 
-      {/* Bottom summary card (white, floats above the dock) */}
+      {/* Bottom summary card */}
       <View style={S.summaryCard}>
-        {/* Header: Booking ID + Status */}
-        <View style={S.sheetTopRow}>
-          <View style={S.flex}>
-            <Text style={S.sheetMetaLabel}>Booking ID</Text>
-            <Text style={S.sheetBookingId}>{liveBus.bookingId}</Text>
+        {routesState === 'loading' ? (
+          <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
+        ) : !selectedRoute.id ? (
+          <View style={S.emptyState}>
+            <Vehicle name="bus" status={routesState === 'error' ? 'maint' : undefined} width={116} label="No routes" />
+            <Text style={S.emptyStateTitle}>{routesState === 'error' ? 'Could not load routes' : 'No routes available yet'}</Text>
+            <Text style={S.emptyStateSub}>{routesState === 'error' ? 'Check your connection and try again.' : 'Routes appear here once they are published.'}</Text>
+            <Button title="Open routes" tone="ink" size="sm" full={false} onPress={onGoRoutes} style={S.emptyBtn} />
           </View>
-          <View style={S.transitBadge}>
-            <Text style={S.transitBadgeText}>In Transit</Text>
+        ) : !selectedRoute.trackable ? (
+          <View style={S.emptyState}>
+            <Vehicle name="minibus" width={116} label="No map data" />
+            <Text style={S.emptyStateTitle}>Live tracking is not set up for this route</Text>
+            <Text style={S.emptyStateSub}>It has no map path or stop positions yet.</Text>
           </View>
-        </View>
-
-        {/* Progress: coral arrow head, distance / ETA like the reference */}
-        <View style={S.progressBlock}>
-          <View style={S.progressMeta}>
-            <Text style={S.progressMetaVal}>{liveBus.speed} km/h</Text>
-            <Text style={S.progressMetaVal}>{liveBus.etaMinutes} min</Text>
-            <Text style={S.progressMetaVal}>{selectedRoute.duration}</Text>
+        ) : !bus ? (
+          <View style={S.emptyState}>
+            <Vehicle name="bus" status={conn === 'connected' ? 'idle' : 'off'} width={116} label="No live bus" />
+            <Text style={S.emptyStateTitle}>{conn === 'connected' ? 'No bus is on this route right now' : 'Reconnecting…'}</Text>
+            <Text style={S.emptyStateSub}>
+              {conn === 'connected' ? 'It will appear here as soon as a driver goes on duty.' : 'Live positions will resume when the connection is back.'}
+            </Text>
           </View>
-          <View style={S.progressTrack}>
-            <View style={[S.progressDone, { flex: progress }]} />
-            <ArrowRightIcon color={COLORS.accent} size={20} />
-            <View style={[S.progressLeft, { flex: 1 - progress }]} />
-          </View>
-          <View style={S.progressLabels}>
-            <Text style={S.progressLabel} numberOfLines={1}>Departed · {selectedRoute.startTerminal}</Text>
-            <Text style={S.progressLabelRight} numberOfLines={1}>{liveBus.etaMinutes} min away</Text>
-          </View>
-        </View>
-
-        {/* From / To already shown in the floating stop selector above, so no duplicate block here. */}
-
-        {/* Driver Card */}
-        <View style={S.driverCard}>
-          <View style={S.driverLeft}>
-            <View style={S.driverAvatar}>
-              <Text style={S.driverAvatarText}>SP</Text>
+        ) : (
+          <>
+            {/* Header: bus + status */}
+            <View style={S.sheetTopRow}>
+              <View style={S.flex}>
+                <Text style={S.sheetMetaLabel}>{liveCount > 1 ? `Nearest of ${liveCount} buses` : 'Bus'}</Text>
+                <Text style={S.sheetBookingId}>{bus.registration}</Text>
+              </View>
+              <View style={[S.transitBadge, bus.stale && S.transitBadgeWarn]}>
+                <Text style={[S.transitBadgeText, bus.stale && S.transitBadgeTextWarn]}>
+                  {bus.stale ? 'Signal lost' : tracked.phase === 'coming' ? `${tracked.etaMin} min away` : 'In transit'}
+                </Text>
+              </View>
             </View>
-            <View style={S.flex}>
-              <Text style={S.driverName}>{liveBus.driverName}</Text>
-              <Text style={S.driverRole} numberOfLines={1}>Route Driver · {liveBus.id}</Text>
-            </View>
-          </View>
-          <View style={S.driverStatusBadge}>
-            <View style={S.driverStatusDot} />
-            <Text style={S.driverStatusText}>On Duty</Text>
-          </View>
-        </View>
 
-        {/* Change Stops */}
-        <Button
-          title="Change boarding / destination"
-          tone="ink"
-          onPress={onOpenStops}
-          icon={<MapPinIcon color={COLORS.accent} size={18} />}
-        />
+            {/* Progress along the route */}
+            <View style={S.progressBlock}>
+              <View style={S.progressTrack}>
+                <View style={[S.progressDone, { flex: progress }]} />
+                <ArrowRightIcon color={COLORS.accent} size={20} />
+                <View style={[S.progressLeft, { flex: 1 - progress }]} />
+              </View>
+              <Text style={S.progressSummary}>{trackedSummary(tracked, boardingStop, destinationStop)}</Text>
+            </View>
+
+            {/* Predicted arrival at every stop, updated on each GPS fix */}
+            <ScrollView style={S.etaList} showsVerticalScrollIndicator={false}>
+              {bus.stops.map((stop) => {
+                const mine = stop.index === boardingIndex || stop.index === destinationIndex;
+                return (
+                  <View key={stop.index} style={[S.etaRow, mine && S.etaRowOn]}>
+                    <View style={[S.etaDot, stop.status === 'passed' && S.etaDotPassed, mine && S.etaDotOn]} />
+                    <Text style={[S.etaStop, stop.status === 'passed' && S.etaPassed]} numberOfLines={1}>{stop.name}</Text>
+                    <Text style={[S.etaVal, stop.status === 'passed' && S.etaPassed]}>
+                      {stop.status === 'passed' ? 'Passed' : `${stop.etaMin} min`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            <View style={S.driverCard}>
+              <View style={S.driverLeft}>
+                <View style={S.driverAvatar}>
+                  <Text style={S.driverAvatarText}>{(bus.driverName || bus.registration || 'B').charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={S.flex}>
+                  <Text style={S.driverName}>{bus.driverName || 'Driver on duty'}</Text>
+                  <Text style={S.driverRole} numberOfLines={1}>{Math.round((bus.speed || 0) * 3.6)} km/h · {bus.registration}</Text>
+                </View>
+              </View>
+              <View style={S.driverStatusBadge}>
+                <View style={S.driverStatusDot} />
+                <Text style={S.driverStatusText}>On Duty</Text>
+              </View>
+            </View>
+          </>
+        )}
       </View>
     </View>
   );
 }
 
-function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
+function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
+  const bus = tracked?.bus;
   const services = [
-    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.accent} size={22} /> },
-    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primaryStrong} size={22} /> },
-    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.ink} size={22} /> },
+    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primary} size={22} /> },
+    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primary} size={22} /> },
+    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primary} size={22} /> },
   ];
   return (
     <ScrollView
@@ -777,19 +909,21 @@ function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destina
       contentContainerStyle={S.homeScroll}
       showsVerticalScrollIndicator={false}
     >
-      {/* Greeting header (teal) with overlapping sheet below */}
       <OverlapHeader minHeight={196}>
         <View style={S.homeHeader}>
           <Avatar label={userProfile?.name} size={48} />
           <View style={S.homeHeaderText}>
-            <Text style={S.homeGreeting}>Good morning,</Text>
+            <Text style={S.homeGreeting}>Hello,</Text>
             <Text style={S.homeUserName} numberOfLines={1}>{userProfile?.name || 'Passenger'}</Text>
           </View>
-          <IconButton label="Notifications" onPress={() => showToast('No new alerts for Route ' + selectedRoute.id)}>
-            <BellIcon color={COLORS.ink} size={20} hasBadge />
+          <IconButton
+            label="Notifications"
+            onPress={() => showToast(bus ? trackedSummary(tracked, boardingStop, destinationStop) : `No live bus on ${selectedRoute.shortName} right now.`)}
+          >
+            <BellIcon color={COLORS.ink} size={20} hasBadge={!!bus} />
           </IconButton>
         </View>
-        <Vehicle name="bus" width={150} style={S.homeHeaderBus} label="Illustrated city bus" />
+        <Vehicle name="bus" livery="purple" width={132} style={S.homeHeaderBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet style={S.homeSheet}>
@@ -801,7 +935,7 @@ function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destina
             </View>
             <View style={S.flex}>
               <Text style={S.travelCardLabel}>Travelling to</Text>
-              <Text style={S.travelCardPlace} numberOfLines={1}>{destinationStop}</Text>
+              <Text style={S.travelCardPlace} numberOfLines={1}>{destinationStop || 'Choose a route'}</Text>
             </View>
           </View>
           <Button title="Change" tone="soft" size="sm" full={false} onPress={onOpenStops} />
@@ -824,60 +958,53 @@ function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destina
           ))}
         </View>
 
-        {/* Active Journey: pastel gradient status card with illustrated bus on the right edge */}
+        {/* Active Journey: the live bus for the chosen stops */}
         <Text style={S.sectionTitle}>Active Journey</Text>
-        <GradientCard tint="bus" style={S.journeyCard}>
-          <Pressable
-            onPress={onGoTracking}
-            accessibilityRole="button"
-            accessibilityLabel={`Open live tracker for bus ${liveBus.id}`}
-            style={({ pressed }) => [S.journeyPress, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}
-          >
-            <View style={S.journeyCardTop}>
-              <View style={S.flex}>
-                <Text style={S.journeyBusId}>Bus {liveBus.id}</Text>
-                <Text style={S.journeyRouteName}>{selectedRoute.shortName}</Text>
-                <View style={S.journeyKv}>
-                  <View>
-                    <Text style={S.journeyKvLabel}>Status</Text>
-                    <Text style={S.journeyKvVal}>Transit</Text>
-                  </View>
-                  <View>
-                    <Text style={S.journeyKvLabel}>Arrival</Text>
-                    <Text style={S.journeyKvVal}>{liveBus.etaMinutes} min</Text>
+        {bus ? (
+          <GradientCard tint="bus" style={S.journeyCard}>
+            <Pressable
+              onPress={onGoTracking}
+              accessibilityRole="button"
+              accessibilityLabel={`Open live tracker for bus ${bus.registration}`}
+              style={({ pressed }) => [S.journeyPress, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}
+            >
+              <View style={S.journeyCardTop}>
+                <View style={S.flex}>
+                  <Text style={S.journeyBusId}>Bus {bus.registration}</Text>
+                  <Text style={S.journeyRouteName}>{selectedRoute.shortName}</Text>
+                  <View style={S.journeyKv}>
+                    <View>
+                      <Text style={S.journeyKvLabel}>Status</Text>
+                      <Text style={S.journeyKvVal}>{bus.stale ? 'Signal lost' : tracked.phase === 'coming' ? 'On the way' : 'In transit'}</Text>
+                    </View>
+                    <View>
+                      <Text style={S.journeyKvLabel}>{tracked.phase === 'coming' ? 'At your stop' : 'At destination'}</Text>
+                      <Text style={S.journeyKvVal}>{tracked.etaMin != null ? `${tracked.etaMin} min` : '—'}</Text>
+                    </View>
                   </View>
                 </View>
+                <Vehicle name="bus" livery={liveryFor(selectedRoute.id)} status={bus.stale ? 'off' : undefined} running={!bus.stale} width={124} style={S.journeyBus} label="Illustrated city bus" />
               </View>
-              <Vehicle name="bus" width={132} style={S.journeyBus} label="Illustrated city bus" />
-            </View>
 
-            {/* Horizontal progress bar */}
-            <View style={S.journeyProgress}>
-              <View style={S.journeyDotStart} />
-              <View style={S.journeyLine}>
-                <View style={S.journeyLineProgress} />
+              <View style={S.journeyTerminals}>
+                <View style={S.flex}>
+                  <Text style={S.journeyTerminalLabel}>From</Text>
+                  <Text style={S.journeyTerminalName} numberOfLines={1}>{boardingStop}</Text>
+                </View>
+                <View style={S.journeyTerminalRight}>
+                  <Text style={S.journeyTerminalLabel}>To</Text>
+                  <Text style={S.journeyTerminalName} numberOfLines={1}>{destinationStop}</Text>
+                </View>
               </View>
-              <View style={S.journeyBusPill}>
-                <Text style={S.journeyBusPillText}>{liveBus.etaMinutes}m</Text>
-              </View>
-              <View style={S.journeyLine}>
-                <View style={S.journeyLineProgress} />
-              </View>
-              <View style={S.journeyDotEnd} />
-            </View>
-
-            <View style={S.journeyTerminals}>
-              <View style={S.flex}>
-                <Text style={S.journeyTerminalLabel}>From</Text>
-                <Text style={S.journeyTerminalName} numberOfLines={1}>{boardingStop}</Text>
-              </View>
-              <View style={S.journeyTerminalRight}>
-                <Text style={S.journeyTerminalLabel}>To</Text>
-                <Text style={S.journeyTerminalName} numberOfLines={1}>{destinationStop}</Text>
-              </View>
-            </View>
-          </Pressable>
-        </GradientCard>
+            </Pressable>
+          </GradientCard>
+        ) : (
+          <View style={[S.routeSummaryCard, S.journeyCard, S.emptyState]}>
+            <Vehicle name="bus" status="idle" width={108} label="No live bus" />
+            <Text style={S.emptyStateTitle}>No live bus right now</Text>
+            <Text style={S.emptyStateSub}>{selectedRoute.id ? `Nothing is running on ${selectedRoute.shortName} at the moment.` : 'Pick a route to start tracking.'}</Text>
+          </View>
+        )}
 
         {/* Route Summary */}
         <View style={S.sectionRow}>
@@ -892,7 +1019,7 @@ function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destina
             <View style={S.routeBadge}>
               <Text style={S.routeBadgeText}>{selectedRoute.shortName}</Text>
             </View>
-            <Text style={S.routeSummaryMeta}>{selectedRoute.duration} · {selectedRoute.activeBuses} buses active</Text>
+            <Text style={S.routeSummaryMeta}>{selectedRoute.distanceKm} km · {liveCount} {liveCount === 1 ? 'bus' : 'buses'} live</Text>
           </View>
           <Text style={S.routeSummaryName}>{selectedRoute.name}</Text>
           <View style={S.routeTerminalRow}>
@@ -906,7 +1033,7 @@ function HomeScreen({ userProfile, selectedRoute, liveBus, boardingStop, destina
   );
 }
 
-function RoutesScreen({ routeSearchQuery, setRouteSearchQuery, filteredRoutes, selectedRoute, onSelectRoute }) {
+function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteSearchQuery, filteredRoutes, selectedRoute, onSelectRoute }) {
   return (
     <ScrollView
       style={S.flex}
@@ -938,7 +1065,7 @@ function RoutesScreen({ routeSearchQuery, setRouteSearchQuery, filteredRoutes, s
 
       <OverlapSheet>
         {/* Currently Selected */}
-        {selectedRoute && (
+        {selectedRoute.id && (
           <View style={S.activeRouteBanner}>
             <View style={S.activeRouteLeft}>
               <NavigationArrowIcon color={COLORS.accentText} size={14} />
@@ -951,11 +1078,20 @@ function RoutesScreen({ routeSearchQuery, setRouteSearchQuery, filteredRoutes, s
         )}
 
         {/* Route Cards */}
-        {filteredRoutes.length === 0 ? (
+        {routesState === 'loading' ? (
+          <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
+        ) : routesState === 'error' ? (
           <View style={S.emptyState}>
-            <Vehicle name="bus" width={140} label="No routes found" />
+            <Vehicle name="bus" status="maint" width={120} label="Could not load routes" />
+            <Text style={S.emptyStateTitle}>Could not load routes</Text>
+            <Text style={S.emptyStateSub}>Check your connection and try again.</Text>
+            <Button title="Try again" tone="ink" size="sm" full={false} onPress={onRetry} style={S.emptyBtn} />
+          </View>
+        ) : filteredRoutes.length === 0 ? (
+          <View style={S.emptyState}>
+            <Vehicle name="coach" width={128} label="No routes found" />
             <Text style={S.emptyStateTitle}>No routes found</Text>
-            <Text style={S.emptyStateSub}>Try a different search term</Text>
+            <Text style={S.emptyStateSub}>{routeSearchQuery ? 'Try a different search term' : 'Routes appear here once they are published.'}</Text>
           </View>
         ) : (
           filteredRoutes.map(route => {
@@ -974,12 +1110,14 @@ function RoutesScreen({ routeSearchQuery, setRouteSearchQuery, filteredRoutes, s
                   <View style={S.routeCardTop}>
                     <View style={[S.routeNumBadge, isSel && S.routeNumBadgeActive]}>
                       <Text style={[S.routeNumText, isSel && S.routeNumTextActive]}>
-                        {route.id}
+                        {route.number}
                       </Text>
                     </View>
                     <View style={S.routeCardTitleBox}>
                       <Text style={S.routeCardName} numberOfLines={1}>{route.name}</Text>
-                      <Text style={S.routeCardMeta}>{route.duration} · {route.activeBuses} buses</Text>
+                      <Text style={S.routeCardMeta}>
+                        {route.distanceKm} km · {route.stops.length} stops{route.trackable ? '' : ' · no live tracking yet'}
+                      </Text>
                     </View>
                     {isSel ? (
                       <View style={S.trackingPill}>
@@ -1039,17 +1177,17 @@ function ProfileScreen({ userProfile, selectedRoute, boardingStop, destinationSt
             </Text>
           </View>
           <Text style={S.profileName}>{userProfile?.name || 'Passenger'}</Text>
-          <Text style={S.profileUsername}>{userProfile?.type || 'Daily Commuter'}</Text>
+          <Text style={S.profileUsername}>@{userProfile?.username}</Text>
         </View>
       </OverlapHeader>
 
       <OverlapSheet>
-        {/* Commuter Information */}
+        {/* Account */}
         <View style={S.profileCard}>
-          <Text style={S.profileCardTitle}>Commuter Information</Text>
-          <ProfileRow label="Passenger Type" value={userProfile?.type || 'Daily Commuter'} />
-          <ProfileRow label="Region" value="Western Province, Colombo" />
-          <ProfileRow label="App Access" value="Instant Public Access (No Password)" last />
+          <Text style={S.profileCardTitle}>Account</Text>
+          <ProfileRow label="Full name" value={userProfile?.name || '—'} />
+          <ProfileRow label="Username" value={userProfile?.username || '—'} />
+          <ProfileRow label="Phone" value={userProfile?.phone || 'Not provided'} last />
         </View>
 
         {/* Journey Preferences */}
@@ -1061,14 +1199,14 @@ function ProfileScreen({ userProfile, selectedRoute, boardingStop, destinationSt
             </TouchableOpacity>
           </View>
           <ProfileRow label="Preferred Route" value={selectedRoute.shortName} />
-          <ProfileRow label="Boarding Stop" value={boardingStop} accent />
-          <ProfileRow label="Destination Stop" value={destinationStop} accent last />
+          <ProfileRow label="Boarding Stop" value={boardingStop || '—'} accent />
+          <ProfileRow label="Destination Stop" value={destinationStop || '—'} accent last />
         </View>
 
         {/* Reset Stops Defaults */}
         <Button title="Reset Route Terminals" tone="soft" onPress={onResetDefaults} style={S.profileBtn} />
 
-        {/* Sign Out / Switch User */}
+        {/* Sign Out */}
         <Button title="Sign Out" tone="dangerSoft" onPress={onLogout} style={S.profileBtn} />
       </OverlapSheet>
     </ScrollView>
@@ -1085,12 +1223,13 @@ function ProfileRow({ label, value, accent, last }) {
 }
 
 function BottomDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.ink : '#C9D3DD'} size={size} />;
+  // CHANGED (visual only): filled two-tone nav icons, shared with the admin sidebar
+  const icon = (name) => (active) => <NavIcon name={name} active={active} />;
   const items = [
-    { id: 'home', label: 'Home', icon: icon(MapIcon, 19) },
-    { id: 'tracking', label: 'Track', icon: icon(NavigationArrowIcon, 18) },
-    { id: 'routes', label: 'Routes', icon: icon(RouteIcon, 19) },
-    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
+    { id: 'home', label: 'Home', icon: icon('home') },
+    { id: 'tracking', label: 'Track', icon: icon('arrow') },
+    { id: 'routes', label: 'Routes', icon: icon('route') },
+    { id: 'profile', label: 'Profile', icon: icon('user') },
   ];
   return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }
@@ -1216,7 +1355,7 @@ const S = StyleSheet.create({
   homeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: TOP_INSET },
   homeHeaderText: { flex: 1 },
   homeGreeting: { ...type('small'), color: COLORS.ink },
-  homeUserName: { ...type('h1'), color: COLORS.white },
+  homeUserName: { ...type('h1'), color: COLORS.ink },
   homeHeaderBus: { position: "absolute", right: 12, bottom: 34 },
   homeSheet: { minHeight: 600 },
 
@@ -1245,7 +1384,7 @@ const S = StyleSheet.create({
   journeyCard: { marginBottom: 24 },
   journeyPress: { padding: 20 },
   journeyCardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 8 },
-  journeyBus: { marginTop: 8, marginRight: -28 },
+  journeyBus: { marginTop: 8, marginRight: -16 },
   journeyBusId: { ...type('h2'), color: COLORS.ink },
   journeyRouteName: { ...type('small'), color: COLORS.muted, marginTop: 2 },
   journeyKv: { flexDirection: 'row', gap: 24, marginTop: 12 },
@@ -1275,7 +1414,7 @@ const S = StyleSheet.create({
 
   // ─── Routes Screen ──────────────────────────────────────
   routesScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('h1'), color: COLORS.white, paddingTop: TOP_INSET },
+  screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
   screenSubtitle: { ...type('small'), color: COLORS.ink, marginTop: 4, marginBottom: 16 },
 
   searchBar: {
@@ -1294,7 +1433,7 @@ const S = StyleSheet.create({
   activeRouteBannerText: { ...type('smallBold'), color: COLORS.accentText },
   activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
 
-  emptyState: { alignItems: 'center', paddingVertical: 48, gap: 4 },
+  emptyState: { alignItems: 'center', paddingVertical: 24, gap: 4 },
   emptyStateTitle: { ...type('h3'), color: COLORS.ink, marginTop: 16 },
   emptyStateSub: { ...type('small'), color: COLORS.muted },
 
@@ -1336,7 +1475,7 @@ const S = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
   },
   profileAvatarText: { ...type('display'), color: COLORS.primaryDeep },
-  profileName: { ...type('h1'), color: COLORS.white },
+  profileName: { ...type('h1'), color: COLORS.ink },
   profileUsername: { ...type('small'), color: COLORS.ink, marginTop: 4 },
 
   profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
@@ -1396,4 +1535,24 @@ const S = StyleSheet.create({
   timelineStopName: { ...type('small'), color: COLORS.ink },
   timelineStopNameHighlight: { fontWeight: '700', color: COLORS.accentText },
   timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
+// ─── Live states ─────────────────────────────────────────
+  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  gap16: { height: 16 },
+  liveChipOff: { backgroundColor: COLORS.muted },
+  liveDotOff: { backgroundColor: COLORS.mutedLight },
+  transitBadgeWarn: { backgroundColor: COLORS.warningSoft },
+  transitBadgeTextWarn: { color: COLORS.warning },
+  progressSummary: { ...type('smallBold'), color: COLORS.ink, marginTop: 8 },
+  emptyBtn: { marginTop: 12, alignSelf: 'center' },
+
+  // Arrival time at every stop
+  etaList: { maxHeight: 176, marginBottom: 12 },
+  etaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: RADII.sm },
+  etaRowOn: { backgroundColor: COLORS.accentSoft },
+  etaDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.ink },
+  etaDotPassed: { backgroundColor: COLORS.mutedLight },
+  etaDotOn: { backgroundColor: COLORS.accent },
+  etaStop: { ...type('small'), color: COLORS.ink, flex: 1 },
+  etaVal: { ...type('smallBold'), color: COLORS.ink, fontVariant: ['tabular-nums'] },
+  etaPassed: { color: COLORS.muted },
 });

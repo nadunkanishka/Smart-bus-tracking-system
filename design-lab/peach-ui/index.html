@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Peach Learning UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<i id="backdrop"></i>
+<main class="page">
+  <header>
+    <h1 class="page-title">Peach learning UI</h1>
+    <p class="page-lede">A working recreation of the three-screen learning app, built from tokens, inline SVG and a single data file.</p>
+  </header>
+
+  <section class="section" aria-labelledby="t-app">
+    <h2 class="section-title" id="t-app">Working app</h2>
+    <p>Use the bottom bar to move between Home, Progress and My courses. Tasks and Settings show the empty state.</p>
+    <div class="app-stage"><div class="phone" id="app"></div></div>
+  </section>
+
+  <section class="section" aria-labelledby="t-show">
+    <h2 class="section-title" id="t-show">The three screens</h2>
+    <div class="showcase">
+      <div class="phone" id="show-home"></div>
+      <div class="phone" id="show-courses"></div>
+      <div class="phone" id="show-progress"></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="t-lib">
+    <h2 class="section-title" id="t-lib">Components and states</h2>
+    <div class="gallery" id="gallery"></div>
+  </section>
+</main>
+<script src="data.js"></script>
+<script src="art.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

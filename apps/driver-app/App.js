@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -10,8 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
-import OpenStreetMapContainer from './src/components/OpenStreetMapContainer';
+import LiveMap from './src/components/LiveMap';
+import { request, toRoute } from './src/api';
+import * as telemetry from './src/telemetry';
 import { COLORS, RADII, SHADOWS, TYPE } from './src/constants/theme';
 // CHANGED (visual only): shared SmartBus design-system kit.
 import {
@@ -28,6 +31,8 @@ import {
   TextField,
   Toast,
   Vehicle,
+  NotchStat,
+  NavIcon,
 } from './src/components/ui';
 import {
   ArrowRightIcon,
@@ -35,7 +40,6 @@ import {
   CheckIcon,
   LockIcon,
   MessageCircleIcon,
-  MoreVerticalIcon,
   NavigationArrowIcon,
   PhoneCallIcon,
   PlayIcon,
@@ -47,18 +51,9 @@ import {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const API_BASE =
-  Platform.OS === 'android'
-    ? 'http://10.0.2.2:5000/api'
-    : 'http://localhost:5000/api';
-
-const DEFAULT_ROUTE_NUMBER = 'Route 138';
-const DEFAULT_ROUTE_LABEL = 'Pettah ➔ Maharagama Central';
-const DEFAULT_STOPS = ['Pettah', 'Borella Junction', 'Nugegoda Supermarket', 'High Level Stop', 'Maharagama'];
-
-const INITIAL_COORDINATE = { latitude: 6.9271, longitude: 79.8612 };
-const DISPATCH_PHONE = '+94 11 248 7700';
+const DISPATCH_PHONE = process.env.EXPO_PUBLIC_DISPATCH_PHONE || '+94 11 248 7700';
 const MAX_LOG_ITEMS = 8;
+const MAP_PADDING = { top: 24, bottom: 24 };
 
 const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
 
@@ -69,24 +64,20 @@ function formatCoord(val) { return Number(val).toFixed(4); }
 export default function App() {
   // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [busRegistration, setBusRegistration] = useState('NB-4712');
+  const [busRegistration, setBusRegistration] = useState('');
   const [busPassword, setBusPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [authenticatedBus, setAuthenticatedBus] = useState(null);
   const [assignedRoute, setAssignedRoute] = useState(null);
+  const [driverName, setDriverName] = useState(null);
 
   // Navigation
   const [activeTab, setActiveTab] = useState('shift'); // 'shift' | 'route' | 'diagnostics' | 'profile'
 
-  // Shift state
-  const [isOnShift, setIsOnShift] = useState(false);
-  const [currentStopIndex, setCurrentStopIndex] = useState(1);
-
-  // Telemetry
-  const [driverCoordinate, setDriverCoordinate] = useState(INITIAL_COORDINATE);
-  const [busSpeed, setBusSpeed] = useState(28);
-  const [gpsStatus, setGpsStatus] = useState('Connected');
+  // Live telemetry state (connection, duty, offline queue, last GPS fix) comes from src/telemetry.js
+  const [tele, setTele] = useState({ connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, mode: null, error: null });
+  const [dutyBusy, setDutyBusy] = useState(false);
   const [logs, setLogs] = useState([]);
 
   // UI
@@ -94,80 +85,31 @@ export default function App() {
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [dispatchMode, setDispatchMode] = useState('call'); // 'call' | 'message'
 
-  const fallbackRef = useRef(INITIAL_COORDINATE);
-
-  const routeStops = assignedRoute?.stops?.length > 0 ? assignedRoute.stops : DEFAULT_STOPS;
-  const routeNumber = assignedRoute?.routeId || DEFAULT_ROUTE_NUMBER;
-  const routeLabel = assignedRoute?.name
-    || `${assignedRoute?.start || 'Pettah'} ➔ ${assignedRoute?.end || 'Maharagama'}`
-    || DEFAULT_ROUTE_LABEL;
+  // ─── Derived ──────────────────────────────────────────────────────────────
+  const route = useMemo(() => toRoute(assignedRoute), [assignedRoute]);
+  const isOnShift = tele.onDuty;
+  const routeStops = route?.stops || [];
+  const routeNumber = route ? route.shortName : 'No route assigned';
+  const routeLabel = route ? `${route.startTerminal} ➔ ${route.endTerminal}` : 'Ask the admin to assign this bus to a route';
+  const currentStopIndex = tele.nextStopIndex ?? 0;
+  const busSpeed = tele.lastFix ? Math.round(tele.lastFix.speed * 3.6) : 0;
+  const gpsStatus = !tele.onDuty ? 'Disconnected' : tele.lastFix ? 'Connected' : 'Searching';
+  const lastTs = tele.lastFix?.ts;
+  const busMarkers = useMemo(
+    () => (tele.lastFix ? [{ id: 'me', lat: tele.lastFix.lat, lng: tele.lastFix.lng, label: 'This bus' }] : []),
+    [lastTs], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   // ─── Effects ──────────────────────────────────────────────────────────────
 
+  useEffect(() => telemetry.subscribe(setTele), []);
+
+  // GPS transmission log: one line per captured fix
   useEffect(() => {
-    let isMounted = true;
-    let subscription;
-    let fallbackTimer;
-
-    async function startTracking() {
-      if (!isAuthenticated || !isOnShift) {
-        setGpsStatus('Disconnected');
-        return;
-      }
-
-      setGpsStatus('Searching');
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (!isMounted) return;
-
-      if (perm.status !== 'granted') {
-        setGpsStatus('Connected');
-        fallbackTimer = setInterval(() => {
-          if (!isMounted) return;
-          fallbackRef.current = {
-            latitude: fallbackRef.current.latitude + (Math.random() - 0.4) * 0.0006,
-            longitude: fallbackRef.current.longitude + (Math.random() - 0.4) * 0.0006,
-          };
-          const speed = Math.floor(Math.random() * 20) + 20;
-          setBusSpeed(speed);
-          setDriverCoordinate({ ...fallbackRef.current });
-          appendLog(`Fix: ${formatCoord(fallbackRef.current.latitude)}, ${formatCoord(fallbackRef.current.longitude)} | ${speed} km/h`);
-        }, 3000);
-        return;
-      }
-
-      subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, distanceInterval: 5, timeInterval: 3000 },
-        ({ coords }) => {
-          if (!isMounted) return;
-          const speed = coords.speed && coords.speed > 0
-            ? Math.round(coords.speed * 3.6)
-            : Math.floor(Math.random() * 20) + 18;
-          const next = { latitude: coords.latitude, longitude: coords.longitude };
-          fallbackRef.current = next;
-          setDriverCoordinate(next);
-          setBusSpeed(speed);
-          setGpsStatus('Connected');
-          appendLog(`GPS: ${formatCoord(coords.latitude)}, ${formatCoord(coords.longitude)} | ${speed} km/h`);
-        }
-      );
-    }
-
-    startTracking();
-    return () => {
-      isMounted = false;
-      if (subscription) subscription.remove();
-      if (fallbackTimer) clearInterval(fallbackTimer);
-    };
-  }, [isAuthenticated, isOnShift]);
-
-  // Advance stop index on shift
-  useEffect(() => {
-    if (!isAuthenticated || !isOnShift) return undefined;
-    const t = setInterval(() => {
-      setCurrentStopIndex(p => p < routeStops.length - 1 ? p + 1 : p);
-    }, 8000);
-    return () => clearInterval(t);
-  }, [isAuthenticated, isOnShift, routeStops]);
+    if (!tele.lastFix) return;
+    const f = tele.lastFix;
+    appendLog(`${tele.connected ? 'Sent' : 'Buffered'}: ${formatCoord(f.lat)}, ${formatCoord(f.lng)} | ${Math.round(f.speed * 3.6)} km/h`);
+  }, [lastTs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -194,58 +136,50 @@ export default function App() {
       return;
     }
     setLoginLoading(true);
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 3000);
     try {
-      const res = await fetch(`${API_BASE}/auth/driver-login`, {
+      const data = await request('/auth/driver-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registration: busRegistration.trim(), password: busPassword.trim() }),
-        signal: controller.signal,
+        body: { registration: busRegistration.trim(), password: busPassword.trim() },
       });
-      clearTimeout(tid);
-      const data = await res.json();
-      if (!res.ok) { setLoginError(data.error || 'Authentication failed.'); setLoginLoading(false); return; }
       setAuthenticatedBus(data.bus);
       setAssignedRoute(data.assignedRoute);
+      setDriverName(data.driver?.name || null);
+      await telemetry.connect(data.token);
       setIsAuthenticated(true);
-      setIsOnShift(true);
       setActiveTab('shift');
-      appendLog(`Logged in: ${data.bus?.registration || busRegistration}.`);
-    } catch {
-      clearTimeout(tid);
-      const reg = busRegistration.trim() || 'NB-4712';
-      setAuthenticatedBus({ registration: reg, status: 'Active' });
-      setIsAuthenticated(true);
-      setIsOnShift(true);
-      setActiveTab('shift');
-      appendLog(`Session authorized: ${reg}. GPS telemetry linked.`);
+      appendLog(`Signed in: ${data.bus?.registration || busRegistration}.`);
+    } catch (err) {
+      setLoginError(err.message);
     } finally {
       setLoginLoading(false);
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    await telemetry.disconnect();
     setIsAuthenticated(false);
-    setIsOnShift(false);
     setActiveTab('shift');
     setLogs([]);
-    setBusSpeed(0);
     setBusPassword('');
   }
 
-  function handleToggleShift() {
-    if (isOnShift) {
-      setIsOnShift(false);
-      setGpsStatus('Disconnected');
-      setBusSpeed(0);
-      appendLog('Shift ended. Telemetry offline.');
-      showToast('Shift ended. Telemetry offline.');
-    } else {
-      setIsOnShift(true);
-      setGpsStatus('Searching');
-      appendLog('Shift started. Broadcasting live location.');
-      showToast('Shift started. Broadcasting live location.');
+  async function handleToggleShift() {
+    if (dutyBusy) return;
+    setDutyBusy(true);
+    try {
+      if (tele.onDuty) {
+        await telemetry.stopDuty();
+        appendLog('Off duty. Location sharing stopped.');
+        showToast('Off duty. Location sharing stopped.');
+      } else {
+        await telemetry.startDuty();
+        appendLog('On duty. Broadcasting live location.');
+        showToast('On duty. Broadcasting live location.');
+      }
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      setDutyBusy(false);
     }
   }
 
@@ -277,7 +211,7 @@ export default function App() {
           brand="SmartBus Driver"
           tagline="Broadcast live GPS to passengers"
           title="Driver sign in"
-          subtitle="Enter your bus registration details to start your shift."
+          subtitle="Enter your bus registration details."
           footer={
             <Text style={D.authHelp}>
               Forgot your password? Ask Transit Dispatch at {DISPATCH_PHONE}.
@@ -302,7 +236,7 @@ export default function App() {
             placeholder="Enter driver password"
             onSubmitEditing={handleLogin}
           />
-          <Button title="Sign in & start shift" onPress={handleLogin} loading={loginLoading} />
+          <Button title="Sign in" onPress={handleLogin} loading={loginLoading} />
         </AuthLayout>
       ) : (
         /* ═══════════════════════════════════════════════════
@@ -314,20 +248,24 @@ export default function App() {
           {activeTab === 'shift' ? (
             <ShiftScreen
               isOnShift={isOnShift}
+              busy={dutyBusy}
+              hasRoute={!!route?.trackable}
               busRegistration={authenticatedBus?.registration || busRegistration}
+              driverName={driverName}
               routeLabel={routeLabel}
               routeNumber={routeNumber}
-              routeStops={routeStops}
-              currentStopIndex={currentStopIndex}
-              driverCoordinate={driverCoordinate}
+              nextStop={routeStops[currentStopIndex]}
               busSpeed={busSpeed}
               gpsStatus={gpsStatus}
+              connected={tele.connected}
+              queued={tele.queued}
+              mode={tele.mode}
               onToggleShift={handleToggleShift}
-              onOpenDispatch={openDispatch}
-              onViewRoute={() => setActiveTab('route')}
             />
           ) : activeTab === 'route' ? (
             <RouteScreen
+              route={route}
+              busMarkers={busMarkers}
               routeNumber={routeNumber}
               routeLabel={routeLabel}
               routeStops={routeStops}
@@ -338,17 +276,19 @@ export default function App() {
             <DiagnosticsScreen
               busSpeed={busSpeed}
               gpsStatus={gpsStatus}
-              driverCoordinate={driverCoordinate}
+              driverCoordinate={tele.lastFix ? { latitude: tele.lastFix.lat, longitude: tele.lastFix.lng } : null}
               logs={logs}
               isOnShift={isOnShift}
             />
           ) : (
             <ProfileScreen
               busRegistration={authenticatedBus?.registration || busRegistration}
+              driverName={driverName}
               routeNumber={routeNumber}
               routeLabel={routeLabel}
               isOnShift={isOnShift}
               onLogout={handleLogout}
+              onOpenDispatch={openDispatch}
             />
           )}
 
@@ -472,134 +412,80 @@ export default function App() {
   );
 }
 
-// ─── Shift Screen (Map Primary) ───────────────────────────────────────────────
+// ─── Duty Screen ──────────────────────────────────────────────────────────────
+// Intentionally minimal: one large On Duty / Off Duty toggle and the status a driver needs at a glance.
 
 function ShiftScreen({
-  isOnShift,
-  busRegistration,
-  routeLabel,
-  routeNumber,
-  routeStops,
-  currentStopIndex,
-  driverCoordinate,
-  busSpeed,
-  gpsStatus,
-  onToggleShift,
-  onOpenDispatch,
-  onViewRoute,
+  isOnShift, busy, hasRoute, busRegistration, driverName, routeLabel, routeNumber, nextStop,
+  busSpeed, gpsStatus, connected, queued, mode, onToggleShift,
 }) {
-  const progress = isOnShift ? Math.min(0.95, Math.max(0.1, (currentStopIndex + 1) / routeStops.length)) : 0.1;
   const gpsOk = gpsStatus === 'Connected';
   return (
-    <View style={D.flex}>
-      {/* Map fills the screen; cards float on top */}
-      <View style={D.mapCanvas}>
-        <OpenStreetMapContainer
-          isOnDuty={isOnShift}
-          routeName={routeNumber}
-          liveCoordinate={driverCoordinate}
-        />
-      </View>
+    <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
+      <OverlapHeader minHeight={150}>
+        <Text style={D.screenTitle}>{busRegistration}</Text>
+        <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
+        {/* CHANGED (illustration only): the bus shows a z while off duty; the toggle text still states the status. */}
+        <Vehicle name="bus" livery="purple" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
+      </OverlapHeader>
 
-      {/* Floating Map Header */}
-      <View style={D.mapHeader} pointerEvents="box-none">
-        <View style={D.mapHeaderInner}>
-          <View style={D.mapHeaderLeft}>
-            <View style={[D.liveChip, !isOnShift && D.liveChipOff]}>
-              <View style={[D.liveDot, !isOnShift && D.liveDotOff]} />
-              <Text style={D.liveText}>{isOnShift ? 'LIVE' : 'OFF'}</Text>
-            </View>
-            <Text style={D.mapHeaderTitle}>Driver Navigation</Text>
-          </View>
-          <IconButton label="View route" onPress={onViewRoute} tone="soft">
-            <MoreVerticalIcon color={COLORS.ink} size={18} />
-          </IconButton>
-        </View>
-      </View>
+      <OverlapSheet>
+        {!hasRoute ? (
+          <Banner tone="danger">This bus has no route with a map path and stops yet. Ask the admin to assign one before going on duty.</Banner>
+        ) : null}
 
-      {/* Telemetry summary card (white, floats above the dock) */}
-      <View style={D.summaryCard}>
-        {/* Header Row */}
-        <View style={D.sheetHeader}>
-          <View style={D.flex}>
-            <Text style={D.sheetMeta}>Bus registration</Text>
-            <Text style={D.sheetBusId}>{busRegistration}</Text>
-            <Text style={D.sheetRoute} numberOfLines={1}>{routeLabel}</Text>
+        <Pressable
+          onPress={onToggleShift}
+          disabled={busy || (!hasRoute && !isOnShift)}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: isOnShift, busy, disabled: !hasRoute && !isOnShift }}
+          accessibilityLabel={isOnShift ? 'On duty. Tap to go off duty' : 'Off duty. Tap to go on duty'}
+          style={({ pressed }) => [
+            D.dutyBtn,
+            isOnShift ? D.dutyBtnOn : D.dutyBtnOff,
+            !hasRoute && !isOnShift && D.dutyBtnDisabled,
+            { transform: [{ scale: pressed ? 0.98 : 1 }] },
+          ]}
+        >
+          <View style={D.dutyIcon}>
+            {busy
+              ? <ActivityIndicator color={COLORS.ink} />
+              : isOnShift ? <StopIcon color={COLORS.ink} size={24} /> : <PlayIcon color={COLORS.ink} size={24} />}
           </View>
-          <Button
-            title={isOnShift ? 'End shift' : 'Start shift'}
-            tone={isOnShift ? 'ink' : 'accent'}
-            size="sm"
-            full={false}
-            onPress={onToggleShift}
-            icon={isOnShift ? <StopIcon color={COLORS.accent} size={13} /> : <PlayIcon color={COLORS.ink} size={13} />}
-          />
-        </View>
+          <Text style={D.dutyState}>{isOnShift ? 'ON DUTY' : 'OFF DUTY'}</Text>
+          <Text style={D.dutyHint}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>
+        </Pressable>
 
-        {/* Progress bar with coral arrow head */}
-        <View style={D.progressWrap}>
-          <View style={D.progressTrack}>
-            <View style={[D.progressFill, { flex: progress }]} />
-            <ArrowRightIcon color={COLORS.accent} size={20} />
-            <View style={[D.progressRest, { flex: 1 - progress }]} />
-          </View>
-          <View style={D.progressLabels}>
-            <Text style={D.progressLabel} numberOfLines={1}>{routeStops[0]}</Text>
-            <Text style={D.progressLabelCenter} numberOfLines={1}>Next: {routeStops[currentStopIndex]}</Text>
-            <Text style={D.progressLabelRight} numberOfLines={1}>{routeStops[routeStops.length - 1]}</Text>
-          </View>
-        </View>
-
-        {/* Three-column stat panel */}
+        {/* Three-column status panel */}
+        {/* CHANGED (visual only): same three values, shown as notch stat cards */}
         <View style={D.specsRow}>
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>Speed</Text>
-            <Text style={D.specValAccent}>{isOnShift ? `${busSpeed}` : '0'}<Text style={D.specUnit}> km/h</Text></Text>
-          </View>
-          <View style={D.specDivider} />
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>GPS</Text>
-            <Text style={[D.specVal, { color: gpsOk ? COLORS.success : COLORS.danger }]}>
-              {gpsStatus}
-            </Text>
-          </View>
-          <View style={D.specDivider} />
-          <View style={D.specBlock}>
-            <Text style={D.specLabel}>Status</Text>
-            <Text style={[D.specVal, { color: isOnShift ? COLORS.success : COLORS.muted }]}>
-              {isOnShift ? 'Active' : 'Standby'}
-            </Text>
-          </View>
+          <NotchStat label="Server" tone="orange" icon={(c) => <RouteIcon color={c} size={14} />} value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
+          <NotchStat label="GPS" tone="purple" icon={(c) => <NavigationArrowIcon color={c} size={14} />} value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
+          <NotchStat label="Buffered" tone="orange" icon={(c) => <BusIcon color={c} size={14} />} value={String(queued)} valueColor={queued ? COLORS.warning : COLORS.ink} />
         </View>
 
-        {/* Dispatch Contact */}
-        <View style={D.dispatchCard}>
-          <View style={D.dispatchLeft}>
-            <View style={D.dispatchCardAvatar}>
-              <Text style={D.dispatchCardAvatarText}>HQ</Text>
-            </View>
-            <View style={D.flex}>
-              <Text style={D.dispatchCardName}>Transit Dispatch</Text>
-              <Text style={D.dispatchCardRole} numberOfLines={1}>Central Command Center</Text>
-            </View>
+        {queued > 0 ? (
+          <Text style={D.dutyNote}>
+            {connected ? 'Sending saved positions…' : `No connection. ${queued} position${queued === 1 ? '' : 's'} saved and will be sent when the signal returns.`}
+          </Text>
+        ) : null}
+
+        {isOnShift ? (
+          <View style={D.profileCard}>
+            <PRow label="Route" value={routeLabel} />
+            <PRow label="Next stop" value={nextStop || '—'} accent />
+            <PRow label="Speed" value={`${busSpeed} km/h`} />
+            <PRow label="Tracking" value={mode === 'background' ? 'Continues with the screen off' : 'While this screen is open'} last />
           </View>
-          <View style={D.dispatchBtns}>
-            <IconButton label="Call dispatch" tone="ink" onPress={() => onOpenDispatch('call')}>
-              <PhoneCallIcon color="#FFF" size={16} />
-            </IconButton>
-            <IconButton label="Message dispatch" tone="glass" onPress={() => onOpenDispatch('message')}>
-              <MessageCircleIcon color={COLORS.ink} size={16} />
-            </IconButton>
-          </View>
-        </View>
-      </View>
-    </View>
+        ) : null}
+      </OverlapSheet>
+    </ScrollView>
   );
 }
 
 // ─── Route Screen ────────────────────────────────────────────────────────────
 
-function RouteScreen({ routeNumber, routeLabel, routeStops, currentStopIndex, isOnShift }) {
+function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, currentStopIndex, isOnShift }) {
   return (
     <ScrollView
       style={D.flex}
@@ -609,16 +495,16 @@ function RouteScreen({ routeNumber, routeLabel, routeStops, currentStopIndex, is
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Route Overview</Text>
         <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
-        <Vehicle name="bus" width={130} style={D.headerBus} label="Illustrated city bus" />
+        <Vehicle name="bus" livery="navy" width={124} style={D.headerBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet>
-        {/* Route Badge Card: pastel gradient with illustrated bus on the right edge */}
+        {/* Route Badge Card: pastel gradient */}
         <GradientCard tint="bus" style={D.routeHeaderCardWrap}>
           <View style={D.routeHeaderCard}>
             <View style={D.routeHeaderLeft}>
               <View style={D.routeNumBadge}>
-                <Text style={D.routeNumText}>{routeNumber.replace('Route ', '')}</Text>
+                <Text style={D.routeNumText}>{route?.number || '–'}</Text>
               </View>
               <View style={D.flex}>
                 <Text style={D.routeCardLabel}>{routeNumber}</Text>
@@ -627,18 +513,29 @@ function RouteScreen({ routeNumber, routeLabel, routeStops, currentStopIndex, is
             </View>
             <View style={[D.statusPill, isOnShift ? D.statusPillActive : D.statusPillOff]}>
               <Text style={[D.statusPillText, isOnShift ? D.statusPillTextActive : D.statusPillTextOff]}>
-                {isOnShift ? 'On Shift' : 'Standby'}
+                {isOnShift ? 'On Duty' : 'Off Duty'}
               </Text>
             </View>
           </View>
         </GradientCard>
 
+        {route?.trackable ? (
+          <View style={D.mapCard}>
+            <LiveMap path={route.path} stops={route.stopPoints} buses={busMarkers} highlightStop={isOnShift ? currentStopIndex : -1} padding={MAP_PADDING} />
+          </View>
+        ) : null}
+
         {/* Stop Timeline */}
         <Text style={D.sectionLabel}>Stop timeline</Text>
         <View style={D.timelineCard}>
-          {routeStops.map((stop, idx) => {
-            const isPassed = idx < currentStopIndex;
-            const isCurrent = idx === currentStopIndex;
+          {routeStops.length === 0 ? (
+            <View style={D.emptyLogBox}>
+              <Vehicle name="bus" width={100} label="No route assigned" />
+              <Text style={D.emptyLog}>No route is assigned to this bus yet.</Text>
+            </View>
+          ) : routeStops.map((stop, idx) => {
+            const isPassed = isOnShift && idx < currentStopIndex;
+            const isCurrent = isOnShift && idx === currentStopIndex;
             return (
               <View key={idx} style={D.timelineRow}>
                 <View style={D.timelineLeft}>
@@ -659,7 +556,7 @@ function RouteScreen({ routeNumber, routeLabel, routeStops, currentStopIndex, is
                     {stop}
                   </Text>
                   <Text style={D.timelineTag}>
-                    {isPassed ? 'Passed' : isCurrent ? '→ Approaching Now' : 'Upcoming'}
+                    {isPassed ? 'Passed' : isCurrent ? '→ Next stop' : 'Upcoming'}
                   </Text>
                 </View>
               </View>
@@ -684,7 +581,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Telemetry</Text>
         <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
-        <Vehicle name="van" width={120} style={D.headerBus} label="Illustrated delivery van" />
+        <Vehicle name="minibus" width={116} style={D.headerBus} label="Illustrated minibus" />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -710,7 +607,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
         <View style={D.coordCard}>
           <Text style={D.sectionLabelFlat}>Current coordinates</Text>
           <Text style={D.coordText}>
-            {formatCoord(driverCoordinate.latitude)}, {formatCoord(driverCoordinate.longitude)}
+            {driverCoordinate ? `${formatCoord(driverCoordinate.latitude)}, ${formatCoord(driverCoordinate.longitude)}` : 'No GPS fix yet'}
           </Text>
         </View>
 
@@ -719,8 +616,8 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
         <View style={D.logCard}>
           {logs.length === 0 ? (
             <View style={D.emptyLogBox}>
-              <Vehicle name="bus" width={110} label="No GPS fixes yet" />
-              <Text style={D.emptyLog}>No fixes recorded. Start shift to broadcast.</Text>
+              <Vehicle name="bus" status="idle" width={100} label="No GPS fixes yet" />
+              <Text style={D.emptyLog}>No fixes recorded. Go on duty to broadcast.</Text>
             </View>
           ) : (
             logs.map((entry, idx) => (
@@ -737,7 +634,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
 
 // ─── Profile Screen ──────────────────────────────────────────────────────────
 
-function ProfileScreen({ busRegistration, routeNumber, routeLabel, isOnShift, onLogout }) {
+function ProfileScreen({ busRegistration, driverName, routeNumber, routeLabel, isOnShift, onLogout, onOpenDispatch }) {
   return (
     <ScrollView
       style={D.flex}
@@ -750,8 +647,8 @@ function ProfileScreen({ busRegistration, routeNumber, routeLabel, isOnShift, on
           <View style={D.profileAvatar}>
             <Text style={D.profileAvatarText}>{(busRegistration || 'NB').slice(0, 2)}</Text>
           </View>
-          <Text style={D.profileName}>{busRegistration || 'NB-4712'}</Text>
-          <Text style={D.profileSub}>Commercial Transit Vehicle</Text>
+          <Text style={D.profileName}>{busRegistration}</Text>
+          <Text style={D.profileSub}>{driverName || 'Commercial Transit Vehicle'}</Text>
         </View>
       </OverlapHeader>
 
@@ -760,9 +657,31 @@ function ProfileScreen({ busRegistration, routeNumber, routeLabel, isOnShift, on
         <View style={D.profileCard}>
           <Text style={D.profileCardTitle}>Vehicle Details</Text>
           <PRow label="Registration" value={busRegistration} />
+          <PRow label="Driver" value={driverName || 'Not assigned'} />
           <PRow label="Assigned Route" value={routeNumber} />
           <PRow label="Corridor" value={routeLabel} />
-          <PRow label="Shift Status" value={isOnShift ? 'Active (Broadcasting)' : 'Off-duty'} accent={isOnShift} last />
+          <PRow label="Duty Status" value={isOnShift ? 'On duty (broadcasting)' : 'Off duty'} accent={isOnShift} last />
+        </View>
+
+        {/* Dispatch Contact (kept off the duty screen so it does not distract while driving) */}
+        <View style={[D.dispatchCard, D.dispatchCardSpaced]}>
+          <View style={D.dispatchLeft}>
+            <View style={D.dispatchCardAvatar}>
+              <Text style={D.dispatchCardAvatarText}>HQ</Text>
+            </View>
+            <View style={D.flex}>
+              <Text style={D.dispatchCardName}>Transit Dispatch</Text>
+              <Text style={D.dispatchCardRole} numberOfLines={1}>Central Command Center</Text>
+            </View>
+          </View>
+          <View style={D.dispatchBtns}>
+            <IconButton label="Call dispatch" tone="ink" onPress={() => onOpenDispatch('call')}>
+              <PhoneCallIcon color="#FFF" size={16} />
+            </IconButton>
+            <IconButton label="Message dispatch" tone="glass" onPress={() => onOpenDispatch('message')}>
+              <MessageCircleIcon color={COLORS.ink} size={16} />
+            </IconButton>
+          </View>
         </View>
 
         {/* Sign Out */}
@@ -784,12 +703,13 @@ function PRow({ label, value, accent, last }) {
 // ─── Driver Bottom Dock ───────────────────────────────────────────────────────
 
 function DriverDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (a) => <Cmp color={a ? COLORS.ink : '#C9D3DD'} size={size} />;
+  // CHANGED (visual only): filled two-tone nav icons, shared with the admin sidebar
+  const icon = (name) => (a) => <NavIcon name={name} active={a} />;
   const items = [
-    { id: 'shift', label: 'Navigate', icon: icon(NavigationArrowIcon, 18) },
-    { id: 'route', label: 'Route', icon: icon(RouteIcon, 19) },
-    { id: 'diagnostics', label: 'Telemetry', icon: icon(SpeedometerIcon, 19) },
-    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
+    { id: 'shift', label: 'Duty', icon: icon('arrow') },
+    { id: 'route', label: 'Route', icon: icon('route') },
+    { id: 'diagnostics', label: 'Telemetry', icon: icon('gauge') },
+    { id: 'profile', label: 'Profile', icon: icon('user') },
   ];
   return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }
@@ -810,61 +730,24 @@ const D = StyleSheet.create({
   // ─── Auth ───────────────────────────────────────────────
   authHelp: { ...type('small'), textAlign: 'center', color: COLORS.muted, marginTop: 24 },
 
-  // ─── Shift Screen ────────────────────────────────────────
-  mapCanvas: { ...StyleSheet.absoluteFillObject },
-  mapHeader: {
-    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
-    paddingTop: TOP_INSET + 8, paddingHorizontal: 16,
-  },
-  mapHeaderInner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.surface, borderRadius: RADII.lg, paddingLeft: 16, paddingRight: 8, paddingVertical: 8,
-    ...SHADOWS.md,
-  },
-  mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  liveChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill,
-  },
-  liveChipOff: { backgroundColor: COLORS.muted },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent },
-  liveDotOff: { backgroundColor: COLORS.mutedLight },
-  liveText: { ...type('overline'), color: COLORS.white },
-  mapHeaderTitle: { ...type('h3'), color: COLORS.ink },
+  // ─── Duty Screen ─────────────────────────────────────────
+  dutyBtn: { minHeight: 220, borderRadius: RADII.xl, alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16, padding: 24, ...SHADOWS.md },
+  dutyBtnOn: { backgroundColor: COLORS.success },
+  dutyBtnOff: { backgroundColor: COLORS.ink },
+  dutyBtnDisabled: { opacity: 0.5 },
+  dutyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  dutyState: { ...type('display'), color: COLORS.white, letterSpacing: 1 },
+  dutyHint: { ...type('body'), color: COLORS.white },
+  dutyNote: { ...type('small'), color: COLORS.warning, marginBottom: 16 },
+  mapCard: { height: 260, borderRadius: RADII.lg, overflow: 'hidden', marginTop: 16, backgroundColor: COLORS.surfaceSoft, ...SHADOWS.sm },
 
-  summaryCard: {
-    position: 'absolute', left: 16, right: 16, bottom: 104,
-    backgroundColor: COLORS.surface, borderRadius: RADII.xl, padding: 20, ...SHADOWS.lg,
-  },
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 },
-  sheetMeta: { ...type('caption'), color: COLORS.muted },
-  sheetBusId: { ...type('h2'), color: COLORS.ink },
-  sheetRoute: { ...type('small'), color: COLORS.muted },
-
-  progressWrap: { marginBottom: 16 },
-  progressTrack: { flexDirection: 'row', alignItems: 'center', height: 20 },
-  progressFill: { height: 4, borderRadius: 2, backgroundColor: COLORS.accent },
-  progressRest: { height: 4, borderRadius: 2, backgroundColor: COLORS.ink },
-  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, gap: 8 },
-  progressLabel: { ...type('caption'), color: COLORS.muted, flex: 1 },
-  progressLabelCenter: { ...type('caption'), color: COLORS.ink, flex: 1.4, textAlign: 'center' },
-  progressLabelRight: { ...type('caption'), color: COLORS.muted, flex: 1, textAlign: 'right' },
-
-  specsRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, paddingVertical: 16, marginBottom: 12,
-  },
-  specBlock: { flex: 1, alignItems: 'center', gap: 4 },
-  specDivider: { width: 1, height: 32, backgroundColor: COLORS.line },
-  specLabel: { ...type('caption'), color: COLORS.muted },
-  specVal: { ...type('bodyBold'), color: COLORS.ink, textAlign: 'center' },
-  specValAccent: { ...type('bodyBold'), color: COLORS.ink },
-  specUnit: { ...type('caption'), color: COLORS.muted },
+  specsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
 
   dispatchCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
     backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, padding: 12,
   },
+  dispatchCardSpaced: { backgroundColor: COLORS.surface, marginBottom: 16, padding: 16, borderRadius: RADII.lg, ...SHADOWS.sm },
   dispatchLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
   dispatchCardAvatar: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primarySoft,
@@ -877,7 +760,7 @@ const D = StyleSheet.create({
 
   // ─── Route / Telemetry / Profile ─────────────────────────
   routeScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('h1'), color: COLORS.white, paddingTop: TOP_INSET },
+  screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
   screenSubHeader: { ...type('small'), color: COLORS.ink, marginTop: 4, maxWidth: '60%' },
   headerBus: { position: 'absolute', right: 12, bottom: 34 },
 
@@ -938,7 +821,7 @@ const D = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
   },
   profileAvatarText: { ...type('h1'), color: COLORS.primaryDeep },
-  profileName: { ...type('h1'), color: COLORS.white },
+  profileName: { ...type('h1'), color: COLORS.ink },
   profileSub: { ...type('small'), color: COLORS.ink, marginTop: 4 },
   profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
   profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 4 },

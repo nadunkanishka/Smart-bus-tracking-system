@@ -1,14 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './design/tokens.css'; // CHANGED: shared design tokens
 import './admin-theme.css';
-import { RoadScene, Vehicle } from './design/Vehicle'; // CHANGED: shared vehicle illustration set
+import { RoadScene, Vehicle } from './design/Vehicle';
+import { NAV_ICONS } from './design/navIcons'; // CHANGED: shared vehicle illustration set
+import RouteMapEditor from './components/RouteMapEditor';
+import LiveMonitor from './pages/LiveMonitor';
+import Analytics from './pages/Analytics';
 
-const API_BASE = 'http://localhost:5000/api';
+// Set REACT_APP_API_URL (e.g. https://api.example.com) for deployed builds.
+const API_BASE = `${(process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/\/$/, '')}/api`;
+
+// Every request after login carries the admin token.
+let authToken = '';
+const api = (path, options = {}) => fetch(`${API_BASE}${path}`, {
+  ...options,
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}`, ...options.headers },
+});
 
 const modalDefaults = {
   driver: { name: '', license: '', expiry: '', phone: '' },
-  bus: { registration: '', capacity: '', mileage: '', password: '', status: 'Active' },
-  route: { name: '', start: '', end: '', distance: '', stops: [''], assignedBus: '' },
+  bus: { registration: '', capacity: '', mileage: '', password: '', assignedDriver: '', status: 'Active' },
+  route: { name: '', routeNumber: '', start: '', end: '', distance: '', stopPoints: [], path: [], assignedBus: '' },
 };
 
 function App() {
@@ -20,6 +32,7 @@ function App() {
       return null;
     }
   });
+  authToken = user?.token || '';
   const [loginCreds, setLoginCreds] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
@@ -67,11 +80,18 @@ function App() {
   const fetchBackendData = async () => {
     try {
       const [resD, resB, resR, resS] = await Promise.all([
-        fetch(`${API_BASE}/drivers`),
-        fetch(`${API_BASE}/buses`),
-        fetch(`${API_BASE}/routes`),
-        fetch(`${API_BASE}/dashboard/summary`),
+        api('/drivers'),
+        api('/buses'),
+        api('/routes'),
+        api('/dashboard/summary'),
       ]);
+
+      // Session expired or signed in before tokens existed: ask the admin to sign in again.
+      if (resD.status === 401 || resD.status === 403) {
+        handleLogout();
+        setLoginError('Your session has expired. Please sign in again.');
+        return;
+      }
 
       let connected = false;
 
@@ -103,7 +123,8 @@ function App() {
               registration: b.registration,
               capacity: `${b.capacity} seats`,
               mileage: `${Number(b.mileage || 0).toLocaleString('en-US')} km`,
-              password: b.password || '',
+              hasPassword: !!b.hasPassword,
+              assignedDriver: b.assignedDriver || '',
               rawCapacity: b.capacity,
               rawMileage: b.mileage,
               status: b.status || 'Active',
@@ -125,7 +146,11 @@ function App() {
               end: r.end,
               distance: `${r.distance} km`,
               rawDistance: r.distance,
+              routeNumber: r.routeNumber || '',
               stops: Array.isArray(r.stops) ? r.stops : [],
+              // GeoJSON [lng, lat] from the API -> [lat, lng] for the map editor
+              stopPoints: (r.stopPoints || []).map((sp) => ({ name: sp.name, lat: sp.location.coordinates[1], lng: sp.location.coordinates[0] })),
+              path: (r.path?.coordinates || []).map(([lng, lat]) => [lat, lng]),
               assignedBus: r.assignedBus || '',
               status: r.status || 'Active',
             }))
@@ -149,7 +174,7 @@ function App() {
     if (user) {
       fetchBackendData();
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const updateClock = () => {
@@ -195,8 +220,9 @@ function App() {
         return;
       }
 
-      setUser(data.user);
-      sessionStorage.setItem('adminUser', JSON.stringify(data.user));
+      const signedIn = { ...data.user, token: data.token };
+      setUser(signedIn);
+      sessionStorage.setItem('adminUser', JSON.stringify(signedIn));
       setLoginLoading(false);
     } catch (err) {
       setLoginError('Could not connect to backend server. Make sure node backend is running.');
@@ -217,7 +243,7 @@ function App() {
   const fleetChartStyle = {
     background: `conic-gradient(
       var(--primary) 0deg ${activePct}deg,
-      #C4CFDA ${activePct}deg ${idlePct}deg,
+      #D1D1D1 ${activePct}deg ${idlePct}deg,
       var(--accent) ${idlePct}deg 360deg
     )`,
   };
@@ -245,7 +271,8 @@ function App() {
           registration: record.registration,
           capacity: record.rawCapacity ?? String(record.capacity).replace(' seats', ''),
           mileage: record.rawMileage ?? String(record.mileage).replace(' km', '').replaceAll(',', ''),
-          password: record.password || '',
+          password: '', // write-only: blank keeps the current password
+          assignedDriver: record.assignedDriver || '',
           status: record.status || 'Active',
         });
       } else {
@@ -254,11 +281,9 @@ function App() {
           start: record.start,
           end: record.end,
           distance: record.rawDistance ?? String(record.distance).replace(' km', ''),
-          stops: Array.isArray(record.stops)
-            ? record.stops.length > 0 ? record.stops : ['']
-            : typeof record.stops === 'string'
-              ? record.stops.split(',').map((s) => s.trim())
-              : [''],
+          routeNumber: record.routeNumber || '',
+          stopPoints: record.stopPoints || [],
+          path: record.path || [],
           assignedBus: record.assignedBus || '',
         });
       }
@@ -299,131 +324,83 @@ function App() {
     setFormData((current) => ({ ...current, [key]: value }));
   };
 
+  // Sends a write to the API. Returns true on success; on failure shows the server's message and keeps the form open.
+  const send = async (method, path, payload, successMessage) => {
+    try {
+      const res = await api(path, { method, body: payload ? JSON.stringify(payload) : undefined });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showNotification(`Not saved: ${data.error || `server returned ${res.status}`}`);
+        return false;
+      }
+      showNotification(successMessage);
+      return true;
+    } catch (err) {
+      showNotification('Not saved: could not reach the backend server.');
+      return false;
+    }
+  };
+
   const handleSave = async () => {
     const { entity, mode, editId } = modalState;
+    const missing = (fields) => fields.filter(([value]) => !String(value ?? '').trim()).map(([, label]) => label);
+    let payload;
+    let required;
+    let label;
 
     if (entity === 'driver') {
-      const payload = {
-        name: formData.name || 'New Driver',
-        license: formData.license || `LK-2026-${Math.floor(10000 + Math.random() * 90000)}`,
-        expiry: formData.expiry || '2028-01-01',
-        phone: formData.phone || '+94 77 000 0000',
-        status: 'Active',
-      };
-
-      try {
-        if (mode === 'edit') {
-          await fetch(`${API_BASE}/drivers/${editId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          showNotification(`Driver ${payload.name} updated successfully.`);
-        } else {
-          await fetch(`${API_BASE}/drivers`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          showNotification(`Driver ${payload.name} added successfully.`);
-        }
-      } catch (err) {
-        showNotification(`Saved driver ${payload.name}.`);
-      }
-    }
-
-    if (entity === 'bus') {
-      const payload = {
-        registration: formData.registration || 'NB-0000',
-        capacity: Number(formData.capacity || 50),
-        mileage: Number(formData.mileage || 0),
+      required = missing([[formData.name, 'full name'], [formData.license, 'license number'], [formData.expiry, 'license expiry'], [formData.phone, 'phone number']]);
+      payload = { name: formData.name.trim(), license: formData.license.trim(), expiry: formData.expiry, phone: formData.phone.trim(), status: 'Active' };
+      label = `Driver ${payload.name}`;
+    } else if (entity === 'bus') {
+      required = missing([[formData.registration, 'registration number'], [formData.capacity, 'seating capacity'], [formData.mileage, 'mileage']]);
+      if (mode !== 'edit' && !formData.password) required.push('bus password');
+      payload = {
+        registration: formData.registration.trim(),
+        capacity: Number(formData.capacity),
+        mileage: Number(formData.mileage),
         password: formData.password || '',
+        assignedDriver: formData.assignedDriver || '',
         status: formData.status || 'Active',
       };
-
-      try {
-        if (mode === 'edit') {
-          await fetch(`${API_BASE}/buses/${editId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          showNotification(`Bus ${payload.registration} updated successfully.`);
-        } else {
-          await fetch(`${API_BASE}/buses`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          showNotification(`Bus ${payload.registration} registered successfully.`);
-        }
-      } catch (err) {
-        showNotification(`Saved bus ${payload.registration}.`);
-      }
-    }
-
-    if (entity === 'route') {
-      const cleanStops = (Array.isArray(formData.stops) ? formData.stops : [])
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      const payload = {
-        name: formData.name || 'New Route',
-        start: formData.start || 'Start Terminal',
-        end: formData.end || 'End Terminal',
-        distance: Number(formData.distance || 0),
-        stops: cleanStops,
+      label = `Bus ${payload.registration}`;
+    } else {
+      const stopPoints = (formData.stopPoints || []).map((sp) => ({ ...sp, name: sp.name.trim() }));
+      required = missing([[formData.name, 'route name'], [formData.start, 'start terminal'], [formData.end, 'end terminal'], [formData.distance, 'distance']]);
+      if (stopPoints.some((sp) => !sp.name)) required.push('a name for every stop');
+      payload = {
+        name: formData.name.trim(),
+        routeNumber: String(formData.routeNumber || '').trim(),
+        start: formData.start.trim(),
+        end: formData.end.trim(),
+        distance: Number(formData.distance),
+        stopPoints,
+        stops: stopPoints.map((sp) => sp.name),
+        path: formData.path || [],
         assignedBus: formData.assignedBus || '',
         status: 'Active',
       };
-
-      try {
-        if (mode === 'edit') {
-          await fetch(`${API_BASE}/routes/${editId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          showNotification(`Route ${payload.name} updated successfully.`);
-        } else {
-          await fetch(`${API_BASE}/routes`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          showNotification(`Route ${payload.name} created successfully.`);
-        }
-      } catch (err) {
-        showNotification(`Saved route ${payload.name}.`);
-      }
+      label = `Route ${payload.name}`;
     }
+
+    if (required.length) {
+      showNotification(`Please fill in: ${required.join(', ')}.`);
+      return;
+    }
+
+    const ok = mode === 'edit'
+      ? await send('PUT', `/${entity}s/${editId}`, payload, `${label} updated.`)
+      : await send('POST', `/${entity}s`, payload, `${label} added.`);
+    if (!ok) return;
 
     closeModal();
     fetchBackendData();
   };
 
   const handleDelete = async () => {
-    const { entity, id, rawId, registration } = confirmState;
-    const targetId = rawId || id;
-
-    // Instantly filter out from UI
-    if (entity === 'bus') {
-      setBuses((prev) => prev.filter((b) => b.rawId !== rawId && b.id !== id && b.registration !== registration));
-    } else if (entity === 'driver') {
-      setDrivers((prev) => prev.filter((d) => d.rawId !== rawId && d.id !== id));
-    } else if (entity === 'route') {
-      setRoutes((prev) => prev.filter((r) => r.rawId !== rawId && r.id !== id));
-    }
-
+    const { entity, id, rawId } = confirmState;
     closeConfirm();
-
-    try {
-      await fetch(`${API_BASE}/${entity}s/${encodeURIComponent(targetId)}`, { method: 'DELETE' });
-      showNotification(`${entity.toUpperCase()} deleted successfully.`);
-    } catch (err) {
-      showNotification('Record deleted.');
-    }
-
+    await send('DELETE', `/${entity}s/${encodeURIComponent(rawId || id)}`, null, `${entity.charAt(0).toUpperCase()}${entity.slice(1)} deleted.`);
     await fetchBackendData();
   };
 
@@ -440,7 +417,7 @@ function App() {
             </div>
             <span className="login-tagline">Fleet, drivers and routes in one place</span>
           </div>
-          <RoadScene scene="admin" className="login-scene" label="A metro train and a cargo truck on the road" />
+          <RoadScene scene="admin" className="login-scene" label="Buses on a two-lane road" />
         </section>
 
         <div className="login-card">
@@ -453,7 +430,7 @@ function App() {
             <label className="field">
               <span className="form-label">Username</span>
               <span className="input-wrap">
-                <svg className="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                <Icon type="user" className="lead" />
                 <input
                   type="text"
                   className="form-input"
@@ -469,7 +446,7 @@ function App() {
             <label className="field">
               <span className="form-label">Password</span>
               <span className="input-wrap">
-                <svg className="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                <Icon type="lock" className="lead" />
                 <input
                   type={showPw ? 'text' : 'password'}
                   className="form-input"
@@ -480,7 +457,7 @@ function App() {
                   required
                 />
                 <button type="button" className="toggle-pw" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" /><circle cx="12" cy="12" r="3" />{showPw && <path d="M3 3l18 18" />}</svg>
+                  <Icon type="eye" />
                 </button>
               </span>
             </label>
@@ -501,6 +478,10 @@ function App() {
   const currentPageTitle =
     activePage === 'dashboard'
       ? 'System Admin Dashboard'
+      : activePage === 'live'
+        ? 'Live Monitor'
+        : activePage === 'analytics'
+          ? 'Trip Analytics'
       : activePage === 'drivers'
         ? 'Driver Management'
         : activePage === 'buses'
@@ -529,6 +510,8 @@ function App() {
                 { section: 'Fleet Management', key: 'drivers', label: 'Drivers', icon: 'drivers' },
                 { section: 'Fleet Management', key: 'buses', label: 'Buses', icon: 'bus' },
                 { section: 'Network & Operations', key: 'routes', label: 'Routes', icon: 'route' },
+                { section: 'Network & Operations', key: 'live', label: 'Live Monitor', icon: 'pulse' },
+                { section: 'Network & Operations', key: 'analytics', label: 'Analytics', icon: 'chart' },
               ]
                 .filter((item) => item.section === section)
                 .map((item) => (
@@ -540,7 +523,7 @@ function App() {
                     aria-label={item.label}
                   >
                     <span className="nav-icon">
-                      <Icon type={item.icon} />
+                      <NavGlyph name={NAV_FOR[item.icon]} />
                     </span>
                     <span className="nav-label">{item.label}</span>
                   </button>
@@ -597,6 +580,7 @@ function App() {
               onClick={handleLogout}
               title="Sign Out of Admin Console"
             >
+              <Icon type="logout" />
               Sign Out ({user.username})
             </button>
           </div>
@@ -606,8 +590,8 @@ function App() {
           <div className="notification-banner" role="alert">
             <div className="notification-card">
               <p className="notification-text">{notification}</p>
-              <button type="button" className="notification-close" onClick={() => setNotification(null)}>
-                ✕
+              <button type="button" className="notification-close" onClick={() => setNotification(null)} aria-label="Dismiss">
+                <Icon type="close" />
               </button>
             </div>
           </div>
@@ -615,7 +599,7 @@ function App() {
 
         <main className="page-scroll">
           {activePage === 'dashboard' && (
-            <section className="page-section">
+            <section className="page-section" data-page="dashboard">
               <div className="section-header">
                 <div>
                   <h1>System Dashboard</h1>
@@ -639,25 +623,23 @@ function App() {
                   label="Active Routes"
                   value={summary.activeRoutes}
                   subtitle="Active network routes"
-                  icon="route"
                   tint="train"
-                  vehicle="train"
+                  vehicle="route"
                 />
                 <KpiCard
                   label="Registered Buses"
                   value={summary.registeredBuses}
                   subtitle={`${summary.fleetDistribution?.active || 0} Active / ${summary.fleetDistribution?.maintenance || 0} Maintenance`}
-                  icon="bus"
                   tint="bus"
                   vehicle="bus"
+                  livery="purple"
                 />
                 <KpiCard
                   label="Active Drivers"
                   value={summary.activeDrivers}
                   subtitle="Authorized drivers in system"
-                  icon="drivers"
                   tint="taxi"
-                  vehicle="taxi"
+                  vehicle="driver"
                 />
               </div>
 
@@ -700,13 +682,13 @@ function App() {
                     <p>Shortcuts to instantly add assets into MongoDB</p>
                     <div className="quick-actions">
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('driver')}>
-                        <span>+</span> Register New Driver
+                        <span><Icon type="plus" /></span> Register New Driver
                       </button>
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('bus')}>
-                        <span>+</span> Register New Bus / Vehicle
+                        <span><Icon type="plus" /></span> Register New Bus / Vehicle
                       </button>
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('route')}>
-                        <span>+</span> Create Network Route
+                        <span><Icon type="plus" /></span> Create Network Route
                       </button>
                     </div>
                   </div>
@@ -718,8 +700,11 @@ function App() {
             </section>
           )}
 
+          {activePage === 'live' && <LiveMonitor api={api} routes={routes} />}
+          {activePage === 'analytics' && <Analytics api={api} routes={routes} />}
+
           {activePage === 'drivers' && (
-            <section className="page-section">
+            <section className="page-section" data-page="drivers">
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
@@ -747,7 +732,7 @@ function App() {
                     {drivers.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="taxi" width={140} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
+                          <div className="empty-state"><Vehicle name="minibus" width={120} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -763,12 +748,8 @@ function App() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}>
-                                Delete
-                              </button>
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}><Icon type="edit" />Edit</button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}><Icon type="trash" />Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -781,7 +762,7 @@ function App() {
           )}
 
           {activePage === 'buses' && (
-            <section className="page-section">
+            <section className="page-section" data-page="buses">
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
@@ -800,6 +781,7 @@ function App() {
                       <th>Registration No.</th>
                       <th>Passenger Capacity</th>
                       <th>Total Mileage</th>
+                      <th>Driver</th>
                       <th>Password</th>
                       <th>Status</th>
                       <th>Actions</th>
@@ -808,8 +790,8 @@ function App() {
                   <tbody>
                     {buses.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="bus" width={140} label="Nothing here yet" />No buses registered yet. Click "Add New Bus" to register a bus!</div>
+                        <td colSpan="8" className="cell-empty">
+                          <div className="empty-state"><Vehicle name="bus" width={120} label="Nothing here yet" />No buses registered yet. Click "Add New Bus" to register a bus!</div>
                         </td>
                       </tr>
                     ) : (
@@ -819,20 +801,19 @@ function App() {
                           <td className="mono-cell table-strong">{bus.registration}</td>
                           <td>{bus.capacity}</td>
                           <td>{bus.mileage}</td>
-                          <td className="mono-cell cell-muted">
-                            {bus.password ? bus.password : <span className="cell-muted">None</span>}
+                          <td>
+                            {drivers.find((d) => d.id === bus.assignedDriver)?.name || <span className="cell-muted">Unassigned</span>}
+                          </td>
+                          <td>
+                            <span className={`badge ${bus.hasPassword ? 'badge-green' : 'badge-amber'}`}>{bus.hasPassword ? 'Set' : 'Not set'}</span>
                           </td>
                           <td>
                             <StatusBadge status={bus.status} />
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}>
-                                Delete
-                              </button>
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}><Icon type="edit" />Edit</button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}><Icon type="trash" />Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -845,7 +826,7 @@ function App() {
           )}
 
           {activePage === 'routes' && (
-            <section className="page-section">
+            <section className="page-section" data-page="routes">
               <div className="section-header">
                 <div>
                   <h1>{currentPageTitle}</h1>
@@ -866,7 +847,8 @@ function App() {
                       <th>Start Terminal</th>
                       <th>End Terminal</th>
                       <th>Distance</th>
-                      <th>Intermediate Stops</th>
+                      <th>Stops</th>
+                      <th>Live Tracking</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
@@ -874,8 +856,8 @@ function App() {
                   <tbody>
                     {routes.length === 0 ? (
                       <tr>
-                        <td colSpan="9" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="train" width={140} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
+                        <td colSpan="10" className="cell-empty">
+                          <div className="empty-state"><Vehicle name="coach" width={128} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -912,16 +894,17 @@ function App() {
                             )}
                           </td>
                           <td>
+                            {route.path.length > 1 && route.stopPoints.length > 1
+                              ? <span className="badge badge-green">Ready</span>
+                              : <span className="badge badge-amber">Needs map path and stops</span>}
+                          </td>
+                          <td>
                             <StatusBadge status={route.status} />
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}>
-                                Delete
-                              </button>
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}><Icon type="edit" />Edit</button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}><Icon type="trash" />Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -937,7 +920,12 @@ function App() {
 
       {modalState.open && (
         <div className="overlay" onClick={(event) => event.target === event.currentTarget && closeModal()}>
-          <div className="modal-box">
+          <div className={`modal-box ${modalState.entity === 'route' ? 'modal-wide' : ''}`} role="dialog" aria-modal="true">
+            {/* CHANGED (visual only): notch header + close button */}
+            <header className="modal-head">
+              <span className="notch"><i><Icon type={modalState.entity === 'driver' ? 'user' : modalState.entity === 'bus' ? 'bus' : 'route'} /></i></span>
+              <div className="modal-head-copy">
+                <span className="eyebrow">{modalState.mode === 'edit' ? 'Update record' : 'New record'}</span>
             <h3 className="modal-title">
               {modalState.entity === 'driver'
                 ? modalState.mode === 'edit'
@@ -951,6 +939,9 @@ function App() {
                     ? 'Edit Route'
                     : 'Create New Route'}
             </h3>
+              </div>
+              <button type="button" className="icon-btn" onClick={closeModal} aria-label="Close"><Icon type="close" /></button>
+            </header>
 
             {modalState.entity === 'driver' && (
               <div className="modal-form">
@@ -1022,13 +1013,14 @@ function App() {
                   </Field>
                 </div>
                 <div className="form-grid">
-                  <Field label="Bus Password / Security PIN">
+                  <Field label={modalState.mode === 'edit' ? 'New Bus Password (optional)' : 'Bus Password *'}>
                     <input
-                      type="text"
+                      type="password"
                       className="form-input mono-input"
                       value={formData.password}
                       onChange={(event) => updateField('password', event.target.value)}
-                      placeholder="Enter bus password"
+                      placeholder={modalState.mode === 'edit' ? 'Leave blank to keep the current one' : 'Driver app login password'}
+                      autoComplete="new-password"
                     />
                   </Field>
                   <Field label="Bus Operating Status">
@@ -1043,19 +1035,41 @@ function App() {
                     </select>
                   </Field>
                 </div>
+                <Field label="Assigned Driver">
+                  <select
+                    className="form-input"
+                    value={formData.assignedDriver}
+                    onChange={(event) => updateField('assignedDriver', event.target.value)}
+                  >
+                    <option value="">-- No Driver Assigned --</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name} ({d.id})</option>
+                    ))}
+                  </select>
+                </Field>
               </div>
             )}
 
             {modalState.entity === 'route' && (
               <div className="modal-form">
-                <Field label="Route Name *">
-                  <input
-                    className="form-input"
-                    value={formData.name}
-                    onChange={(event) => updateField('name', event.target.value)}
-                    placeholder="e.g. Colombo to Galle"
-                  />
-                </Field>
+                <div className="form-grid">
+                  <Field label="Route Name *">
+                    <input
+                      className="form-input"
+                      value={formData.name}
+                      onChange={(event) => updateField('name', event.target.value)}
+                      placeholder="e.g. Pettah to Maharagama"
+                    />
+                  </Field>
+                  <Field label="Route Number">
+                    <input
+                      className="form-input"
+                      value={formData.routeNumber}
+                      onChange={(event) => updateField('routeNumber', event.target.value)}
+                      placeholder="e.g. 138"
+                    />
+                  </Field>
+                </div>
                 <div className="form-grid">
                   <Field label="Start Terminal *">
                     <input
@@ -1100,47 +1114,20 @@ function App() {
                   </Field>
                 </div>
 
-                <Field label="Intermediate Stops (Enter each stop name)">
-                  <div className="stop-list">
-                    {(Array.isArray(formData.stops) ? formData.stops : ['']).map((stop, index) => (
-                      <div key={index} className="stop-row">
-                        <input
-                          className="form-input"
-                          value={stop}
-                          onChange={(e) => {
-                            const newStops = [...(Array.isArray(formData.stops) ? formData.stops : [])];
-                            newStops[index] = e.target.value;
-                            updateField('stops', newStops);
-                          }}
-                          placeholder={`Stop ${index + 1} Name (e.g. Peradeniya)`}
-                        />
-                        {Array.isArray(formData.stops) && formData.stops.length > 1 && (
-                          <button
-                            type="button"
-                            className="btn btn-danger stop-remove"
-                            aria-label={`Remove stop ${index + 1}`}
-                            onClick={() => {
-                              const newStops = formData.stops.filter((_, i) => i !== index);
-                              updateField('stops', newStops);
-                            }}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      className="btn btn-secondary stop-add"
-                      onClick={() => {
-                        const currentStops = Array.isArray(formData.stops) ? formData.stops : [];
-                        updateField('stops', [...currentStops, '']);
-                      }}
-                    >
-                      + Add Stop Name
-                    </button>
-                  </div>
-                </Field>
+                {/* Road path and stops on the map. Not wrapped in <label>: it holds many controls. */}
+                <div className="field">
+                  <span className="form-label">Route Path and Stops</span>
+                  <RouteMapEditor
+                    path={formData.path || []}
+                    stops={formData.stopPoints || []}
+                    onChange={({ path, stops, distanceKm }) => setFormData((current) => ({
+                      ...current,
+                      path,
+                      stopPoints: stops,
+                      distance: path.length > 1 ? distanceKm : current.distance,
+                    }))}
+                  />
+                </div>
               </div>
             )}
 
@@ -1149,6 +1136,7 @@ function App() {
                 Cancel
               </button>
               <button type="button" className="btn btn-primary" onClick={handleSave}>
+                <Icon type="check" />
                 Save Changes
               </button>
             </div>
@@ -1161,9 +1149,7 @@ function App() {
         <div className="overlay confirm-overlay" onClick={(event) => event.target === event.currentTarget && closeConfirm()}>
           <div className="clean-delete-box">
             <div className="clean-delete-icon-wrapper">
-              <svg fill="none" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Icon type="trash" />
             </div>
             <h3 className="clean-delete-title">Delete Confirmation</h3>
             <p className="clean-delete-text">Are you sure you want to permanently remove this record from MongoDB?</p>
@@ -1183,11 +1169,15 @@ function App() {
   );
 }
 
+// CHANGED (visual only): a leading icon chosen from the label text.
+const FIELD_ICONS = [[/password/i, 'lock'], [/license number/i, 'card'], [/expiry/i, 'calendar'], [/phone/i, 'phone'], [/registration/i, 'bus'], [/capacity/i, 'drivers'], [/mileage/i, 'gauge'],
+  [/status/i, 'pulse'], [/route number/i, 'hash'], [/terminal/i, 'pin'], [/distance/i, 'ruler'], [/assign(ed)? driver/i, 'user'], [/bus/i, 'bus'], [/route name/i, 'route'], [/name/i, 'user']];
 function Field({ label, children }) {
+  const icon = (FIELD_ICONS.find(([re]) => re.test(label)) || [])[1];
   return (
     <label className="field">
       <span className="form-label">{label}</span>
-      {children}
+      {icon ? <span className="input-wrap"><Icon type={icon} className="lead" />{children}</span> : children}
     </label>
   );
 }
@@ -1196,16 +1186,11 @@ function TableShell({ children }) {
   return <div className="panel table-shell">{children}</div>;
 }
 
-function KpiCard({ label, value, subtitle, icon, tint, vehicle }) {
+function KpiCard({ label, value, subtitle, tint, vehicle, livery }) {
   return (
     <div className={`kpi-card tint-${tint}`}>
-      <Vehicle name={vehicle} width={150} className="kpi-art" label={`${vehicle} illustration`} />
-      <div className="kpi-topline">
-        <p>{label}</p>
-        <span className="kpi-icon">
-          <Icon type={icon} />
-        </span>
-      </div>
+      <Vehicle name={vehicle} livery={livery} width={212} className="kpi-art" label={`${vehicle} illustration`} />
+      <p className="kpi-label">{label}</p>
       <strong>{value}</strong>
       <span>{subtitle}</span>
     </div>
@@ -1235,70 +1220,52 @@ function StatusBadge({ status }) {
   return <span className={className}>{status}</span>;
 }
 
-function Icon({ type }) {
-  const commonProps = {
-    fill: 'none',
-    viewBox: '0 0 24 24',
-    'aria-hidden': 'true',
-  };
+// CHANGED (visual only): sidebar items use the same filled two-tone glyphs as the mobile apps' bar.
+const NAV_FOR = { grid: 'home', drivers: 'people', bus: 'bus', route: 'route', pulse: 'pulse', chart: 'chart' };
+function NavGlyph({ name }) {
+  return (
+    <svg className="nav-glyph" viewBox="0 0 24 24" aria-hidden="true">
+      {(NAV_ICONS[name] || NAV_ICONS.home).map(([d, role, sw], i) => (sw
+        ? <path key={i} d={d} className={`g-${role}-line`} fill="none" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" />
+        : <path key={i} d={d} className={`g-${role}`} />))}
+    </svg>
+  );
+}
 
-  switch (type) {
-    case 'grid':
-      return (
-        <svg {...commonProps}>
-          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-        </svg>
-      );
-    case 'drivers':
-      return (
-        <svg {...commonProps}>
-          <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
-          <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'bus':
-      return (
-        <svg {...commonProps}>
-          <rect x="1" y="6" width="22" height="13" rx="2" stroke="currentColor" strokeWidth="2" />
-          <path d="M5 19v2M19 19v2M1 11h22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'route':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 6h18M3 12h12M3 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'sync':
-      return (
-        <svg {...commonProps}>
-          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'plus':
-      return (
-        <svg {...commonProps}>
-          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      );
-    case 'trash':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    case 'menu':
-    default:
-      return (
-        <svg {...commonProps}>
-          <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      );
-  }
+// CHANGED (visual only): one outline icon set, 24 grid, 2px round strokes.
+const ICONS = {
+  grid: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',
+  drivers: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18.5 14.5a6.5 6.5 0 0 1 3 5.5',
+  bus: 'M5 17V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11zM5 11h14M4 17h16M8 17v2.5M16 17v2.5M8.5 14h.01M15.5 14h.01',
+  route: 'M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 17h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6',
+  pulse: 'M3 12h4l2.5-6 4 12 2.5-6H21',
+  chart: 'M6 19V11M12 19V5M18 19v-6',
+  sync: 'M20 11a8 8 0 0 0-14.5-4M4 4v4h4M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4',
+  plus: 'M12 5v14M5 12h14',
+  trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
+  menu: 'M4 7h16M4 12h10M4 17h16',
+  edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+  close: 'M6 6l12 12M18 6L6 18',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  lock: 'M6 11h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM8 11V8a4 4 0 0 1 8 0v3',
+  eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  card: 'M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM7 14h4M7 10h2M15 10h2M15 14h2',
+  calendar: 'M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM4 10h16M8 3v4M16 3v4',
+  phone: 'M6 3h3l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z',
+  gauge: 'M12 14l4-4M5 18a9 9 0 1 1 14 0z',
+  pin: 'M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  hash: 'M9 4L7 20M17 4l-2 16M4 9h16M3 15h16',
+  ruler: 'M4 15L15 4l5 5L9 20zM8 11l2 2M11 8l2 2M14 5l2 2',
+  logout: 'M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9',
+};
+
+function Icon({ type, className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICONS[type] || ICONS.menu} />
+    </svg>
+  );
 }
 
 export default App;
