@@ -621,7 +621,6 @@ function App() {
                   label="Active Routes"
                   value={summary.activeRoutes}
                   subtitle="Active network routes"
-                  icon="route"
                   tint="train"
                   vehicle="route"
                 />
@@ -629,7 +628,6 @@ function App() {
                   label="Registered Buses"
                   value={summary.registeredBuses}
                   subtitle={`${summary.fleetDistribution?.active || 0} Active / ${summary.fleetDistribution?.maintenance || 0} Maintenance`}
-                  icon="bus"
                   tint="bus"
                   vehicle="bus"
                   livery="teal"
@@ -638,7 +636,6 @@ function App() {
                   label="Active Drivers"
                   value={summary.activeDrivers}
                   subtitle="Authorized drivers in system"
-                  icon="drivers"
                   tint="taxi"
                   vehicle="driver"
                 />
@@ -1188,16 +1185,11 @@ function TableShell({ children }) {
   return <div className="panel table-shell">{children}</div>;
 }
 
-function KpiCard({ label, value, subtitle, icon, tint, vehicle, livery }) {
+function KpiCard({ label, value, subtitle, tint, vehicle, livery }) {
   return (
     <div className={`kpi-card tint-${tint}`}>
-      <Vehicle name={vehicle} livery={livery} width={196} className="kpi-art" label={`${vehicle} illustration`} />
-      <div className="kpi-topline">
-        <p>{label}</p>
-        <span className="kpi-icon">
-          <Icon type={icon} />
-        </span>
-      </div>
+      <Vehicle name={vehicle} livery={livery} width={212} className="kpi-art" label={`${vehicle} illustration`} />
+      <p className="kpi-label">{label}</p>
       <strong>{value}</strong>
       <span>{subtitle}</span>
     </div>

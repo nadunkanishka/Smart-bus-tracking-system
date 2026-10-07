@@ -138,13 +138,11 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 }
 .kpi-card.tint-train { --tint-from: var(--tint-train-from); --tint-to: var(--tint-train-to); }
 .kpi-card.tint-taxi { --tint-from: var(--tint-taxi-from); --tint-to: var(--tint-taxi-to); }
-.kpi-topline { display: flex; align-items: center; justify-content: space-between; }
-.kpi-topline p { font-size: var(--fs-small); font-weight: 700; color: var(--inkSoft, var(--ink-soft)); }
-.kpi-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.75); display: grid; place-items: center; padding: 8px; color: var(--primary-deep); }
+.kpi-label { font-size: var(--fs-small); font-weight: 700; color: var(--inkSoft, var(--ink-soft)); }
 .kpi-card strong { font-size: var(--fs-display); line-height: var(--lh-display); font-weight: 800; letter-spacing: -0.6px; }
 .kpi-card > span:not(.kpi-art) { font-size: var(--fs-caption); line-height: var(--lh-caption); font-weight: 600; color: var(--ink-soft); max-width: 60%; }
 .kpi-card > :not(.kpi-art) { position: relative; z-index: 1; }
-.kpi-art { position: absolute; right: -34px; bottom: -26px; pointer-events: none; transform-origin: 100% 100%; }
+.kpi-art { position: absolute; right: -36px; bottom: -30px; pointer-events: none; transform-origin: 100% 100%; }
 @media (min-width: 1101px) and (max-width: 1320px) { .kpi-art { transform: scale(0.8); } }
 
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-4); }

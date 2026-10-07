@@ -141,37 +141,45 @@
   }
 
   // ── Props in the same clay style, for cards whose subject is not a bus. ──
-  // A standing bus driver: cap and top in the theme colour, facing the same way as the buses.
+  // A bus driver waving: cap, collar, belt and badge, top in the theme colour, facing the same way as the buses.
+  // Shot from the thighs up (see manifest), so a card corner can crop into the figure.
   function buildDriver(themeKey) {
     const theme = THEMES[themeKey], g = new THREE.Group(), add = (...m) => g.add(...m);
-    const top = mat(theme.main), deep = mat(theme.deep), light = mat(theme.light), skin = mat(theme.skin, { roughness: 0.65 }), navy = mat('#27365A'), dark = mat(TRIM.dark, { roughness: 0.7 });
+    const top = mat(theme.main), deep = mat(theme.deep), light = mat(theme.light), skin = mat(theme.skin, { roughness: 0.65 }), navy = mat('#27365A'), dark = mat(TRIM.dark, { roughness: 0.7 }), white = mat('#FFFFFF', { roughness: 0.5 });
     const ball = (r, material, at) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 24), material); m.position.set(at[0], at[1], at[2]); m.castShadow = true; return m; };
     for (const z of [-0.22, 0.22]) add(rbox(0.34, 0.95, 0.34, 0.15, navy, [0, 0.62, z]), rbox(0.52, 0.2, 0.36, 0.09, dark, [0.08, 0.1, z]));
     add(rbox(0.62, 1.05, 0.98, 0.3, top, [0, 1.55, 0]));
+    add(rbox(0.66, 0.13, 1.02, 0.05, dark, [0, 1.08, 0]), rbox(0.06, 0.1, 0.16, 0.03, light, [0.33, 1.08, 0])); // belt and buckle
+    add(rbox(0.5, 0.12, 0.6, 0.06, white, [0.02, 2.07, 0])); // collar
     add(rbox(0.06, 0.2, 0.26, 0.04, light, [0.3, 1.75, -0.24])); // badge
-    for (const z of [-0.63, 0.63]) add(rbox(0.26, 0.82, 0.26, 0.12, top, [0, 1.6, z]), ball(0.15, skin, [0, 1.12, z]));
+    for (const y of [1.62, 1.4]) add(ball(0.035, white, [0.31, y, 0])); // two buttons
+    // One arm hangs, the other is raised in a wave (pivoted at the shoulder).
+    add(rbox(0.26, 0.82, 0.26, 0.12, top, [0, 1.6, -0.63]), ball(0.15, skin, [0, 1.12, -0.63]));
+    const wave = new THREE.Group(); wave.position.set(0, 1.95, 0.6); wave.rotation.x = -2.5;
+    wave.add(rbox(0.26, 0.82, 0.26, 0.12, top, [0, -0.36, 0]), ball(0.16, skin, [0, -0.86, 0]));
+    add(wave);
     add(ball(0.38, skin, [0.02, 2.45, 0]));
     for (const z of [-0.14, 0.14]) add(ball(0.045, dark, [0.37, 2.47, z])); // eyes
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.022, 8, 20, Math.PI), dark); smile.rotation.set(0, Math.PI / 2, Math.PI); smile.position.set(0.375, 2.37, 0); add(smile);
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.405, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.36), deep); cap.position.set(0.02, 2.5, 0); cap.castShadow = true;
-    add(cap, rbox(0.34, 0.06, 0.56, 0.03, deep, [0.42, 2.66, 0]));
-    g.scale.setScalar(1.9); g.position.set(0.5, 0, 0.5); // large, and nudged toward the camera's left so a corner crop keeps the face
+    add(cap, rbox(0.34, 0.06, 0.56, 0.03, deep, [0.42, 2.66, 0]), rbox(0.05, 0.12, 0.2, 0.03, light, [0.37, 2.76, 0])); // cap, brim, cap badge
+    g.scale.setScalar(1.9); g.position.set(0.5, 0, 0.5);
     return g;
   }
   // A route: an S-shaped road with three stops and a map pin at each end.
   function buildRoute(themeKey) {
     const theme = THEMES[themeKey], g = new THREE.Group(), add = (...m) => g.add(...m);
     const road = mat('#56616D', { roughness: 0.85 }), white = mat('#FFFFFF', { roughness: 0.6 });
-    add(rbox(4.6, 0.14, 1.5, 0.07, road, [-1.55, 0.07, -1.5]), rbox(1.5, 0.14, 4.5, 0.07, road, [0, 0.07, 0]), rbox(4.6, 0.14, 1.5, 0.07, road, [1.55, 0.07, 1.5]));
-    for (const [x, z] of [[-2.6, -1.5], [-1.5, -1.5], [0, -0.6], [0, 0.6], [1.5, 1.5], [2.6, 1.5]]) { const d = rbox(z === -1.5 || z === 1.5 ? 0.5 : 0.14, 0.03, z === -1.5 || z === 1.5 ? 0.14 : 0.5, 0.01, white, [x, 0.15, z]); d.castShadow = false; add(d); }
-    for (const [x, z] of [[-0.4, -1.5], [0, 0], [0.4, 1.5]]) { const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 28), white); stop.position.set(x, 0.2, z); stop.castShadow = true; add(stop); }
+    add(rbox(8.6, 0.14, 1.5, 0.07, road, [-3.55, 0.07, -1.5]), rbox(1.5, 0.14, 4.5, 0.07, road, [0, 0.07, 0]), rbox(4.6, 0.14, 1.5, 0.07, road, [1.55, 0.07, 1.5]));
+    for (const [x, z] of [[-5.9, -1.5], [-4.8, -1.5], [-3.7, -1.5], [-2.6, -1.5], [-1.5, -1.5], [0, -0.6], [0, 0.6], [1.5, 1.5], [2.6, 1.5]]) { const d = rbox(z === -1.5 || z === 1.5 ? 0.5 : 0.14, 0.03, z === -1.5 || z === 1.5 ? 0.14 : 0.5, 0.01, white, [x, 0.15, z]); d.castShadow = false; add(d); }
+    for (const [x, z] of [[-2.05, -1.5], [0, 0], [0.4, 1.5]]) { const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 28), white); stop.position.set(x, 0.2, z); stop.castShadow = true; add(stop); }
     const pin = (x, z, material) => {
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.62, 32, 24), material); head.position.set(x, 2.25, z);
       const tip = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.5, 32), material); tip.rotation.x = Math.PI; tip.position.set(x, 1.1, z);
       const dot = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 16), white); dot.position.set(x + 0.42, 2.3, z - 0.3);
       for (const m of [head, tip, dot]) { m.castShadow = true; add(m); }
     };
-    pin(-3.3, -1.5, mat(theme.deep)); pin(3.3, 1.5, mat(theme.main));
-    g.scale.setScalar(0.8); g.position.set(0.5, 0, 0.5);
+    pin(0, -1.5, mat(theme.deep)); pin(3.3, 1.5, mat(theme.main));
     return g;
   }
   const PROPS = { driver: buildDriver, route: buildRoute };
@@ -232,7 +240,9 @@
     for (const theme of Object.keys(THEMES).filter((t) => t !== 'off')) for (const state of ['running', 'idle', 'parked']) hero.push({ name: `bus-${theme}-${state}`, type: 'bus', theme, state });
     hero.push({ name: 'bus-off', type: 'bus', theme: 'off', state: 'parked' });
     for (const type of Object.keys(TYPES).filter((t) => t !== 'bus')) for (const theme of TYPES[type].themes || [TYPES[type].theme]) for (const state of ['running', 'idle']) hero.push({ name: `${type}-${theme}-${state}`, type, theme, state });
-    hero.push({ name: 'driver-coral-idle', prop: 'driver', theme: 'coral' }, { name: 'route-mint-idle', prop: 'route', theme: 'mint' });
+    // Props are framed closer and off-centre (toward the right) so a card corner crops into them.
+    hero.push({ name: 'driver-coral-idle', prop: 'driver', theme: 'coral', shot: { distance: 13, target: [1.0, 3.9, 0.98] } },
+      { name: 'route-mint-idle', prop: 'route', theme: 'mint', shot: { distance: 21, target: [0.2, 1.1, 0.2] } });
     return { hero, scenes: Object.keys(SCENES), markers: [0, 1, 2, 3, 4, 5, 6, 7] };
   }
 
