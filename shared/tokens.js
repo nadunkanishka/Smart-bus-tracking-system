@@ -76,13 +76,13 @@ export const TYPE = {
   display: { fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.6 },
   h1: { fontSize: 24, lineHeight: 30, fontWeight: '800', letterSpacing: -0.4 },
   h2: { fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.2 },
-  h3: { fontSize: 17, lineHeight: 24, fontWeight: '700' },
-  body: { fontSize: 15, lineHeight: 22, fontWeight: '500' },
-  bodyBold: { fontSize: 15, lineHeight: 22, fontWeight: '700' },
-  small: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
-  smallBold: { fontSize: 13, lineHeight: 18, fontWeight: '700' },
-  caption: { fontSize: 11, lineHeight: 14, fontWeight: '600' },
-  overline: { fontSize: 11, lineHeight: 14, fontWeight: '700', letterSpacing: 0.8 },
+  h3: { fontSize: 18, lineHeight: 25, fontWeight: '700' },
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '500' },
+  bodyBold: { fontSize: 16, lineHeight: 24, fontWeight: '700' },
+  small: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  smallBold: { fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
+  overline: { fontSize: 12, lineHeight: 16, fontWeight: '700', letterSpacing: 0.8 },
 };
 
 // Soft, diffuse shadows only.

@@ -32,6 +32,7 @@ import {
   Toast,
   Vehicle,
   NotchStat,
+  NavIcon,
 } from './src/components/ui';
 import {
   ArrowRightIcon,
@@ -702,12 +703,13 @@ function PRow({ label, value, accent, last }) {
 // ─── Driver Bottom Dock ───────────────────────────────────────────────────────
 
 function DriverDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (a) => <Cmp color={a ? COLORS.primaryLight : '#9A9CA6'} size={size + 2} />;
+  // CHANGED (visual only): filled two-tone nav icons, shared with the admin sidebar
+  const icon = (name) => (a) => <NavIcon name={name} active={a} />;
   const items = [
-    { id: 'shift', label: 'Duty', icon: icon(NavigationArrowIcon, 18) },
-    { id: 'route', label: 'Route', icon: icon(RouteIcon, 19) },
-    { id: 'diagnostics', label: 'Telemetry', icon: icon(SpeedometerIcon, 19) },
-    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
+    { id: 'shift', label: 'Duty', icon: icon('arrow') },
+    { id: 'route', label: 'Route', icon: icon('route') },
+    { id: 'diagnostics', label: 'Telemetry', icon: icon('gauge') },
+    { id: 'profile', label: 'Profile', icon: icon('user') },
   ];
   return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }

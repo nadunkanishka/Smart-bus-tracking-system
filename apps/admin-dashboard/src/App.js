@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './design/tokens.css'; // CHANGED: shared design tokens
 import './admin-theme.css';
-import { RoadScene, Vehicle } from './design/Vehicle'; // CHANGED: shared vehicle illustration set
+import { RoadScene, Vehicle } from './design/Vehicle';
+import { NAV_ICONS } from './design/navIcons'; // CHANGED: shared vehicle illustration set
 import RouteMapEditor from './components/RouteMapEditor';
 import LiveMonitor from './pages/LiveMonitor';
 import Analytics from './pages/Analytics';
@@ -522,7 +523,7 @@ function App() {
                     aria-label={item.label}
                   >
                     <span className="nav-icon">
-                      <Icon type={item.icon} />
+                      <NavGlyph name={NAV_FOR[item.icon]} />
                     </span>
                     <span className="nav-label">{item.label}</span>
                   </button>
@@ -1217,6 +1218,18 @@ function StatusBadge({ status }) {
         : 'badge badge-gray';
 
   return <span className={className}>{status}</span>;
+}
+
+// CHANGED (visual only): sidebar items use the same filled two-tone glyphs as the mobile apps' bar.
+const NAV_FOR = { grid: 'home', drivers: 'people', bus: 'bus', route: 'route', pulse: 'pulse', chart: 'chart' };
+function NavGlyph({ name }) {
+  return (
+    <svg className="nav-glyph" viewBox="0 0 24 24" aria-hidden="true">
+      {(NAV_ICONS[name] || NAV_ICONS.home).map(([d, role, sw], i) => (sw
+        ? <path key={i} d={d} className={`g-${role}-line`} fill="none" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" />
+        : <path key={i} d={d} className={`g-${role}`} />))}
+    </svg>
+  );
 }
 
 // CHANGED (visual only): one outline icon set, 24 grid, 2px round strokes.

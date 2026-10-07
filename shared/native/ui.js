@@ -8,6 +8,7 @@ import {
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { COLORS, RADII, SHADOWS, TYPE } from '../constants/theme';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
+import { NAV_ICONS, NAV_TONES } from './navIcons';
 import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
@@ -214,15 +215,16 @@ export function TextField({ label, icon, error, hint, secure, style, inputStyle,
   const [shown, setShown] = useState(false);
   return (
     <View style={[{ marginBottom: 16 }, style]}>
-      {label ? <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.ink, marginBottom: 8 }}>{label}</Text> : null}
+      {label ? <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.ink, marginBottom: 8, marginLeft: 8 }}>{label}</Text> : null}
       <View
         style={{
-          minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: RADII.md,
-          backgroundColor: COLORS.surfaceSoft, borderWidth: 2,
-          borderColor: error ? COLORS.danger : focused ? COLORS.primaryStrong : 'transparent',
+          minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, borderRadius: RADII.pill,
+          backgroundColor: COLORS.surface, borderWidth: 1.5,
+          borderColor: error ? COLORS.danger : focused ? COLORS.primary : '#D9D8E3',
+          ...(Platform.OS === 'web' && focused ? { boxShadow: error ? '0 0 0 4px rgba(198,47,67,0.15)' : '0 0 0 4px rgba(108,107,198,0.18)' } : null),
         }}
       >
-        {icon}
+        {React.isValidElement(icon) ? React.cloneElement(icon, { color: error ? COLORS.danger : COLORS.primary }) : icon}
         <TextInput
           {...input}
           accessibilityLabel={input.accessibilityLabel || label}
@@ -335,12 +337,30 @@ export function OverlapSheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.bg, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 20, paddingTop: 24 }, style]}>{children}</View>;
 }
 
-// Floating dark pill navigation: icon-only, the active item sits in a near-black circle (labels stay as
-// accessibility labels). items: [{ id, label, icon(active) }]
+// Navigation icon: filled two-tone glyph from shared/navIcons.js (same data the admin sidebar draws).
+export function NavIcon({ name, active, size = 24 }) {
+  const [main, accent] = NAV_TONES[active ? 'active' : 'idle'];
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {(NAV_ICONS[name] || NAV_ICONS.home).map(([d, role, sw], i) => {
+        const color = role === 'main' ? main : accent;
+        return sw
+          ? <Path key={i} d={d} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" />
+          : <Path key={i} d={d} fill={color} />;
+      })}
+    </Svg>
+  );
+}
+
+// Bottom navigation: a dark pill docked in the screen's own footer (content never slides behind it). Every item
+// shows its label; the current item sits in a near-black circle with a lilac icon. items: [{ id, label, icon(active) }]
 export function FloatingDock({ items, active, onChange }) {
   return (
-    <View style={{ position: 'absolute', left: 0, right: 0, bottom: Platform.OS === 'ios' ? 24 : 16, alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
-      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.lg }}>
+    <View
+      pointerEvents="box-none"
+      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 28 : 14, backgroundColor: COLORS.bg, ...SHADOWS.sm, shadowOffset: { width: 0, height: -6 } }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between' }}>
         {items.map((item) => {
           const on = active === item.id;
           return (
@@ -350,11 +370,12 @@ export function FloatingDock({ items, active, onChange }) {
               accessibilityRole="button"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: on }}
-              style={({ pressed, focused }) => [{ flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused, 'rgba(255,176,121,0.9)')]}
+              style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused, 'rgba(255,176,121,0.9)')]}
             >
-              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: on ? COLORS.bgDark : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.bgDark : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon(on)}
               </View>
+              <Text style={{ ...TYPE.caption, ...FONT, color: on ? COLORS.white : '#B9BBC4' }} numberOfLines={1}>{item.label}</Text>
             </Pressable>
           );
         })}

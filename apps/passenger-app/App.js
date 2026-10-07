@@ -36,6 +36,7 @@ import {
   Toast,
   Vehicle,
   VehicleLoader,
+  NavIcon,
 } from './src/components/ui';
 import { liveryFor } from './src/components/vehicleShapes';
 import {
@@ -898,9 +899,9 @@ function TrackingScreen({
 function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
   const bus = tracked?.bus;
   const services = [
-    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.accent} size={22} /> },
-    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primaryStrong} size={22} /> },
-    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.ink} size={22} /> },
+    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primary} size={22} /> },
+    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primary} size={22} /> },
+    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primary} size={22} /> },
   ];
   return (
     <ScrollView
@@ -1222,12 +1223,13 @@ function ProfileRow({ label, value, accent, last }) {
 }
 
 function BottomDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.primaryLight : '#9A9CA6'} size={size + 2} />;
+  // CHANGED (visual only): filled two-tone nav icons, shared with the admin sidebar
+  const icon = (name) => (active) => <NavIcon name={name} active={active} />;
   const items = [
-    { id: 'home', label: 'Home', icon: icon(MapIcon, 19) },
-    { id: 'tracking', label: 'Track', icon: icon(NavigationArrowIcon, 18) },
-    { id: 'routes', label: 'Routes', icon: icon(RouteIcon, 19) },
-    { id: 'profile', label: 'Profile', icon: icon(UserIcon, 19) },
+    { id: 'home', label: 'Home', icon: icon('home') },
+    { id: 'tracking', label: 'Track', icon: icon('arrow') },
+    { id: 'routes', label: 'Routes', icon: icon('route') },
+    { id: 'profile', label: 'Profile', icon: icon('user') },
   ];
   return <FloatingDock items={items} active={activeTab} onChange={setActiveTab} />;
 }
