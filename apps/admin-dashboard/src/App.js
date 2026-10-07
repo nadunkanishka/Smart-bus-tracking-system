@@ -429,7 +429,7 @@ function App() {
             <label className="field">
               <span className="form-label">Username</span>
               <span className="input-wrap">
-                <svg className="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                <Icon type="user" className="lead" />
                 <input
                   type="text"
                   className="form-input"
@@ -445,7 +445,7 @@ function App() {
             <label className="field">
               <span className="form-label">Password</span>
               <span className="input-wrap">
-                <svg className="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                <Icon type="lock" className="lead" />
                 <input
                   type={showPw ? 'text' : 'password'}
                   className="form-input"
@@ -456,7 +456,7 @@ function App() {
                   required
                 />
                 <button type="button" className="toggle-pw" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" /><circle cx="12" cy="12" r="3" />{showPw && <path d="M3 3l18 18" />}</svg>
+                  <Icon type="eye" />
                 </button>
               </span>
             </label>
@@ -579,6 +579,7 @@ function App() {
               onClick={handleLogout}
               title="Sign Out of Admin Console"
             >
+              <Icon type="logout" />
               Sign Out ({user.username})
             </button>
           </div>
@@ -588,8 +589,8 @@ function App() {
           <div className="notification-banner" role="alert">
             <div className="notification-card">
               <p className="notification-text">{notification}</p>
-              <button type="button" className="notification-close" onClick={() => setNotification(null)}>
-                ✕
+              <button type="button" className="notification-close" onClick={() => setNotification(null)} aria-label="Dismiss">
+                <Icon type="close" />
               </button>
             </div>
           </div>
@@ -680,13 +681,13 @@ function App() {
                     <p>Shortcuts to instantly add assets into MongoDB</p>
                     <div className="quick-actions">
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('driver')}>
-                        <span>+</span> Register New Driver
+                        <span><Icon type="plus" /></span> Register New Driver
                       </button>
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('bus')}>
-                        <span>+</span> Register New Bus / Vehicle
+                        <span><Icon type="plus" /></span> Register New Bus / Vehicle
                       </button>
                       <button type="button" className="btn btn-secondary quick-action" onClick={() => openModal('route')}>
-                        <span>+</span> Create Network Route
+                        <span><Icon type="plus" /></span> Create Network Route
                       </button>
                     </div>
                   </div>
@@ -746,12 +747,8 @@ function App() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}>
-                                Delete
-                              </button>
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('driver', 'edit', driver)}><Icon type="edit" />Edit</button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('driver', driver)}><Icon type="trash" />Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -814,12 +811,8 @@ function App() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}>
-                                Delete
-                              </button>
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}><Icon type="edit" />Edit</button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}><Icon type="trash" />Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -909,12 +902,8 @@ function App() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}>
-                                Edit
-                              </button>
-                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}>
-                                Delete
-                              </button>
+                              <button type="button" className="btn btn-edit" onClick={() => openModal('route', 'edit', route)}><Icon type="edit" />Edit</button>
+                              <button type="button" className="btn btn-danger" onClick={() => openConfirm('route', route)}><Icon type="trash" />Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -931,6 +920,11 @@ function App() {
       {modalState.open && (
         <div className="overlay" onClick={(event) => event.target === event.currentTarget && closeModal()}>
           <div className={`modal-box ${modalState.entity === 'route' ? 'modal-wide' : ''}`} role="dialog" aria-modal="true">
+            {/* CHANGED (visual only): notch header + close button */}
+            <header className="modal-head">
+              <span className="notch"><i><Icon type={modalState.entity === 'driver' ? 'user' : modalState.entity === 'bus' ? 'bus' : 'route'} /></i></span>
+              <div className="modal-head-copy">
+                <span className="eyebrow">{modalState.mode === 'edit' ? 'Update record' : 'New record'}</span>
             <h3 className="modal-title">
               {modalState.entity === 'driver'
                 ? modalState.mode === 'edit'
@@ -944,6 +938,9 @@ function App() {
                     ? 'Edit Route'
                     : 'Create New Route'}
             </h3>
+              </div>
+              <button type="button" className="icon-btn" onClick={closeModal} aria-label="Close"><Icon type="close" /></button>
+            </header>
 
             {modalState.entity === 'driver' && (
               <div className="modal-form">
@@ -1138,6 +1135,7 @@ function App() {
                 Cancel
               </button>
               <button type="button" className="btn btn-primary" onClick={handleSave}>
+                <Icon type="check" />
                 Save Changes
               </button>
             </div>
@@ -1150,9 +1148,7 @@ function App() {
         <div className="overlay confirm-overlay" onClick={(event) => event.target === event.currentTarget && closeConfirm()}>
           <div className="clean-delete-box">
             <div className="clean-delete-icon-wrapper">
-              <svg fill="none" viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Icon type="trash" />
             </div>
             <h3 className="clean-delete-title">Delete Confirmation</h3>
             <p className="clean-delete-text">Are you sure you want to permanently remove this record from MongoDB?</p>
@@ -1172,11 +1168,15 @@ function App() {
   );
 }
 
+// CHANGED (visual only): a leading icon chosen from the label text.
+const FIELD_ICONS = [[/password/i, 'lock'], [/license number/i, 'card'], [/expiry/i, 'calendar'], [/phone/i, 'phone'], [/registration/i, 'bus'], [/capacity/i, 'drivers'], [/mileage/i, 'gauge'],
+  [/status/i, 'pulse'], [/route number/i, 'hash'], [/terminal/i, 'pin'], [/distance/i, 'ruler'], [/assign(ed)? driver/i, 'user'], [/bus/i, 'bus'], [/route name/i, 'route'], [/name/i, 'user']];
 function Field({ label, children }) {
+  const icon = (FIELD_ICONS.find(([re]) => re.test(label)) || [])[1];
   return (
     <label className="field">
       <span className="form-label">{label}</span>
-      {children}
+      {icon ? <span className="input-wrap"><Icon type={icon} className="lead" />{children}</span> : children}
     </label>
   );
 }
@@ -1219,82 +1219,40 @@ function StatusBadge({ status }) {
   return <span className={className}>{status}</span>;
 }
 
-function Icon({ type }) {
-  const commonProps = {
-    fill: 'none',
-    viewBox: '0 0 24 24',
-    'aria-hidden': 'true',
-  };
+// CHANGED (visual only): one outline icon set, 24 grid, 2px round strokes.
+const ICONS = {
+  grid: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z',
+  drivers: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18.5 14.5a6.5 6.5 0 0 1 3 5.5',
+  bus: 'M5 17V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11zM5 11h14M4 17h16M8 17v2.5M16 17v2.5M8.5 14h.01M15.5 14h.01',
+  route: 'M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM8 17h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6',
+  pulse: 'M3 12h4l2.5-6 4 12 2.5-6H21',
+  chart: 'M6 19V11M12 19V5M18 19v-6',
+  sync: 'M20 11a8 8 0 0 0-14.5-4M4 4v4h4M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4',
+  plus: 'M12 5v14M5 12h14',
+  trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
+  menu: 'M4 7h16M4 12h10M4 17h16',
+  edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+  close: 'M6 6l12 12M18 6L6 18',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  lock: 'M6 11h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM8 11V8a4 4 0 0 1 8 0v3',
+  eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  card: 'M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM7 14h4M7 10h2M15 10h2M15 14h2',
+  calendar: 'M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM4 10h16M8 3v4M16 3v4',
+  phone: 'M6 3h3l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z',
+  gauge: 'M12 14l4-4M5 18a9 9 0 1 1 14 0z',
+  pin: 'M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  hash: 'M9 4L7 20M17 4l-2 16M4 9h16M3 15h16',
+  ruler: 'M4 15L15 4l5 5L9 20zM8 11l2 2M11 8l2 2M14 5l2 2',
+  logout: 'M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9',
+};
 
-  switch (type) {
-    case 'grid':
-      return (
-        <svg {...commonProps}>
-          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="2" />
-        </svg>
-      );
-    case 'drivers':
-      return (
-        <svg {...commonProps}>
-          <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
-          <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'bus':
-      return (
-        <svg {...commonProps}>
-          <rect x="1" y="6" width="22" height="13" rx="2" stroke="currentColor" strokeWidth="2" />
-          <path d="M5 19v2M19 19v2M1 11h22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'route':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 6h18M3 12h12M3 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'pulse':
-      return (
-        <svg {...commonProps}>
-          <path d="M2 12h4l3-8 4 16 3-8h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    case 'chart':
-      return (
-        <svg {...commonProps}>
-          <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'sync':
-      return (
-        <svg {...commonProps}>
-          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      );
-    case 'plus':
-      return (
-        <svg {...commonProps}>
-          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      );
-    case 'trash':
-      return (
-        <svg {...commonProps}>
-          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      );
-    case 'menu':
-    default:
-      return (
-        <svg {...commonProps}>
-          <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-      );
-  }
+function Icon({ type, className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICONS[type] || ICONS.menu} />
+    </svg>
+  );
 }
 
 export default App;

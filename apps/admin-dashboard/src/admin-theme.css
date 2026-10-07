@@ -309,3 +309,65 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .histogram span.empty { background: var(--line); }
 @media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } .inline-field { min-width: 0; width: 100%; } .route-editor-map { height: 280px; } }
+
+/* ── Peach component layer: notch, icon buttons, sidebar, forms, modal, tables ──────────────── */
+.eyebrow { font-size: var(--fs-overline); line-height: var(--lh-overline); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); }
+/* Corner notch: a coloured tab with a charcoal icon badge, joined to the card edge by two concave corners. */
+.notch { --c: #EC9458; position: absolute; left: 0; top: 0; width: 68px; height: 62px; background: var(--c); border-bottom-right-radius: 30px; display: grid; place-items: center; padding: 0 8px 6px 0; }
+.notch::before, .notch::after { content: ''; position: absolute; width: 16px; height: 16px; background: radial-gradient(circle at 100% 100%, transparent 15.5px, var(--c) 16px); }
+.notch::before { left: 100%; top: 0; } .notch::after { left: 0; top: 100%; }
+.notch i { width: 40px; height: 40px; border-radius: 14px; background: var(--ink-soft); color: #FFB079; display: grid; place-items: center; }
+.notch i svg { width: 20px; height: 20px; }
+.icon-btn, .icon-button { width: var(--touch); height: var(--touch); flex-shrink: 0; border: 1.5px solid rgba(38, 38, 43, 0.14); border-radius: 50%; background: transparent; display: grid; place-items: center; padding: 0; cursor: pointer; transition: transform 160ms var(--ease-out), background-color 160ms; }
+.icon-btn svg, .icon-button svg { width: 20px; height: 20px; }
+.icon-btn:active, .icon-button:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) { .icon-btn:hover, .icon-button:hover { background: rgba(38, 38, 43, 0.06); } }
+
+/* Sidebar: the active item is a near-black pill with a lilac icon, like the reference's nav circle. */
+.sidebar { background: var(--ink-soft); }
+.nav-item.active { background: #17181B; color: #fff; }
+.nav-item.active .nav-icon { color: var(--primary-light); }
+.sidebar.collapsed .nav-item { width: 48px; height: 48px; padding: 0; border-radius: 50%; margin-inline: auto; }
+.sidebar-avatar { background: var(--primary-light); color: var(--ink); }
+
+/* Header bar and section titles */
+.main-header { border-radius: var(--radius-pill); padding: var(--space-2) var(--space-3); }
+.system-status { background: var(--primary-soft); }
+.section-header h1 { font-weight: 700; letter-spacing: -0.4px; }
+.panel h2, .header-title, .modal-title, .clean-delete-title, .brand-title, .login-title { font-weight: 700; }
+
+/* Buttons */
+.btn-edit, .btn-danger { gap: 6px; }
+.btn-edit svg, .btn-danger svg { width: 16px; height: 16px; }
+.quick-action span svg { width: 14px; height: 14px; }
+.notification-close { display: grid; place-items: center; padding: 13px; }
+
+/* Tables and badges */
+.data-table thead th { color: var(--accent-text); }
+.badge-gray { background: var(--primary-soft); color: var(--primary-deep); }
+
+/* Forms: white pill inputs with a lilac leading icon */
+.form-label { padding-left: var(--space-2); }
+.form-input { background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius-pill); padding: 0 var(--space-5); }
+.form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); background: var(--surface); }
+.input-wrap > svg.lead { left: 18px; color: var(--primary); }
+.input-wrap .form-input { padding-left: 50px; }
+.input-wrap .toggle-pw svg { width: 20px; height: 20px; }
+
+/* Modal: an off-white screen with the notch header */
+.modal-box { position: relative; background: var(--bg); padding: var(--space-5) var(--space-6) var(--space-6); overflow-x: hidden; }
+.modal-head { display: flex; align-items: center; gap: var(--space-3); min-height: 48px; padding-left: 60px; margin-bottom: var(--space-6); }
+.modal-head-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.modal-title { margin: 0; }
+.modal-actions .btn { min-height: 48px; padding-inline: var(--space-6); }
+.clean-delete-box { background: var(--bg); }
+.clean-delete-icon-wrapper { border-radius: 22px; }
+.clean-delete-icon-wrapper svg { width: 28px; height: 28px; }
+.clean-delete-target-badge, .btn-cancel-soft { background: var(--surface); box-shadow: var(--shadow-sm); }
+
+/* Live monitor and analytics: outlined wash cards and pill histogram bars */
+.stat-card { border: 1.5px solid #EC9458; background: #F6F0F0; }
+.stat-card:nth-child(even) { border-color: #8180DB; background: var(--primary-soft); }
+.stat-card strong { font-size: var(--fs-display); line-height: var(--lh-display); font-weight: 700; }
+.histogram span { background: var(--accent-text); border-radius: 4px 4px 0 0; }
+.histogram span.empty { background: #E4C4AF; }
