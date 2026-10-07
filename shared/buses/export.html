@@ -17,17 +17,17 @@
 <body>
 <h1>SmartBus clay buses</h1>
 <p>Open this file in a browser to preview every baked image. Run <code>node shared/buses/export.mjs</code> to write them into the apps. Edit <code>clay.js</code> to change a model, colour or camera, then export again.</p>
-<h2>Buses (480 × 400)</h2><div class="grid" id="hero"></div>
+<h2>Buses and props (480 × 400)</h2><div class="grid" id="hero"></div>
 <h2>Road scenes (960 × 540)</h2><div class="grid scenes" id="scenes"></div>
 <h2>Map markers by compass heading (128 × 128, shown at 48)</h2><div class="markers" id="markers"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="clay.js"></script>
 <script>
-  const { buildBus, buildScene, studio, manifest, SCENES } = window.ClayBus;
+  const { build, buildBus, buildScene, studio, manifest, SCENES } = window.ClayBus;
   const shoot = studio(), m = manifest();
   const fig = (name, src, label) => `<figure><img data-name="${name}" src="${src}" alt="${label}">${label}</figure>`;
   // Same camera for every bus so sizes are comparable and states never shift the art.
-  document.getElementById('hero').innerHTML = m.hero.map((s) => fig(s.name, shoot(buildBus(s), { w: 480, h: 400, distance: 22, target: [-0.3, 1.9, 0] }), s.name)).join('');
+  document.getElementById('hero').innerHTML = m.hero.map((s) => fig(s.name, shoot(build(s), { w: 480, h: 400, distance: 22, target: [-0.3, 1.9, 0] }), s.name)).join('');
   document.getElementById('scenes').innerHTML = m.scenes.map((k) => fig(`scene-${k}`, shoot(buildScene(SCENES[k]), { w: 960, h: 540, distance: 46, target: [1.5, 1.2, 0] }), k)).join('');
   // Marker k faces compass heading k × 45° (0 = north = up the screen): model rotation = 135° - heading with the camera at 45°.
   const marker = buildBus({ type: 'bus', theme: 'teal', state: 'parked', detail: false });

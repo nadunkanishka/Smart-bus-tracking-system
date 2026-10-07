@@ -43,6 +43,8 @@ export const IMAGES = {
   'school-yellow-idle': require('../../assets/buses/school-yellow-idle.webp'),
   'decker-red-running': require('../../assets/buses/decker-red-running.webp'),
   'decker-red-idle': require('../../assets/buses/decker-red-idle.webp'),
+  'driver-coral-idle': require('../../assets/buses/driver-coral-idle.webp'),
+  'route-mint-idle': require('../../assets/buses/route-mint-idle.webp'),
   'scene-login': require('../../assets/buses/scene-login.webp'),
   'scene-register': require('../../assets/buses/scene-register.webp'),
   'scene-driver': require('../../assets/buses/scene-driver.webp'),

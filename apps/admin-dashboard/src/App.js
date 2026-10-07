@@ -623,8 +623,7 @@ function App() {
                   subtitle="Active network routes"
                   icon="route"
                   tint="train"
-                  vehicle="coach"
-                  livery="mint"
+                  vehicle="route"
                 />
                 <KpiCard
                   label="Registered Buses"
@@ -641,8 +640,7 @@ function App() {
                   subtitle="Authorized drivers in system"
                   icon="drivers"
                   tint="taxi"
-                  vehicle="minibus"
-                  livery="coral"
+                  vehicle="driver"
                 />
               </div>
 

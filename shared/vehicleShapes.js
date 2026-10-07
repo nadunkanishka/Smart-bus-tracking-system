@@ -2,12 +2,13 @@
 // The art itself is generated from code in shared/buses (clay.js → export.mjs) and shipped as WebP images;
 // this file is the small, renderer-free lookup shared by the native, web and Leaflet layers.
 
-export const VEHICLES = ['bus', 'coach', 'minibus', 'school', 'decker'];
+export const VEHICLES = ['bus', 'coach', 'minibus', 'school', 'decker', 'driver', 'route'];
+const PROPS = ['driver', 'route']; // not buses: one image each, no states
 // The city bus is baked in every colour; the other types only in the colours listed (first = default).
 // Keep in step with TYPES[...].themes in shared/buses/clay.js; sync.js fails if an image is missing.
 export const LIVERIES = ['green', 'teal', 'coral', 'yellow', 'orange', 'purple', 'navy', 'red', 'mint', 'cream'];
-const BAKED = { bus: ['teal', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'] };
-const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus' };
+const BAKED = { bus: ['teal', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['mint'] };
+const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus', driver: 'Bus driver', route: 'Route with stops' };
 export const SCENES = ['login', 'register', 'driver', 'admin'];
 export const ASPECT = 400 / 480; // every bus image is 6:5, so states never resize the art
 
@@ -24,6 +25,7 @@ export const liveryFor = (key) => LIVERIES[[...String(key)].reduce((h, ch) => (h
 // → { key, label, badge }. key names a file in shared/buses/out (see manifest() in shared/buses/clay.js).
 export function pick(name, { livery, status, running } = {}) {
   const type = VEHICLES.includes(name) ? name : 'bus';
+  if (PROPS.includes(type)) return { key: `${type}-${BAKED[type][0]}-idle`, label: LABEL[type], badge: null };
   const badge = STATUS[status] || null;
   const label = badge ? `${LABEL[type]}, ${badge.label}` : LABEL[type];
   if (status === 'off') return { key: 'bus-off', label, badge }; // one grey bus stands in for every type
