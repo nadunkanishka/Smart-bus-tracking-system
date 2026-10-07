@@ -101,7 +101,7 @@ export function GradientCard({ tint = 'bus', style, children, id }) {
 
 export function Avatar({ label = 'P', size = 44, tone = 'soft' }) {
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: tone === 'ink' ? COLORS.ink : COLORS.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: tone === 'ink' ? COLORS.ink : COLORS.primarySoft, borderWidth: tone === 'ink' ? 0 : 3, borderColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ ...TYPE.bodyBold, ...FONT, color: tone === 'ink' ? COLORS.white : COLORS.primaryDeep, fontSize: size * 0.4, lineHeight: size * 0.5 }}>
         {String(label || 'P').charAt(0).toUpperCase()}
       </Text>
@@ -283,16 +283,16 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const hero = (
-    <View style={[{ backgroundColor: COLORS.primary, paddingTop: 24, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
+    <View style={[{ backgroundColor: COLORS.accent, paddingTop: 24, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
       <View style={[{ paddingHorizontal: 24 }, wide && { paddingHorizontal: 0 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
             <Vehicle name="bus" width={34} label="SmartBus logo" />
           </View>
-          <Text style={{ ...TYPE.h1, ...FONT, color: COLORS.white }}>{brand}</Text>
+          <Text style={{ ...TYPE.h1, ...FONT, color: COLORS.ink }}>{brand}</Text>
         </View>
         {tagline ? (
-          <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.primaryDeep, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
+          <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
             <Text style={{ ...TYPE.small, ...FONT, color: COLORS.white }}>{tagline}</Text>
           </View>
         ) : null}
@@ -318,7 +318,7 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
     </View>
   );
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.primary }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.accent }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={[{ flexGrow: 1 }, wide ? { flexDirection: 'row', minHeight: 640 } : { width: '100%', maxWidth: 560, alignSelf: 'center' }]}>
         {hero}
         {panel}
@@ -327,19 +327,20 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
   );
 }
 
-// Overlapping screen header: coloured block + curved sheet that the screen content sits on.
+// Overlapping screen header: orange block (ink text only) + curved sheet that the screen content sits on.
 export function OverlapHeader({ children, minHeight = 148 }) {
-  return <View style={{ backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, minHeight, overflow: 'hidden' }}>{children}</View>;
+  return <View style={{ backgroundColor: COLORS.accent, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, minHeight, overflow: 'hidden' }}>{children}</View>;
 }
 export function OverlapSheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.bg, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 20, paddingTop: 24 }, style]}>{children}</View>;
 }
 
-// Floating dark pill navigation; the active item is an orange pill with ink content. items: [{id,label,icon(active)}]
+// Floating dark pill navigation: icon-only, the active item sits in a near-black circle (labels stay as
+// accessibility labels). items: [{ id, label, icon(active) }]
 export function FloatingDock({ items, active, onChange }) {
   return (
     <View style={{ position: 'absolute', left: 0, right: 0, bottom: Platform.OS === 'ios' ? 24 : 16, alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.ink, borderRadius: RADII.pill, padding: 8, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.lg }}>
         {items.map((item) => {
           const on = active === item.id;
           return (
@@ -349,14 +350,30 @@ export function FloatingDock({ items, active, onChange }) {
               accessibilityRole="button"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: on }}
-              style={({ pressed, focused }) => [{ flex: 1, minHeight: 48, borderRadius: RADII.pill, backgroundColor: on ? COLORS.accent : 'transparent', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.96 : 1 }] }, webRing(focused, 'rgba(255,255,255,0.7)')]}
+              style={({ pressed, focused }) => [{ flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused, 'rgba(255,176,121,0.9)')]}
             >
-              {item.icon(on)}
-              <Text style={{ ...TYPE.caption, ...FONT, marginTop: 2, color: on ? COLORS.ink : '#C9CBD2' }} numberOfLines={1}>{item.label}</Text>
+              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: on ? COLORS.bgDark : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                {item.icon(on)}
+              </View>
             </Pressable>
           );
         })}
       </View>
+    </View>
+  );
+}
+
+// Stat card with a corner notch: a tinted outline, a soft wash and a charcoal icon badge in a coloured tab.
+// icon: (color) => element. tone: 'orange' | 'purple'.
+export function NotchStat({ label, value, tone = 'orange', icon, valueColor, style }) {
+  const [line, wash, ink] = tone === 'purple' ? ['#8180DB', COLORS.primarySoft, COLORS.primaryLight] : ['#EC9458', '#F6F0F0', '#FFB079'];
+  return (
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 100, borderWidth: 1.5, borderColor: line, backgroundColor: wash, borderRadius: RADII.lg, overflow: 'hidden', paddingTop: 12, paddingBottom: 14, paddingHorizontal: 8, alignItems: 'center' }, style]}>
+      <View style={{ position: 'absolute', left: 0, top: 0, width: 44, height: 40, backgroundColor: line, borderBottomRightRadius: 20, alignItems: 'center', justifyContent: 'center', paddingRight: 4, paddingBottom: 4 }}>
+        <View style={{ width: 26, height: 26, borderRadius: 9, backgroundColor: COLORS.inkSoft, alignItems: 'center', justifyContent: 'center' }}>{icon ? icon(ink) : null}</View>
+      </View>
+      <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.textSecondary, marginLeft: 30 }} numberOfLines={1}>{label}</Text>
+      <Text style={{ ...TYPE.h3, ...FONT, color: valueColor || COLORS.ink, marginTop: 16, textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
     </View>
   );
 }

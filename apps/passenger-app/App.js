@@ -922,7 +922,7 @@ function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingSt
             <BellIcon color={COLORS.ink} size={20} hasBadge={!!bus} />
           </IconButton>
         </View>
-        <Vehicle name="bus" width={132} style={S.homeHeaderBus} label="Illustrated city bus" />
+        <Vehicle name="bus" livery="purple" width={132} style={S.homeHeaderBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet style={S.homeSheet}>
@@ -1222,7 +1222,7 @@ function ProfileRow({ label, value, accent, last }) {
 }
 
 function BottomDock({ activeTab, setActiveTab }) {
-  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.ink : '#C9CBD2'} size={size} />;
+  const icon = (Cmp, size) => (active) => <Cmp color={active ? COLORS.primaryLight : '#9A9CA6'} size={size + 2} />;
   const items = [
     { id: 'home', label: 'Home', icon: icon(MapIcon, 19) },
     { id: 'tracking', label: 'Track', icon: icon(NavigationArrowIcon, 18) },
@@ -1353,7 +1353,7 @@ const S = StyleSheet.create({
   homeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: TOP_INSET },
   homeHeaderText: { flex: 1 },
   homeGreeting: { ...type('small'), color: COLORS.ink },
-  homeUserName: { ...type('h1'), color: COLORS.white },
+  homeUserName: { ...type('h1'), color: COLORS.ink },
   homeHeaderBus: { position: "absolute", right: 12, bottom: 34 },
   homeSheet: { minHeight: 600 },
 
@@ -1412,7 +1412,7 @@ const S = StyleSheet.create({
 
   // ─── Routes Screen ──────────────────────────────────────
   routesScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('h1'), color: COLORS.white, paddingTop: TOP_INSET },
+  screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
   screenSubtitle: { ...type('small'), color: COLORS.ink, marginTop: 4, marginBottom: 16 },
 
   searchBar: {
@@ -1473,7 +1473,7 @@ const S = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
   },
   profileAvatarText: { ...type('display'), color: COLORS.primaryDeep },
-  profileName: { ...type('h1'), color: COLORS.white },
+  profileName: { ...type('h1'), color: COLORS.ink },
   profileUsername: { ...type('small'), color: COLORS.ink, marginTop: 4 },
 
   profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
