@@ -416,7 +416,7 @@ function App() {
             </div>
             <span className="login-tagline">Fleet, drivers and routes in one place</span>
           </div>
-          <RoadScene scene="admin" className="login-scene" label="Buses on a road beside a bus stop" />
+          <RoadScene scene="admin" className="login-scene" label="Buses on a two-lane road" />
         </section>
 
         <div className="login-card">
@@ -732,7 +732,7 @@ function App() {
                     {drivers.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="minibus" livery="orange" width={112} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
+                          <div className="empty-state"><Vehicle name="minibus" width={120} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
                         </td>
                       </tr>
                     ) : (
@@ -865,7 +865,7 @@ function App() {
                     {routes.length === 0 ? (
                       <tr>
                         <td colSpan="10" className="cell-empty">
-                          <div className="empty-state"><Vehicle name="coach" livery="navy" width={128} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
+                          <div className="empty-state"><Vehicle name="coach" width={128} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
                         </td>
                       </tr>
                     ) : (

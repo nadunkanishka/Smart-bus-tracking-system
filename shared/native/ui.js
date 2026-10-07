@@ -2,12 +2,14 @@
 // copied to apps/*/src/components/ui.js by `npm run sync` (so imports below are app-relative).
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  AccessibilityInfo, ActivityIndicator, Animated, Easing, Platform, Pressable, StyleSheet, Text, TextInput,
+  AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Platform, Pressable, StyleSheet, Text, TextInput,
   View, useWindowDimensions, ScrollView,
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { COLORS, RADII, SHADOWS, TYPE } from '../constants/theme';
-import { build, buildScene } from './vehicleShapes';
+import { ASPECT, markerIndex, pick } from './vehicleShapes';
+import { IMAGES } from './busImages';
+import { MARKERS } from './busMarkers';
 
 // Plus Jakarta Sans on web; native keeps the system font (no font-loading dependency).
 export const FONT = Platform.OS === 'web' ? { fontFamily: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" } : null;
@@ -33,29 +35,29 @@ const webRing = (focused, color = 'rgba(31,120,168,0.55)') =>
   (Platform.OS === 'web' && focused ? { boxShadow: `0 0 0 3px ${color}` } : null);
 
 // ─── Vehicles ───────────────────────────────────────────────────────────────
-const SHAPE = { polygon: Polygon, path: Path, circle: Circle };
-const draw = (prims) => prims.map(([tag, props], i) => { const Tag = SHAPE[tag]; return <Tag key={i} {...props} />; });
-
-// Isometric bus. status ('idle' | 'maint' | 'off') adds a badge above the roof; always pair it with a text label.
+// Clay buses: pre-rendered images chosen by vehicleShapes.pick(). status ('idle' | 'maint' | 'off') adds a
+// badge on the corner; always pair it with a text label.
 export function Vehicle({ name = 'bus', width = 160, livery, status, heading, running, marker, label, style }) {
-  const { prims, vb, label: auto } = build(name, { livery, status, heading, running, marker });
+  if (marker) return <Image accessibilityLabel={label || 'Bus'} source={{ uri: MARKERS[markerIndex(heading)] }} style={[{ width, height: width }, style]} />;
+  const { key, label: auto, badge } = pick(name, { livery, status, running });
+  const size = Math.max(16, Math.round(width * 0.2));
   return (
     <View style={style} accessibilityRole="image" accessibilityLabel={label || auto}>
-      <Svg width={width} height={Math.round((width * vb[3]) / vb[2])} viewBox={vb.join(' ')}>{draw(prims)}</Svg>
+      <Image source={IMAGES[key]} style={{ width, height: Math.round(width * ASPECT) }} resizeMode="contain" />
+      {badge ? (
+        <View style={{ position: 'absolute', top: 0, right: Math.round(width * 0.14), width: size, height: size, borderRadius: size / 2, backgroundColor: badge.bg, alignItems: 'center', justifyContent: 'center', ...SHADOWS.sm }}>
+          <Text style={{ color: badge.fg, fontWeight: '800', fontSize: Math.round(size * 0.68), lineHeight: size }}>{badge.glyph}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
-export function RoadScene({ scene = 'login', height = 200, label = 'Buses on a road beside a bus stop' }) {
-  const { prims, vb } = buildScene(scene);
-  return (
-    <View accessibilityRole="image" accessibilityLabel={label}>
-      <Svg width="100%" height={height} viewBox={vb.join(' ')} preserveAspectRatio="xMidYMid meet">{draw(prims)}</Svg>
-    </View>
-  );
+export function RoadScene({ scene = 'login', height = 200, label = 'Buses on a two-lane road' }) {
+  return <Image accessibilityLabel={label} source={IMAGES[`scene-${scene}`] || IMAGES['scene-login']} style={{ width: '100%', height }} resizeMode="contain" />;
 }
 
-// A small bus driving across a road line. Static when reduced motion is on.
+// A small bus driving across a road line (the bus faces left). Static when reduced motion is on.
 export function VehicleLoader({ name = 'bus', label = 'Loading', width = 240 }) {
   const reduced = useReducedMotion();
   const x = useRef(new Animated.Value(0)).current;
@@ -65,14 +67,13 @@ export function VehicleLoader({ name = 'bus', label = 'Loading', width = 240 }) 
     loop.start();
     return () => loop.stop();
   }, [reduced, x]);
-  const car = 84;
-  const { vb } = build(name, { heading: 315, running: true }); // 315 = facing screen-right
-  const height = Math.round((car * vb[3]) / vb[2]);
+  const car = 92;
+  const height = Math.round(car * ASPECT);
   return (
     <View style={{ width, height, overflow: 'hidden' }} accessibilityRole="progressbar" accessibilityLabel={label}>
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: Math.round(height * 0.2), height: 4, borderRadius: 2, backgroundColor: COLORS.primaryDeep, opacity: 0.25 }} />
-      <Animated.View style={{ position: 'absolute', left: 0, top: 0, transform: [{ translateX: reduced ? (width - car) / 2 : x.interpolate({ inputRange: [0, 1], outputRange: [-car, width] }) }] }}>
-        <Vehicle name={name} width={car} heading={315} running />
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: Math.round(height * 0.16), height: 4, borderRadius: 2, backgroundColor: COLORS.primaryDeep, opacity: 0.25 }} />
+      <Animated.View style={{ position: 'absolute', left: 0, top: 0, transform: [{ translateX: reduced ? (width - car) / 2 : x.interpolate({ inputRange: [0, 1], outputRange: [width, -car] }) }] }}>
+        <Vehicle name={name} width={car} running />
       </Animated.View>
     </View>
   );

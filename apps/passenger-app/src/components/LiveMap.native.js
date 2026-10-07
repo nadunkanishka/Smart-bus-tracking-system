@@ -5,7 +5,6 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import MapView, { AnimatedRegion, Marker, MarkerAnimated, Polyline, UrlTile } from 'react-native-maps';
 import { Vehicle } from './ui';
-import { headingFor } from './vehicleShapes';
 
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const FALLBACK = { latitude: 6.9, longitude: 79.87, latitudeDelta: 0.12, longitudeDelta: 0.12 };
@@ -18,7 +17,7 @@ function BusMarker({ bus }) {
   return (
     <MarkerAnimated coordinate={position} anchor={{ x: 0.5, y: 0.5 }} title={bus.label || bus.id}>
       <View style={[styles.bus, bus.stale && styles.stale]}>
-        <Vehicle name="bus" marker heading={headingFor(bus.heading)} width={52} label="Bus" />
+        <Vehicle name="bus" marker heading={bus.heading} width={52} label="Bus" />
       </View>
     </MarkerAnimated>
   );

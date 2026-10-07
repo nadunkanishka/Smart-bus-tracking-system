@@ -591,7 +591,7 @@ function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnSh
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Telemetry</Text>
         <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
-        <Vehicle name="minibus" livery="orange" width={108} style={D.headerBus} label="Illustrated minibus" />
+        <Vehicle name="minibus" width={116} style={D.headerBus} label="Illustrated minibus" />
       </OverlapHeader>
 
       <OverlapSheet>

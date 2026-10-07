@@ -4,10 +4,10 @@
 // Source of truth: /shared/native/LiveMap.js (copied into each app by `node shared/sync.js`).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { vehicleSvgString } from './vehicleShapes';
+import { MARKERS } from './busMarkers';
 
-// The 8 drawn headings (index = model heading / 45). Index 0 is the three-quarter view used when a fix has no heading.
-const BUS_SVGS = [0, 45, 90, 135, 180, 225, 270, 315].map((heading) => vehicleSvgString('bus', { marker: true, size: 52, heading }));
+// One baked marker per compass heading (index = heading / 45). Index 3 is the three-quarter view used when a fix has no heading.
+const BUS_SVGS = MARKERS.map((src) => `<img src="${src}" width="52" height="52" alt="">`);
 
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -31,7 +31,7 @@ const html = () => `<!DOCTYPE html>
   var map = L.map('map', { zoomControl: false }).setView([6.9, 79.87], 12);
   L.tileLayer('${TILE_URL}', { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
   var busSvgs = ${JSON.stringify(BUS_SVGS)};
-  function busSvg(h) { return busSvgs[h == null || isNaN(h) ? 0 : ((Math.round((225 + Number(h)) / 45) % 8) + 8) % 8]; }
+  function busSvg(h) { return busSvgs[h == null || isNaN(h) ? 3 : ((Math.round(Number(h) / 45) % 8) + 8) % 8]; }
   var routeLine = null, routeKey = '', stopLayer = L.layerGroup().addTo(map), buses = {}, pad = { top: 40, bottom: 40 };
   var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

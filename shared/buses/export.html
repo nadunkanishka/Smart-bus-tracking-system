@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartBus clay buses: preview and export</title>
+<style>
+  body { margin: 0; padding: 24px; background: #DCE6F1; color: #0F1419; font: 14px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 28px 0 10px; } p { margin: 0; max-width: 70ch; color: #5B6673; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  figure { margin: 0; background: #D5DBDD; border-radius: 16px; padding: 8px; text-align: center; font-size: 11px; }
+  figure img { display: block; width: 100%; height: auto; }
+  .scenes { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } .scenes figure { background: #3A9BC9; color: #fff; }
+  .markers { display: flex; gap: 8px; flex-wrap: wrap; } .markers figure { background: #E9EFE3; width: 72px; } .markers img { width: 48px; margin: 0 auto; } body.big .markers figure { width: 140px; } body.big .markers img { width: 128px; }
+</style>
+</head>
+<body>
+<h1>SmartBus clay buses</h1>
+<p>Open this file in a browser to preview every baked image. Run <code>node shared/buses/export.mjs</code> to write them into the apps. Edit <code>clay.js</code> to change a model, colour or camera, then export again.</p>
+<h2>Buses (480 × 400)</h2><div class="grid" id="hero"></div>
+<h2>Road scenes (960 × 540)</h2><div class="grid scenes" id="scenes"></div>
+<h2>Map markers by compass heading (128 × 128, shown at 48)</h2><div class="markers" id="markers"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="clay.js"></script>
+<script>
+  const { buildBus, buildScene, studio, manifest, SCENES } = window.ClayBus;
+  const shoot = studio(), m = manifest();
+  const fig = (name, src, label) => `<figure><img data-name="${name}" src="${src}" alt="${label}">${label}</figure>`;
+  // Same camera for every bus so sizes are comparable and states never shift the art.
+  document.getElementById('hero').innerHTML = m.hero.map((s) => fig(s.name, shoot(buildBus(s), { w: 480, h: 400, distance: 22, target: [-0.3, 1.9, 0] }), s.name)).join('');
+  document.getElementById('scenes').innerHTML = m.scenes.map((k) => fig(`scene-${k}`, shoot(buildScene(SCENES[k]), { w: 960, h: 540, distance: 46, target: [1.5, 1.2, 0] }), k)).join('');
+  // Marker k faces compass heading k × 45° (0 = north = up the screen): model rotation = 135° - heading with the camera at 45°.
+  const marker = buildBus({ type: 'bus', theme: 'teal', state: 'parked', detail: false });
+  document.getElementById('markers').innerHTML = m.markers.map((k) => fig(`marker-${k}`, shoot(marker, { w: 128, h: 128, elevation: 50, azimuth: 45, distance: 26, target: [0, 1.3, 0], heading: 135 - k * 45 }), `${k * 45}°`)).join('');
+  document.body.dataset.done = '1';
+</script>
+</body>
+</html>

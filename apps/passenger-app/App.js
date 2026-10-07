@@ -820,7 +820,7 @@ function TrackingScreen({
           </View>
         ) : !selectedRoute.trackable ? (
           <View style={S.emptyState}>
-            <Vehicle name="minibus" livery="violet" width={108} label="No map data" />
+            <Vehicle name="minibus" width={116} label="No map data" />
             <Text style={S.emptyStateTitle}>Live tracking is not set up for this route</Text>
             <Text style={S.emptyStateSub}>It has no map path or stop positions yet.</Text>
           </View>
