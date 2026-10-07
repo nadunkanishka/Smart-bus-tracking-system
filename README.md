@@ -15,6 +15,20 @@ The system consists of **4 main parts**:
 
 ---
 
+## 📚 Documentation
+
+| Document | Contents |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture diagram, data flow, ETA engine, offline buffer |
+| [docs/API.md](docs/API.md) | REST endpoints and Socket.IO events |
+| [docs/DATABASE.md](docs/DATABASE.md) | MongoDB collections, indexes and Redis keys |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Local setup, Docker, Render, driver APK build |
+| [docs/EVALUATION.md](docs/EVALUATION.md) | Measuring latency, ETA accuracy and load; user study |
+
+**First run:** in `backend/`, copy `.env.example` to `.env`, then run `npm install` and `npm run seed` to create a demo route with a map path and stops. Run the tests with `npm test`. Simulate buses with `npm run replay -- --route RT-001 --buses 3`.
+
+---
+
 ## 🛠️ Prerequisites (Install First)
 
 Make sure you have installed on your computer:
