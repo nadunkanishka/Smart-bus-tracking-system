@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Platform, Pressable, StyleSheet, Text, TextInput,
-  View, useWindowDimensions, ScrollView,
+  View, useWindowDimensions, ScrollView, KeyboardAvoidingView, Keyboard,
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
@@ -15,7 +15,7 @@ import { MARKERS } from './busMarkers';
 
 // Outfit on web; native keeps the system font (no font-loading dependency).
 // Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
-const SAFE_TOP = Platform.OS === 'android' ? (initialWindowMetrics?.insets.top ?? 0) : 0;
+const SAFE_TOP = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0) : 0;
 const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
 export const FONT = Platform.OS === 'web' ? { fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" } : null;
@@ -295,6 +295,12 @@ export function StrengthMeter({ password }) {
 export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title, subtitle, children, footer }) {
   const { width } = useWindowDimensions();
   const wide = width >= 900;
+  const scroller = useRef(null);
+  // The form sits at the bottom of the panel: once the keyboard is up, scroll down so the fields are in view.
+  useEffect(() => {
+    const sub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => scroller.current?.scrollToEnd({ animated: true }));
+    return () => sub.remove();
+  }, []);
   const hero = (
     <View style={[{ backgroundColor: COLORS.accent, paddingTop: 24 + SAFE_TOP, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMaxYMid slice">
@@ -336,13 +342,16 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
       </View>
     </View>
   );
+  // Edge-to-edge Android ignores adjustResize, so lift the form above the keyboard ourselves.
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.accent }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" enabled={Platform.OS !== 'web'}>
+    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.accent }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={[{ flexGrow: 1 }, wide ? { flexDirection: 'row', minHeight: 640 } : { width: '100%', maxWidth: 560, alignSelf: 'center' }]}>
         {hero}
         {panel}
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
