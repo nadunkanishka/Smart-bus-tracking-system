@@ -9,7 +9,7 @@ Live bus tracking for Sri Lanka's public bus network. A driver's phone sends its
 | Driver app | `apps/driver-app/` | Expo (React Native), phone or browser | `http://localhost:8081` |
 | Passenger app | `apps/passenger-app/` | Expo (React Native), phone or browser | `http://localhost:8082` |
 
-Ignore the Vite files at the very top of the repository (`index.html`, `src/`, the root `package.json`). They are leftovers and nothing uses them.
+The root `package.json` only holds shortcut scripts (for example `npm run dev:backend`). Each part has its own `package.json` and its own `node_modules`.
 
 ---
 
