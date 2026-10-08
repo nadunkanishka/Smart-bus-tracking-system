@@ -9,7 +9,8 @@
     "test": "node --test",
     "seed": "node scripts/seed.js",
     "replay": "node scripts/replay.js",
-    "clear-sim": "node scripts/clear-sim-data.js"
+    "clear-sim": "node scripts/clear-sim-data.js",
+    "smoke": "node scripts/smoke.js"
   },
   "keywords": [],
   "author": "",
