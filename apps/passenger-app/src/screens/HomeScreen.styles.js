@@ -1,0 +1,57 @@
+import { StyleSheet } from 'react-native';
+import { COLORS, RADII, SHADOWS } from '../shared/theme';
+import { TOP_INSET } from '../constants';
+import { common, type } from '../styles/common';
+
+export const S = {
+  ...common,
+  ...StyleSheet.create({
+    homeScroll: { paddingBottom: 120 },
+    homeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: TOP_INSET },
+    homeHeaderText: { flex: 1 },
+    homeGreeting: { ...type('small'), color: COLORS.ink },
+    homeUserName: { ...type('h1'), color: COLORS.ink },
+    homeHeaderBus: { position: "absolute", right: 12, bottom: 34 },
+    homeSheet: { minHeight: 600 },
+    travelCard: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 16, marginBottom: 24,
+      ...SHADOWS.sm,
+    },
+    travelCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
+    travelIcon: { width: 44, height: 44, borderRadius: RADII.sm, backgroundColor: COLORS.accentSoft, alignItems: 'center', justifyContent: 'center' },
+    travelCardLabel: { ...type('caption'), color: COLORS.muted },
+    travelCardPlace: { ...type('bodyBold'), color: COLORS.ink },
+    quickRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+    quickItem: { flex: 1, alignItems: 'center', gap: 8 },
+    quickTile: {
+      width: 64, height: 64, borderRadius: RADII.lg, backgroundColor: COLORS.surface,
+      alignItems: 'center', justifyContent: 'center', ...SHADOWS.sm,
+    },
+    quickLabel: { ...type('caption'), color: COLORS.ink, textAlign: 'center' },
+    sectionTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 12 },
+    sectionTitleFlat: { ...type('h3'), color: COLORS.ink },
+    sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+    journeyCard: { marginBottom: 24 },
+    journeyPress: { padding: 20 },
+    journeyCardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 8 },
+    journeyBus: { marginTop: 8, marginRight: -16 },
+    journeyBusId: { ...type('h2'), color: COLORS.ink },
+    journeyRouteName: { ...type('small'), color: COLORS.muted, marginTop: 2 },
+    journeyKv: { flexDirection: 'row', gap: 24, marginTop: 12 },
+    journeyKvLabel: { ...type('caption'), color: COLORS.muted },
+    journeyKvVal: { ...type('smallBold'), color: COLORS.ink },
+    journeyTerminals: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
+    journeyTerminalRight: { flex: 1, alignItems: 'flex-end' },
+    journeyTerminalLabel: { ...type('caption'), color: COLORS.muted },
+    journeyTerminalName: { ...type('smallBold'), color: COLORS.ink },
+    routeSummaryCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
+    routeSummaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 12 },
+    routeBadge: { backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill },
+    routeBadgeText: { ...type('caption'), color: COLORS.white },
+    routeSummaryMeta: { ...type('small'), color: COLORS.muted, flexShrink: 1 },
+    routeSummaryName: { ...type('bodyBold'), color: COLORS.ink, marginBottom: 8 },
+    routeTerminalRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    routeTerminalText: { ...type('small'), color: COLORS.muted, flex: 1 },
+  }),
+};
