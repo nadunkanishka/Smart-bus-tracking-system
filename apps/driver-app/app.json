@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "driver-app",
+    "name": "SmartBus Driver",
     "slug": "driver-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,13 +12,20 @@
         "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
       },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow the driver app to share live bus location while on duty."
+        "NSLocationWhenInUseUsageDescription": "Allow the driver app to share live bus location while on duty.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow the driver app to share the live bus location while on duty, including when the screen is off.",
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ],
       "config": {
         "googleMaps": {
@@ -30,10 +37,22 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "lk.smartbus.driver"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Allow SmartBus Driver to share the live bus location while on duty."
+        }
+      ]
+    ]
   }
 }
