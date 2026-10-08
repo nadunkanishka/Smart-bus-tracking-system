@@ -185,24 +185,23 @@
   const PROPS = { driver: buildDriver, route: buildRoute };
   const build = (s) => (s.prop ? PROPS[s.prop](s.theme) : buildBus(s));
 
-  // A two-lane road with buses on it: [type, theme, x, lane] where lane -1 is the near (kerb-side) lane heading +x.
+  // A group of buses on the plain backdrop, like the reference's lone truck: no road, just soft ground shadows, so the
+  // artwork sits on any flat panel colour. Each entry is [type, theme, x, z]; every bus faces the same way.
   function buildScene(list) {
     const g = new THREE.Group();
-    // A finite slab with rounded ends that sits wholly inside the frame, like a toy road tile (no hard cut at the image edge).
-    const road = rbox(31, 0.3, 9.6, 0.5, mat('#5150A6', { roughness: 0.9 }), [1.5, -0.13, 0]); road.castShadow = false; g.add(road);
-    for (let x = -11.5; x < 15; x += 3.6) { const dash = rbox(1.7, 0.03, 0.2, 0.01, mat('#FFFFFF', { roughness: 0.9 }), [x, 0.035, 0]); dash.castShadow = false; g.add(dash); }
-    for (const [type, theme, x, lane] of list) {
+    for (const [type, theme, x, z] of list) {
       const bus = buildBus({ type, theme, state: 'idle' });
-      bus.position.set(x, 0, lane * 2.35); if (lane > 0) bus.rotation.y = Math.PI;
+      bus.position.set(x, 0, z);
       g.add(bus);
     }
     return g;
   }
+  // Positions run across the screen (left to right = -x, -z), staggered in depth so the buses overlap a little.
   const SCENES = {
-    login: [['bus', 'cream', 2, -1], ['minibus', 'mint', 10.5, -1], ['coach', 'coral', -7.5, 1]],
-    register: [['decker', 'red', 2, -1], ['school', 'yellow', 10.8, -1], ['minibus', 'purple', -6.5, 1]],
-    driver: [['bus', 'cream', 4.5, -1], ['minibus', 'mint', -5, 1]],
-    admin: [['coach', 'orange', 1.5, -1], ['bus', 'cream', 11, -1], ['decker', 'red', -7.5, 1]],
+    login: [['coach', 'coral', 5.4, 7.3], ['bus', 'cream', 1.2, -1.3], ['minibus', 'mint', -7.5, -5.1]],
+    register: [['school', 'yellow', 5.4, 7.3], ['decker', 'red', 1.2, -1.3], ['minibus', 'purple', -7.5, -5.1]],
+    driver: [['minibus', 'mint', 2.6, 3.8], ['bus', 'cream', -2.6, -3.8]],
+    admin: [['decker', 'red', 5.4, 7.3], ['coach', 'orange', 1.2, -1.3], ['bus', 'cream', -7.5, -5.1]],
   };
 
   // Fixed studio: one camera recipe and one light rig for every shot. Negative azimuth = seen from the kerb side;

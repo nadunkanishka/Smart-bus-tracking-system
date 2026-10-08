@@ -38,6 +38,7 @@ import {
   VehicleLoader,
   NavIcon,
 } from './src/components/ui';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { liveryFor } from './src/components/vehicleShapes';
 import {
   ArrowRightIcon,
@@ -62,7 +63,8 @@ const SESSION_KEY = 'smartbus:session';
 const STALE_MS = 15000; // no update for this long: the bus is shown as "signal lost"
 const GONE_MS = 60000; // no update for this long: the bus is removed from the map
 const MAP_PADDING = { top: 170, bottom: 400 };
-const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
+// Android draws edge to edge: StatusBar.currentHeight reads 0 there, so use the real safe-area inset.
+const TOP_INSET = Platform.OS === 'android' ? (initialWindowMetrics?.insets.top ?? StatusBar.currentHeight ?? 0) : 0;
 
 const NO_ROUTE = {
   id: null, number: '–', name: 'No routes yet', shortName: '—', startTerminal: '—', endTerminal: '—',
