@@ -2,26 +2,16 @@
   "name": "smart-bus-tracking-system",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "description": "Root scripts only. Each part (backend, apps/*) has its own package.json and node_modules.",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
-    "eslint": "^10.6.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
-    "globals": "^17.7.0",
-    "vite": "^8.1.1"
+    "install:all": "npm --prefix backend install && npm --prefix apps/admin-dashboard install && npm --prefix apps/driver-app install && npm --prefix apps/passenger-app install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:admin": "npm --prefix apps/admin-dashboard start",
+    "dev:driver": "cd apps/driver-app && npx expo start --port 8081",
+    "dev:passenger": "cd apps/passenger-app && npx expo start --port 8082",
+    "seed": "npm --prefix backend run seed",
+    "sync": "node shared/sync.js",
+    "test": "npm --prefix backend test && npm --prefix apps/admin-dashboard test -- --watchAll=false",
+    "build": "npm --prefix apps/admin-dashboard run build"
   }
 }
