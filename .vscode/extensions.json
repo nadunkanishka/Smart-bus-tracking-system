@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "editorconfig.editorconfig",
+    "expo.vscode-expo-tools",
+    "mongodb.mongodb-vscode"
+  ]
+}
