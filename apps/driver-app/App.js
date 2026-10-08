@@ -34,6 +34,7 @@ import {
   NotchStat,
   NavIcon,
 } from './src/components/ui';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import {
   ArrowRightIcon,
   BusIcon,
@@ -55,7 +56,8 @@ const DISPATCH_PHONE = process.env.EXPO_PUBLIC_DISPATCH_PHONE || '+94 11 248 770
 const MAX_LOG_ITEMS = 8;
 const MAP_PADDING = { top: 24, bottom: 24 };
 
-const TOP_INSET = Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0;
+// Android draws edge to edge: StatusBar.currentHeight reads 0 there, so use the real safe-area inset.
+const TOP_INSET = Platform.OS === 'android' ? (initialWindowMetrics?.insets.top ?? StatusBar.currentHeight ?? 0) : 0;
 
 function formatCoord(val) { return Number(val).toFixed(4); }
 

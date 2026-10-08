@@ -5,7 +5,8 @@ import {
   AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Platform, Pressable, StyleSheet, Text, TextInput,
   View, useWindowDimensions, ScrollView,
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { COLORS, RADII, SHADOWS, TYPE } from '../constants/theme';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
 import { NAV_ICONS, NAV_TONES } from './navIcons';
@@ -13,6 +14,10 @@ import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
 // Outfit on web; native keeps the system font (no font-loading dependency).
+// Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
+const SAFE_TOP = Platform.OS === 'android' ? (initialWindowMetrics?.insets.top ?? 0) : 0;
+const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
+
 export const FONT = Platform.OS === 'web' ? { fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" } : null;
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
@@ -54,8 +59,14 @@ export function Vehicle({ name = 'bus', width = 160, livery, status, heading, ru
   );
 }
 
-export function RoadScene({ scene = 'login', height = 200, label = 'Buses on a two-lane road' }) {
-  return <Image accessibilityLabel={label} source={IMAGES[`scene-${scene}`] || IMAGES['scene-login']} style={{ width: '100%', height }} resizeMode="contain" />;
+// The scene image is 1280 x 600 and fills the width of its panel.
+export function RoadScene({ scene = 'login', label = 'A group of buses', width, style }) {
+  // The box carries the shape; the image fills it (a lone image would take its pixel height instead).
+  return (
+    <View style={[width ? { width, height: Math.round((width * 600) / 1280) } : { width: '100%', aspectRatio: 1280 / 600 }, style]}>
+      <Image accessibilityLabel={label} source={IMAGES[`scene-${scene}`] || IMAGES['scene-login']} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+    </View>
+  );
 }
 
 // A small bus driving across a road line (the bus faces left). Static when reduced motion is on.
@@ -285,7 +296,13 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const hero = (
-    <View style={[{ backgroundColor: COLORS.accent, paddingTop: 24, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
+    <View style={[{ backgroundColor: COLORS.accent, paddingTop: 24 + SAFE_TOP, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
+      <Svg pointerEvents="none" style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMaxYMid slice">
+        <Path d="M230 330C240 230 310 140 430 96" fill="none" stroke="#26262B" strokeOpacity="0.22" strokeWidth="1.2" strokeDasharray="5 7" />
+        <Path d="M150 -20C165 70 235 118 340 104" fill="none" stroke="#26262B" strokeOpacity="0.16" strokeWidth="1.2" strokeDasharray="5 7" />
+        <Polygon points="350,36 356,54 374,60 356,66 350,84 344,66 326,60 344,54" fill="#FFE08A" />
+        <Polygon points="60,150 64,161 75,165 64,169 60,180 56,169 45,165 56,161" fill="#FFFFFF" fillOpacity="0.7" />
+      </Svg>
       <View style={[{ paddingHorizontal: 24 }, wide && { paddingHorizontal: 0 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
@@ -299,8 +316,8 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
           </View>
         ) : null}
       </View>
-      <View style={{ marginTop: 8, marginBottom: wide ? 0 : 28 }}>
-        <RoadScene scene={scene} height={wide ? 320 : 190} />
+      <View style={{ marginTop: wide ? 0 : 4, marginBottom: wide ? 0 : 36, paddingHorizontal: wide ? 0 : 8 }}>
+        <RoadScene scene={scene} width={wide ? Math.round(width / 2) - 96 : Math.min(width, 560) - 16} />
       </View>
     </View>
   );
@@ -358,7 +375,7 @@ export function FloatingDock({ items, active, onChange }) {
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 28 : 14, backgroundColor: COLORS.bg, ...SHADOWS.sm, shadowOffset: { width: 0, height: -6 } }}
+      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: (Platform.OS === 'ios' ? 28 : 14) + SAFE_BOTTOM, backgroundColor: COLORS.bg, ...SHADOWS.sm, shadowOffset: { width: 0, height: -6 } }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between' }}>
         {items.map((item) => {
