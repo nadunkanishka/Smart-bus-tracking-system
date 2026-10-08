@@ -1,5 +1,5 @@
 // SmartBus design tokens — single source of truth. `npm run sync` copies this into every app
-// (RN apps: src/constants/theme.js, admin: src/design/tokens.css generated from these values).
+// (RN apps: src/shared/theme.js, admin: src/design/tokens.css generated from these values).
 
 export const COLORS = {
   // Surfaces: off-white screens, white cards, warm peach backdrop for large empty areas

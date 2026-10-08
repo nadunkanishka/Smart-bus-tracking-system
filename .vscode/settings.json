@@ -1,0 +1,31 @@
+{
+  "editor.tabSize": 2,
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "[markdown]": { "files.trimTrailingWhitespace": false },
+
+  "eslint.workingDirectories": [{ "directory": "apps/admin-dashboard", "changeProcessCWD": true }],
+
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.js": "${capture}.styles.js, ${capture}.test.js, ${capture}.native.js",
+    "package.json": "package-lock.json",
+    "app.json": "app.config.js, eas.json, babel.config.js, metro.config.js"
+  },
+
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.expo": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.expo": true,
+    "**/package-lock.json": true,
+    "apps/*/src/shared": true,
+    "apps/*/assets/buses": true,
+    "apps/admin-dashboard/src/design": true,
+    "shared/buses/out": true
+  }
+}

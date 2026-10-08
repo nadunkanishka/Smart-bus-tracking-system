@@ -18,16 +18,19 @@ const copyImages = (to) => { rmSync(to, { recursive: true, force: true }); mkdir
 
 for (const app of ['passenger-app', 'driver-app']) {
   copyImages(join(apps, app, 'assets/buses'));
-  put('native/busImages.js', join(apps, app, 'src/components/busImages.js'));
-  put('busMarkers.js', join(apps, app, 'src/components/busMarkers.js'));
-  put('tokens.js', join(apps, app, 'src/constants/theme.js'));
-  put('navIcons.js', join(apps, app, 'src/components/navIcons.js'));
-  put('vehicleShapes.js', join(apps, app, 'src/components/vehicleShapes.js'));
-  put('native/ui.js', join(apps, app, 'src/components/ui.js'));
-  put('native/VectorIcons.js', join(apps, app, 'src/components/VectorIcons.js'));
-  put('native/LiveMap.js', join(apps, app, 'src/components/LiveMap.js'));
-  put('native/LiveMap.native.js', join(apps, app, 'src/components/LiveMap.native.js'));
-  put('native/api.js', join(apps, app, 'src/api.js'));
+  // Everything generated lands in src/shared/, so hand-written app code never sits next to a copy.
+  const dest = join(apps, app, 'src/shared');
+  put('native/busImages.js', join(dest, 'busImages.js'));
+  put('busMarkers.js', join(dest, 'busMarkers.js'));
+  put('tokens.js', join(dest, 'theme.js'));
+  put('navIcons.js', join(dest, 'navIcons.js'));
+  put('vehicleShapes.js', join(dest, 'vehicleShapes.js'));
+  put('native/ui.js', join(dest, 'ui.js'));
+  put('native/icons.js', join(dest, 'icons.js'));
+  put('native/LiveMap.js', join(dest, 'LiveMap.js'));
+  put('native/LiveMap.native.js', join(dest, 'LiveMap.native.js'));
+  put('native/api.js', join(dest, 'api.js'));
+  writeFileSync(join(dest, 'README.md'), '# Generated files\n\nEverything in this folder is copied from `shared/` at the repository root by `node shared/sync.js`.\nDo not edit these files here: change the source in `shared/` and run the sync again.\n');
 }
 const admin = join(apps, 'admin-dashboard/src/design');
 put('vehicleShapes.js', join(admin, 'vehicleShapes.js'));
