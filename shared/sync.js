@@ -24,6 +24,7 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('navIcons.js', join(apps, app, 'src/components/navIcons.js'));
   put('vehicleShapes.js', join(apps, app, 'src/components/vehicleShapes.js'));
   put('native/ui.js', join(apps, app, 'src/components/ui.js'));
+  put('native/VectorIcons.js', join(apps, app, 'src/components/VectorIcons.js'));
   put('native/LiveMap.js', join(apps, app, 'src/components/LiveMap.js'));
   put('native/LiveMap.native.js', join(apps, app, 'src/components/LiveMap.native.js'));
   put('native/api.js', join(apps, app, 'src/api.js'));
