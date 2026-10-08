@@ -10,7 +10,8 @@ export const GONE_MS = 60000; // no update for this long: the bus is removed fro
 export const MAP_PADDING = { top: 170, bottom: 400 };
 
 // Android draws edge to edge: StatusBar.currentHeight reads 0 there, so use the real safe-area inset.
-export const TOP_INSET = Platform.OS === 'android' ? (initialWindowMetrics?.insets.top ?? StatusBar.currentHeight ?? 0) : 0;
+// Both sources can read 0 at import time, so floor at 24dp (the smallest Android status bar).
+export const TOP_INSET = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0, StatusBar.currentHeight ?? 0) : 0;
 
 export const NO_ROUTE = {
   id: null, number: '–', name: 'No routes yet', shortName: '—', startTerminal: '—', endTerminal: '—',
