@@ -393,13 +393,13 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .sidebar.collapsed { width: 80px; }
 .brand-copy { min-width: 0; } .brand-title { white-space: nowrap; }
 
-/* Each admin page gets its own bus in the banner */
-[data-page="dashboard"] .section-header::after { background-image: url(design/buses/bus-purple-idle.webp); }
-[data-page="drivers"] .section-header::after { background-image: url(design/buses/minibus-mint-idle.webp); }
+/* Each admin page gets artwork that fits it: dashboard screen, driver, bus, route, live pin, chart */
+[data-page="dashboard"] .section-header::after { background-image: url(design/buses/monitor-navy-idle.webp); }
+[data-page="drivers"] .section-header::after { background-image: url(design/buses/driver-coral-idle.webp); }
 [data-page="buses"] .section-header::after { background-image: url(design/buses/bus-navy-idle.webp); }
-[data-page="routes"] .section-header::after { background-image: url(design/buses/bus-teal-idle.webp); }
-[data-page="live"] .section-header::after { background-image: url(design/buses/bus-green-running.webp); }
-[data-page="analytics"] .section-header::after { background-image: url(design/buses/bus-cream-idle.webp); }
+[data-page="routes"] .section-header::after { background-image: url(design/buses/route-orange-idle.webp); }
+[data-page="live"] .section-header::after { background-image: url(design/buses/pin-teal-idle.webp); }
+[data-page="analytics"] .section-header::after { background-image: url(design/buses/chart-purple-idle.webp); }
 
 /* Login panel: buses fill the panel and sit on the orange like the reference, with the same arcs as the banners */
 .login-hero { position: relative; justify-content: flex-start; gap: var(--space-4); }
@@ -407,3 +407,11 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .login-hero::before { content: ''; position: absolute; inset: 0; z-index: 0; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMaxYMid slice'><path d='M230 330C240 230 310 140 430 96' fill='none' stroke='%2326262B' stroke-opacity='.22' stroke-width='.8' stroke-dasharray='5 7'/><path d='M150 -20C165 70 235 118 340 104' fill='none' stroke='%2326262B' stroke-opacity='.16' stroke-width='.8' stroke-dasharray='5 7'/><polygon points='350,36 356,54 374,60 356,66 350,84 344,66 326,60 344,54' fill='%23FFE08A'/><polygon points='60,150 64,161 75,165 64,169 60,180 56,169 45,165 56,161' fill='%23fff' fill-opacity='.7'/></svg>") center / cover no-repeat; }
 .login-scene { margin-block: auto; width: 100%; max-height: none; height: auto; aspect-ratio: 1280 / 600; object-fit: contain; }
 @media (max-width: 900px) { .login-hero { gap: var(--space-2); } .login-scene { margin-block: 0; } }
+
+/* Banner layout: text, artwork and action sit in their own columns, so the art never depends on the action's width */
+.section-header { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: var(--space-5); align-items: center; }
+.section-header > :first-child { grid-column: 1; min-width: 0; }
+.section-header > :nth-child(2) { grid-column: 3; grid-row: 1; }
+.section-header::after { position: relative; right: auto; bottom: auto; grid-column: 2; grid-row: 1; align-self: stretch; width: 220px; height: auto; margin-block: calc(var(--space-6) * -1); display: block; background-position: center bottom; background-repeat: no-repeat; background-size: contain; }
+@media (max-width: 1000px) { .section-header { grid-template-columns: minmax(0, 1fr) auto; } .section-header::after { display: none; } .section-header > :nth-child(2) { grid-column: 2; } }
+@media (max-width: 600px) { .section-header { grid-template-columns: 1fr; row-gap: var(--space-4); } .section-header > :nth-child(2) { grid-column: 1; grid-row: 2; } }
