@@ -12,10 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LiveMap from './src/components/LiveMap';
-import { request, toRoute } from './src/api';
-import * as telemetry from './src/telemetry';
-import { COLORS, RADII, SHADOWS, TYPE } from './src/constants/theme';
+import LiveMap from './src/shared/LiveMap';
+import { request, toRoute } from './src/shared/api';
+import * as telemetry from './src/services/telemetry';
+import { COLORS, RADII, SHADOWS, TYPE } from './src/shared/theme';
 // CHANGED (visual only): shared SmartBus design-system kit.
 import {
   AuthLayout,
@@ -33,7 +33,7 @@ import {
   Vehicle,
   NotchStat,
   NavIcon,
-} from './src/components/ui';
+} from './src/shared/ui';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import {
   ArrowRightIcon,
@@ -48,7 +48,7 @@ import {
   SpeedometerIcon,
   StopIcon,
   UserIcon,
-} from './src/components/VectorIcons';
+} from './src/shared/icons';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -77,7 +77,7 @@ export default function App() {
   // Navigation
   const [activeTab, setActiveTab] = useState('shift'); // 'shift' | 'route' | 'diagnostics' | 'profile'
 
-  // Live telemetry state (connection, duty, offline queue, last GPS fix) comes from src/telemetry.js
+  // Live telemetry state (connection, duty, offline queue, last GPS fix) comes from src/services/telemetry.js
   const [tele, setTele] = useState({ connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, mode: null, error: null });
   const [dutyBusy, setDutyBusy] = useState(false);
   const [logs, setLogs] = useState([]);

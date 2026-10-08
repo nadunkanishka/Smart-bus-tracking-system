@@ -186,7 +186,7 @@ cd backend && npm test                              # ETA engine, GPS pipeline, 
 cd apps/admin-dashboard && npm test -- --watchAll=false
 ```
 
-**The design system.** Colours, type, radii and shadows live in `shared/tokens.js`. The shared mobile components live in `shared/native/`, the bus illustrations in `shared/buses/`, and the navigation icons in `shared/navIcons.js`. After changing anything in `shared/`, copy it into the apps:
+**The design system.** Colours, type, radii and shadows live in `shared/tokens.js`. The shared mobile components live in `shared/native/`, the bus illustrations in `shared/buses/`, and the navigation icons in `shared/navIcons.js`. After changing anything in `shared/`, copy it into the apps (the copies land in each mobile app's `src/shared/` and the admin's `src/design/`; never edit them there):
 
 ```bash
 node shared/sync.js

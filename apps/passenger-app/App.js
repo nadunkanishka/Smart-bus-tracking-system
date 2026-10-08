@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io } from 'socket.io-client';
-import LiveMap from './src/components/LiveMap';
-import { API_URL, request, toRoute } from './src/api';
-import { COLORS, RADII, SHADOWS, TYPE } from './src/constants/theme';
+import LiveMap from './src/shared/LiveMap';
+import { API_URL, request, toRoute } from './src/shared/api';
+import { COLORS, RADII, SHADOWS, TYPE } from './src/shared/theme';
 import {
   Avatar,
   AuthLayout,
@@ -37,9 +37,9 @@ import {
   Vehicle,
   VehicleLoader,
   NavIcon,
-} from './src/components/ui';
+} from './src/shared/ui';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
-import { liveryFor } from './src/components/vehicleShapes';
+import { liveryFor } from './src/shared/vehicleShapes';
 import {
   ArrowRightIcon,
   BellIcon,
@@ -55,7 +55,7 @@ import {
   RouteIcon,
   SearchIcon,
   UserIcon,
-} from './src/components/VectorIcons';
+} from './src/shared/icons';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
