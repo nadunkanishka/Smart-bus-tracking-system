@@ -1,5 +1,5 @@
 // SmartBus shared UI kit (React Native / react-native-web). Source of truth lives in /shared/native and is
-// copied to apps/*/src/components/ui.js by `npm run sync` (so imports below are app-relative).
+// copied to apps/*/src/shared/ui.js by `npm run sync` (so imports below are app-relative).
 import React, { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Platform, Pressable, StyleSheet, Text, TextInput,
@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
-import { COLORS, RADII, SHADOWS, TYPE } from '../constants/theme';
+import { COLORS, RADII, SHADOWS, TYPE } from './theme';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
 import { NAV_ICONS, NAV_TONES } from './navIcons';
 import { IMAGES } from './busImages';

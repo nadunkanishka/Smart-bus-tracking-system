@@ -385,7 +385,7 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .section-header p { color: var(--ink); opacity: 0.82; max-width: 46ch; }
 .section-header h1 { max-width: 14em; }
 .section-header::before { content: ''; position: absolute; inset: 0; z-index: 0; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 140' preserveAspectRatio='xMaxYMid slice'><path d='M240 150C250 90 300 40 380 20' fill='none' stroke='%2326262B' stroke-opacity='.28' stroke-width='1.6' stroke-dasharray='5 7'/><path d='M180 -10C190 40 230 60 290 56' fill='none' stroke='%2326262B' stroke-opacity='.2' stroke-width='1.6' stroke-dasharray='5 7'/><polygon points='330,34 334,45 346,46 337,53 340,65 330,58 320,65 323,53 314,46 326,45' fill='%23FFE08A'/></svg>") right center / auto 100% no-repeat; }
-.section-header::after { content: ''; position: absolute; right: 190px; bottom: -14px; width: 190px; height: 158px; z-index: 0; background: url(design/buses/bus-purple-idle.webp) center / contain no-repeat; pointer-events: none; }
+.section-header::after { content: ''; position: absolute; right: 190px; bottom: -14px; width: 190px; height: 158px; z-index: 0; background: url(../design/buses/bus-purple-idle.webp) center / contain no-repeat; pointer-events: none; }
 .section-header .btn-secondary { background: var(--surface); }
 @media (max-width: 1280px) { .section-header::after { display: none; } }
 @media (max-width: 600px) { .section-header { padding: var(--space-5); min-height: 0; } }
@@ -394,12 +394,12 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; 
 .brand-copy { min-width: 0; } .brand-title { white-space: nowrap; }
 
 /* Each admin page gets artwork that fits it: dashboard screen, driver, bus, route, live pin, chart */
-[data-page="dashboard"] .section-header::after { background-image: url(design/buses/monitor-navy-idle.webp); }
-[data-page="drivers"] .section-header::after { background-image: url(design/buses/driver-coral-idle.webp); }
-[data-page="buses"] .section-header::after { background-image: url(design/buses/bus-navy-idle.webp); }
-[data-page="routes"] .section-header::after { background-image: url(design/buses/route-orange-idle.webp); }
-[data-page="live"] .section-header::after { background-image: url(design/buses/pin-teal-idle.webp); }
-[data-page="analytics"] .section-header::after { background-image: url(design/buses/chart-purple-idle.webp); }
+[data-page="dashboard"] .section-header::after { background-image: url(../design/buses/monitor-navy-idle.webp); }
+[data-page="drivers"] .section-header::after { background-image: url(../design/buses/driver-coral-idle.webp); }
+[data-page="buses"] .section-header::after { background-image: url(../design/buses/bus-navy-idle.webp); }
+[data-page="routes"] .section-header::after { background-image: url(../design/buses/route-orange-idle.webp); }
+[data-page="live"] .section-header::after { background-image: url(../design/buses/pin-teal-idle.webp); }
+[data-page="analytics"] .section-header::after { background-image: url(../design/buses/chart-purple-idle.webp); }
 
 /* Login panel: buses fill the panel and sit on the orange like the reference, with the same arcs as the banners */
 .login-hero { position: relative; justify-content: flex-start; gap: var(--space-4); }

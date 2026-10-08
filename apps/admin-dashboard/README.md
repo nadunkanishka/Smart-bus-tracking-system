@@ -1,70 +1,32 @@
-# Getting Started with Create React App
+# Admin dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React web app (Create React App) for the admin: manage drivers, buses and routes, draw route paths and stops on a map, watch live connections and review trip analytics.
 
-## Available Scripts
+## Run
 
-In the project directory, you can run:
+```bash
+npm install
+npm start                        # http://localhost:3000
+```
 
-### `npm start`
+Sign in with the admin username and the `ADMIN_PASSWORD` set in `backend/.env`. To use a backend that is not on `http://localhost:5000`, copy `.env.example` to `.env.local` and set `REACT_APP_API_URL`.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Command | What it does |
+|---|---|
+| `npm start` | Development server |
+| `npm test -- --watchAll=false` | Run the tests once |
+| `npm run build` | Production build in `build/` |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Key folders
 
-### `npm test`
+| Path | Contents |
+|---|---|
+| `src/App.js` | Root: sign-in state, shell, page switch |
+| `src/pages/` | Login, Dashboard, Drivers, Buses, Routes, LiveMonitor, Analytics |
+| `src/components/` | Sidebar, Header, EntityModal with DriverForm, BusForm and RouteForm, ConfirmDialog, RouteMapEditor, small UI pieces |
+| `src/hooks/` | `useAdminData` (loads everything), `useEntityModal` (add, edit, delete) |
+| `src/api.js` | fetch wrapper that adds the admin token |
+| `src/styles/` | `admin-theme.css`, `index.css` |
+| `src/design/` | Generated from `/shared`. Do not edit; run `node shared/sync.js` from the repository root |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The folder layout and naming rules are in [docs/STRUCTURE.md](../../docs/STRUCTURE.md).

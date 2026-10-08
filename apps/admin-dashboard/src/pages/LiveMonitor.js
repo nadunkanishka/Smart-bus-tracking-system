@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { Vehicle } from '../design/Vehicle';
+import Stat from '../components/Stat';
 
 // Live system health: which drivers are connected, when each bus last reported, and pipeline latency.
 const REFRESH_MS = 3000;
@@ -112,15 +113,5 @@ export default function LiveMonitor({ api, routes }) {
         </table>
       </div>
     </section>
-  );
-}
-
-function Stat({ label, value, hint }) {
-  return (
-    <div className="stat-card">
-      <p>{label}</p>
-      <strong>{value}</strong>
-      <span>{hint}</span>
-    </div>
   );
 }

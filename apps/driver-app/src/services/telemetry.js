@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { io } from 'socket.io-client';
-import { API_URL } from './api';
+import { API_URL } from '../shared/api';
 
 const TASK = 'smartbus-gps';
 const QUEUE_KEY = 'smartbus:gps-queue';
