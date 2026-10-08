@@ -9,7 +9,38 @@ Live bus tracking for Sri Lanka's public bus network. A driver's phone sends its
 | Driver app | `apps/driver-app/` | Expo (React Native), phone or browser | `http://localhost:8081` |
 | Passenger app | `apps/passenger-app/` | Expo (React Native), phone or browser | `http://localhost:8082` |
 
-The root `package.json` only holds shortcut scripts (for example `npm run dev:backend`). Each part has its own `package.json` and its own `node_modules`.
+## Folder map
+
+| Folder | Contents |
+|---|---|
+| `backend/` | API server: `routes/` (REST endpoints), `realtime.js` (live GPS), `lib/` (ETA engine), `models/` |
+| `apps/admin-dashboard/` | Admin web app: `src/pages/`, `src/components/`, `src/hooks/` |
+| `apps/driver-app/` | Driver app: `src/screens/`, `src/services/telemetry.js` |
+| `apps/passenger-app/` | Passenger app: `src/screens/`, `src/hooks/` |
+| `shared/` | Design system shared by the three apps; copied into them by `node shared/sync.js` |
+| `docs/` | Architecture, API, database, deployment, evaluation, and [where things live](docs/STRUCTURE.md) |
+| `loadtest/` | Load test used in the evaluation |
+
+Looking for a specific file? [docs/STRUCTURE.md](docs/STRUCTURE.md) has a "find it fast" table. Each folder above also has its own short README.
+
+## Shortcut commands
+
+Each part has its own `package.json` and `node_modules`. The root `package.json` only holds shortcuts, so these work from the project folder:
+
+| Command | Does |
+|---|---|
+| `npm run install:all` | `npm install` in the backend and the three apps |
+| `npm run dev:backend` | Start the backend with auto-restart |
+| `npm run dev:admin` | Start the admin dashboard |
+| `npm run dev:driver` / `npm run dev:passenger` | Start an Expo app (ports 8081 / 8082) |
+| `npm run seed` | Add the demo route |
+| `npm test` | Backend and admin tests |
+| `npm run build` | Production build of the admin dashboard |
+| `npm run sync` | Copy `shared/` into the apps |
+
+In VS Code, **Terminal > Run Task** offers the same commands, and **Run and Debug** can start the backend with breakpoints.
+
+The step-by-step guide below uses the long form of each command so you can see what happens.
 
 ---
 
@@ -205,6 +236,7 @@ Open `shared/buses/export.html` in a browser to preview every bus image.
 
 | Document | Contents |
 |---|---|
+| [docs/STRUCTURE.md](docs/STRUCTURE.md) | Where every kind of file lives, naming rules, how to add a screen or endpoint, environment variables |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture diagram, data flow, ETA engine, offline buffer |
 | [docs/API.md](docs/API.md) | REST endpoints and Socket.IO events |
 | [docs/DATABASE.md](docs/DATABASE.md) | MongoDB collections, indexes and Redis keys |
