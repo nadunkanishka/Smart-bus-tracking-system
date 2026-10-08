@@ -2,13 +2,13 @@
 // The art itself is generated from code in shared/buses (clay.js → export.mjs) and shipped as WebP images;
 // this file is the small, renderer-free lookup shared by the native, web and Leaflet layers.
 
-export const VEHICLES = ['bus', 'coach', 'minibus', 'school', 'decker', 'driver', 'route'];
-const PROPS = ['driver', 'route']; // not buses: one image each, no states
+export const VEHICLES = ['bus', 'coach', 'minibus', 'school', 'decker', 'driver', 'route', 'monitor', 'chart', 'pin'];
+const PROPS = ['driver', 'route', 'monitor', 'chart', 'pin']; // not buses: one image each, no states
 // The city bus is baked in every colour; the other types only in the colours listed (first = default).
 // Keep in step with TYPES[...].themes in shared/buses/clay.js; sync.js fails if an image is missing.
 export const LIVERIES = ['green', 'teal', 'coral', 'yellow', 'orange', 'purple', 'navy', 'red', 'mint', 'cream'];
-const BAKED = { bus: ['cream', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['orange'] };
-const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus', driver: 'Bus driver', route: 'Route with stops' };
+const BAKED = { bus: ['cream', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['orange'], monitor: ['navy'], chart: ['purple'], pin: ['teal'] };
+const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus', driver: 'Bus driver', route: 'Route with stops', monitor: 'Dashboard screen', chart: 'Bar chart', pin: 'Live location pin' };
 export const SCENES = ['login', 'register', 'driver', 'admin'];
 export const ASPECT = 400 / 480; // every bus image is 6:5, so states never resize the art
 

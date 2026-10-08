@@ -182,7 +182,37 @@
     pin(0, -1.5, mat(theme.deep)); pin(3.3, 1.5, mat(theme.main));
     return g;
   }
-  const PROPS = { driver: buildDriver, route: buildRoute };
+  // A dashboard screen on a stand with a small bar chart on its face.
+  function buildMonitor(themeKey) {
+    const theme = THEMES[themeKey], g = new THREE.Group(), add = (...m) => g.add(...m);
+    const body = mat(theme.main), deep = mat(theme.deep), light = mat(theme.light), screen = mat('#26323D', { roughness: 0.2 }), white = mat('#FFFFFF', { roughness: 0.5 }), warm = mat('#FFA265');
+    add(rbox(2.6, 0.3, 3.8, 0.15, deep, [0, 0.15, 0]), rbox(0.6, 1.3, 0.6, 0.25, deep, [0, 0.95, 0]));
+    add(rbox(0.6, 3.5, 5.8, 0.4, body, [0, 3.35, 0]));
+    add(rbox(0.12, 2.9, 5.2, 0.3, screen, [0.32, 3.35, 0]));
+    [[1.0, white], [1.7, light], [1.3, white], [2.2, warm]].forEach(([h, m], i) => add(rbox(0.12, h, 0.75, 0.25, m, [0.4, 2.15 + h / 2, -1.85 + i * 1.23])));
+    add(rbox(0.12, 0.16, 4.4, 0.08, deep, [0.4, 2.1, 0]));
+    return g;
+  }
+  // Four rising bars on a slab, with a gold ball on the tallest.
+  function buildChart(themeKey) {
+    const theme = THEMES[themeKey], g = new THREE.Group(), add = (...m) => g.add(...m);
+    add(rbox(2.6, 0.3, 8.2, 0.15, mat('#FFFFFF', { roughness: 0.5 }), [0, 0.15, 0]));
+    [[1.5, mat(theme.deep)], [2.5, mat(theme.main)], [3.5, mat(theme.light)], [4.7, mat('#FFA265')]].forEach(([h, m], i) => add(rbox(1.5, h, 1.5, 0.45, m, [0, 0.3 + h / 2, -2.85 + i * 1.9])));
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.55, 28, 20), mat('#F6C344')); ball.position.set(0, 5.6, 2.85); ball.castShadow = true; add(ball);
+    return g;
+  }
+  // A map pin on a round pad with two signal rings.
+  function buildPin(themeKey) {
+    const theme = THEMES[themeKey], g = new THREE.Group(), add = (...m) => g.add(...m);
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 0.3, 48), mat('#FFFFFF', { roughness: 0.5 })); pad.position.y = 0.15; pad.receiveShadow = true; add(pad);
+    for (const [r, m] of [[1.9, mat(theme.light)], [2.7, mat(theme.light)]]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.09, 10, 56), m); ring.rotation.x = Math.PI / 2; ring.position.y = 0.34; add(ring); }
+    const head = new THREE.Mesh(new THREE.SphereGeometry(1.15, 36, 28), mat(theme.main)); head.position.y = 3.5;
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.1, 36), mat(theme.main)); tip.rotation.x = Math.PI; tip.position.y = 1.5;
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 18), mat('#FFFFFF')); dot.position.set(0.74, 3.7, -0.46);
+    for (const m of [head, tip, dot]) { m.castShadow = true; add(m); }
+    return g;
+  }
+  const PROPS = { driver: buildDriver, route: buildRoute, monitor: buildMonitor, chart: buildChart, pin: buildPin };
   const build = (s) => (s.prop ? PROPS[s.prop](s.theme) : buildBus(s));
 
   // A group of buses on the plain backdrop, like the reference's lone truck: no road, just soft ground shadows, so the
@@ -241,7 +271,10 @@
     for (const type of Object.keys(TYPES).filter((t) => t !== 'bus')) for (const theme of TYPES[type].themes || [TYPES[type].theme]) for (const state of ['running', 'idle']) hero.push({ name: `${type}-${theme}-${state}`, type, theme, state });
     // Props are framed closer and off-centre (toward the right) so a card corner crops into them.
     hero.push({ name: 'driver-coral-idle', prop: 'driver', theme: 'coral', shot: { distance: 13, target: [1.0, 3.9, 0.98] } },
-      { name: 'route-orange-idle', prop: 'route', theme: 'orange', shot: { distance: 21, target: [0.2, 1.1, 0.2] } });
+      { name: 'route-orange-idle', prop: 'route', theme: 'orange', shot: { distance: 21, target: [0.2, 1.1, 0.2] } },
+      { name: 'monitor-navy-idle', prop: 'monitor', theme: 'navy', shot: { distance: 21, target: [0, 2.7, 0] } },
+      { name: 'chart-purple-idle', prop: 'chart', theme: 'purple', shot: { distance: 27, target: [0, 3.1, 0] } },
+      { name: 'pin-teal-idle', prop: 'pin', theme: 'teal', shot: { distance: 23, target: [0, 2.1, 0] } });
     return { hero, scenes: Object.keys(SCENES), markers: [0, 1, 2, 3, 4, 5, 6, 7] };
   }
 

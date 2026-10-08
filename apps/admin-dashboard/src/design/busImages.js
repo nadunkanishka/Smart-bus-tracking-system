@@ -44,6 +44,9 @@ import deckerRedRunning from './buses/decker-red-running.webp';
 import deckerRedIdle from './buses/decker-red-idle.webp';
 import driverCoralIdle from './buses/driver-coral-idle.webp';
 import routeOrangeIdle from './buses/route-orange-idle.webp';
+import monitorNavyIdle from './buses/monitor-navy-idle.webp';
+import chartPurpleIdle from './buses/chart-purple-idle.webp';
+import pinTealIdle from './buses/pin-teal-idle.webp';
 import sceneLogin from './buses/scene-login.webp';
 import sceneRegister from './buses/scene-register.webp';
 import sceneDriver from './buses/scene-driver.webp';
@@ -95,6 +98,9 @@ export const IMAGES = {
   'decker-red-idle': deckerRedIdle,
   'driver-coral-idle': driverCoralIdle,
   'route-orange-idle': routeOrangeIdle,
+  'monitor-navy-idle': monitorNavyIdle,
+  'chart-purple-idle': chartPurpleIdle,
+  'pin-teal-idle': pinTealIdle,
   'scene-login': sceneLogin,
   'scene-register': sceneRegister,
   'scene-driver': sceneDriver,
