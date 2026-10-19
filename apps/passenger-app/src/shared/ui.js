@@ -13,16 +13,16 @@ import { NAV_ICONS, NAV_TONES } from './navIcons';
 import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
-// Outfit on web; native keeps the system font (no font-loading dependency).
+// Nunito Sans on web (same as the admin); native keeps the system font (no font-loading dependency).
 // Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
 const SAFE_TOP = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0) : 0;
 const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
-export const FONT = Platform.OS === 'web' ? { fontFamily: "'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" } : null;
+export const FONT = Platform.OS === 'web' ? { fontFamily: "'Nunito Sans', system-ui, sans-serif" } : null;
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
   l.id = 'sb-font'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap';
+  l.href = 'https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap';
   document.head.appendChild(l);
 }
 
@@ -37,7 +37,7 @@ export function useReducedMotion() {
   return reduced;
 }
 
-const webRing = (focused, color = 'rgba(94,95,174,0.6)') =>
+const webRing = (focused, color = 'rgba(44,110,138,0.55)') =>
   (Platform.OS === 'web' && focused ? { boxShadow: `0 0 0 3px ${color}` } : null);
 
 // ─── Vehicles ───────────────────────────────────────────────────────────────
@@ -191,7 +191,7 @@ export function IconButton({ children, onPress, label, tone = 'glass', size = 44
   );
 }
 
-export function Chip({ label, selected, onPress, tone = 'primary', style }) {
+export function Chip({ label, selected, onPress, tone = 'ink', style }) {
   const on = selected;
   return (
     <Pressable
@@ -200,7 +200,7 @@ export function Chip({ label, selected, onPress, tone = 'primary', style }) {
       accessibilityRole={onPress ? 'button' : 'text'}
       accessibilityState={{ selected: !!on }}
       style={({ pressed, focused }) => [
-        { minHeight: 36, paddingHorizontal: 14, borderRadius: RADII.pill, justifyContent: 'center', backgroundColor: on ? (tone === 'ink' ? COLORS.ink : COLORS.primaryStrong) : COLORS.surfaceSoft, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        { minHeight: 36, paddingHorizontal: 14, borderRadius: RADII.pill, justifyContent: 'center', backgroundColor: on ? (tone === 'primary' ? COLORS.primaryStrong : COLORS.ink) : COLORS.surfaceSoft, transform: [{ scale: pressed ? 0.97 : 1 }] },
         webRing(focused),
         style,
       ]}
@@ -229,10 +229,10 @@ export function TextField({ label, icon, error, hint, secure, style, inputStyle,
       {label ? <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.ink, marginBottom: 8, marginLeft: 8 }}>{label}</Text> : null}
       <View
         style={{
-          minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, borderRadius: RADII.pill,
+          minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: RADII.sm,
           backgroundColor: COLORS.surface, borderWidth: 1.5,
-          borderColor: error ? COLORS.danger : focused ? COLORS.primary : '#D9D8E3',
-          ...(Platform.OS === 'web' && focused ? { boxShadow: error ? '0 0 0 4px rgba(198,47,67,0.15)' : '0 0 0 4px rgba(108,107,198,0.18)' } : null),
+          borderColor: error ? COLORS.danger : focused ? COLORS.primary : '#D5DAE1',
+          ...(Platform.OS === 'web' && focused ? { boxShadow: error ? '0 0 0 4px rgba(198,47,67,0.15)' : `0 0 0 4px ${COLORS.primaryLight}` } : null),
         }}
       >
         {React.isValidElement(icon) ? React.cloneElement(icon, { color: error ? COLORS.danger : COLORS.primary }) : icon}
@@ -302,7 +302,7 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
     return () => sub.remove();
   }, []);
   const hero = (
-    <View style={[{ backgroundColor: COLORS.accent, paddingTop: 24 + SAFE_TOP, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
+    <View style={[{ backgroundColor: COLORS.backdrop, paddingTop: 24 + SAFE_TOP, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMaxYMid slice">
         <Path d="M230 330C240 230 310 140 430 96" fill="none" stroke="#26262B" strokeOpacity="0.22" strokeWidth="1.2" strokeDasharray="5 7" />
         <Path d="M150 -20C165 70 235 118 340 104" fill="none" stroke="#26262B" strokeOpacity="0.16" strokeWidth="1.2" strokeDasharray="5 7" />
@@ -311,13 +311,13 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
       </Svg>
       <View style={[{ paddingHorizontal: 24 }, wide && { paddingHorizontal: 0 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
             <Vehicle name="bus" width={34} label="SmartBus logo" />
           </View>
           <Text style={{ ...TYPE.h1, ...FONT, color: COLORS.ink }}>{brand}</Text>
         </View>
         {tagline ? (
-          <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
+          <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.primary, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
             <Text style={{ ...TYPE.small, ...FONT, color: COLORS.white }}>{tagline}</Text>
           </View>
         ) : null}
@@ -345,7 +345,7 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
   // Edge-to-edge Android ignores adjustResize, so lift the form above the keyboard ourselves.
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" enabled={Platform.OS !== 'web'}>
-    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.accent }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.backdrop }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={[{ flexGrow: 1 }, wide ? { flexDirection: 'row', minHeight: 640 } : { width: '100%', maxWidth: 560, alignSelf: 'center' }]}>
         {hero}
         {panel}
@@ -355,9 +355,15 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
   );
 }
 
-// Overlapping screen header: orange block (ink text only) + curved sheet that the screen content sits on.
+// Overlapping screen header: pale blue block (ink text only) with a soft light circle in the corner, plus a
+// curved sheet that the screen content sits on.
 export function OverlapHeader({ children, minHeight = 148 }) {
-  return <View style={{ backgroundColor: COLORS.accent, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, minHeight, overflow: 'hidden' }}>{children}</View>;
+  return (
+    <View style={{ backgroundColor: COLORS.backdrop, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, minHeight, overflow: 'hidden' }}>
+      <View pointerEvents="none" style={{ position: 'absolute', right: -60, top: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.35)' }} />
+      {children}
+    </View>
+  );
 }
 export function OverlapSheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.bg, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 20, paddingTop: 24 }, style]}>{children}</View>;
@@ -378,15 +384,15 @@ export function NavIcon({ name, active, size = 24 }) {
   );
 }
 
-// Bottom navigation: a dark pill docked in the screen's own footer (content never slides behind it). Every item
-// shows its label; the current item sits in a near-black circle with a lilac icon. items: [{ id, label, icon(active) }]
+// Bottom navigation: a white pill docked in the screen's own footer (content never slides behind it). Every item
+// shows its label; the current item sits in an ink circle with a white icon. items: [{ id, label, icon(active) }]
 export function FloatingDock({ items, active, onChange }) {
   return (
     <View
       pointerEvents="box-none"
       style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: (Platform.OS === 'ios' ? 28 : 14) + SAFE_BOTTOM, backgroundColor: COLORS.bg, ...SHADOWS.sm, shadowOffset: { width: 0, height: -6 } }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.inkSoft, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.md }}>
         {items.map((item) => {
           const on = active === item.id;
           return (
@@ -396,12 +402,12 @@ export function FloatingDock({ items, active, onChange }) {
               accessibilityRole="button"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: on }}
-              style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused, 'rgba(255,176,121,0.9)')]}
+              style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused)]}
             >
-              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.bgDark : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.ink : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon(on)}
               </View>
-              <Text style={{ ...TYPE.caption, ...FONT, color: on ? COLORS.white : '#B9BBC4' }} numberOfLines={1}>{item.label}</Text>
+              <Text style={{ ...TYPE.caption, ...FONT, color: on ? COLORS.ink : COLORS.muted }} numberOfLines={1}>{item.label}</Text>
             </Pressable>
           );
         })}
@@ -410,17 +416,15 @@ export function FloatingDock({ items, active, onChange }) {
   );
 }
 
-// Stat card with a corner notch: a tinted outline, a soft wash and a charcoal icon badge in a coloured tab.
-// icon: (color) => element. tone: 'orange' | 'purple'.
+// Stat card: white card with a round tinted icon, a muted label and a bold value (the admin's KPI card in small).
+// icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue); the names are kept for existing callers.
 export function NotchStat({ label, value, tone = 'orange', icon, valueColor, style }) {
-  const [line, wash, ink] = tone === 'purple' ? ['#8180DB', COLORS.primarySoft, COLORS.primaryLight] : ['#EC9458', '#F6F0F0', '#FFB079'];
+  const [wash, ink] = tone === 'purple' ? [COLORS.primaryLight, COLORS.primaryDeep] : [COLORS.accentSoft, COLORS.accentText];
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 100, borderWidth: 1.5, borderColor: line, backgroundColor: wash, borderRadius: RADII.lg, overflow: 'hidden', paddingTop: 12, paddingBottom: 14, paddingHorizontal: 8, alignItems: 'center' }, style]}>
-      <View style={{ position: 'absolute', left: 0, top: 0, width: 44, height: 40, backgroundColor: line, borderBottomRightRadius: 20, alignItems: 'center', justifyContent: 'center', paddingRight: 4, paddingBottom: 4 }}>
-        <View style={{ width: 26, height: 26, borderRadius: 9, backgroundColor: COLORS.inkSoft, alignItems: 'center', justifyContent: 'center' }}>{icon ? icon(ink) : null}</View>
-      </View>
-      <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.textSecondary, marginLeft: 30 }} numberOfLines={1}>{label}</Text>
-      <Text style={{ ...TYPE.h3, ...FONT, color: valueColor || COLORS.ink, marginTop: 16, textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 100, backgroundColor: COLORS.surface, borderRadius: RADII.md, padding: 12, gap: 4, ...SHADOWS.sm }, style]}>
+      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: wash, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>{icon ? icon(ink) : null}</View>
+      <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.muted }} numberOfLines={1}>{label}</Text>
+      <Text style={{ ...TYPE.bodyBold, ...FONT, color: valueColor || COLORS.ink }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
     </View>
   );
 }

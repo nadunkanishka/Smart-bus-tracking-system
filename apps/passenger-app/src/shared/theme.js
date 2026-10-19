@@ -2,29 +2,29 @@
 // (RN apps: src/shared/theme.js, admin: src/design/tokens.css generated from these values).
 
 export const COLORS = {
-  // Surfaces: off-white screens, white cards, warm peach backdrop for large empty areas
-  bg: '#F3F4F9',
+  // Surfaces: cool grey screens, white cards, a pale blue backdrop for headers and the sign-in hero
+  bg: '#EEF0F4',
   surface: '#FFFFFF',
-  surfaceSoft: '#F3F1F4',
-  surfaceTint: '#E9E8F6',
-  line: '#E7E6EE',
-  backdrop: '#F5DCBD',
+  surfaceSoft: '#F3F4F7',
+  surfaceTint: '#E6F3F8',
+  line: '#E6E8EE',
+  backdrop: '#CBE8F2',
 
-  // Brand: purple carries headers and primary actions, orange is the accent
-  primary: '#6C6BC6', // white text on this = 4.61:1 (AA)
-  primaryLight: '#AFB6FA', // lilac: ink text only
-  primaryDeep: '#5E5FAE',
-  primaryStrong: '#5E5FAE', // white text on this = 5.64:1 (AA). Use for purple buttons/chips with text.
-  primarySoft: '#E9E8F6',
-  accent: '#FFA265', // fills, routes, active nav. Text on it must be ink (7.61:1), never white (1.98:1).
-  accentText: '#A85624', // warm brown for text/links on white (5.2:1)
-  accentSoft: '#FDE7D6',
+  // Brand: ink carries primary actions, blue is the brand tone, peach is the accent
+  primary: '#2C6E8A', // white text on this = 5.7:1 (AA)
+  primaryLight: '#BFE3F1', // pale blue: ink text only
+  primaryDeep: '#245B73',
+  primaryStrong: '#245B73', // white text on this = 7.2:1 (AA). Use for blue buttons/chips with text.
+  primarySoft: '#DDEFF6',
+  accent: '#F29A78', // fills and highlights. Text on it must be ink, never white.
+  accentText: '#A2492A', // warm brown for text/links on white (6.4:1)
+  accentSoft: '#FBE1D5',
 
   // Ink
-  ink: '#26262B',
-  inkSoft: '#2A2D32',
-  muted: '#6B6A72', // 4.87:1 on --bg
-  mutedLight: '#9A99A3', // decorative only (placeholders, disabled)
+  ink: '#131416',
+  inkSoft: '#1F2733',
+  muted: '#5C6675', // 5.3:1 on --bg
+  mutedLight: '#9AA2AE', // decorative only (placeholders, disabled)
 
   // Status
   success: '#157F55',
@@ -37,34 +37,34 @@ export const COLORS = {
   // Illustration extras
   taxi: '#FFC857',
   headlight: '#FFE08A',
-  window: '#5E5FAE',
-  tire: '#26262B',
+  window: '#245B73',
+  tire: '#131416',
 
   // Soft wash pairs for status cards: [from, to], each with a 1.5px outline colour in tintLines
   tints: {
-    bus: ['#E9E8F6', '#DDDBF5'],
-    train: ['#F6E8DF', '#F3DCCB'],
-    delivery: ['#FFEBD6', '#FFD9B8'],
-    taxi: ['#FBEFD9', '#F8E2BD'],
-    green: ['#E2F6EA', '#BFEBD2'],
+    bus: ['#D3ECF6', '#E6F3F8'],
+    train: ['#FBDCCB', '#FCEBDD'],
+    delivery: ['#FBDCCB', '#FCEBDD'],
+    taxi: ['#FCE6C8', '#FDF1DF'],
+    green: ['#E0F2CE', '#EEF7E4'],
   },
-  tintLines: { bus: '#8180DB', train: '#EC9458', delivery: '#EC9458', taxi: '#E8B06E', green: '#6CC79A' },
+  tintLines: { bus: '#BFE3F1', train: '#F8CDB8', delivery: '#F8CDB8', taxi: '#F5D9AE', green: '#CDE8B4' },
 
   white: '#FFFFFF',
   black: '#000000',
 
   // ── Legacy keys (kept so older imports keep compiling) ──
-  bgBase: '#F3F4F9', bgSurface: '#FFFFFF', bgSurfaceMuted: '#F3F1F4', bgSurfaceSubtle: '#F3F1F4',
-  bgDark: '#17181B', bgDarkElevated: '#2A2D32', bgDarkCard: '#33363C',
+  bgBase: '#EEF0F4', bgSurface: '#FFFFFF', bgSurfaceMuted: '#F3F4F7', bgSurfaceSubtle: '#F3F4F7',
+  bgDark: '#131416', bgDarkElevated: '#1F2733', bgDarkCard: '#2A2F38',
   borderDark: '#3A3D44', borderDarkSubtle: 'rgba(255, 255, 255, 0.08)',
-  borderColor: '#E7E6EE', borderLight: '#EFEEF4',
-  accentOrange: '#FFA265', accentOrangeLight: 'rgba(255, 162, 101, 0.18)',
-  accentOrangeGlow: 'rgba(255, 162, 101, 0.4)', accentDark: '#A85624',
-  accentBlue: '#6C6BC6', accentBlueLight: '#E9E8F6',
+  borderColor: '#E6E8EE', borderLight: '#EEF0F4',
+  accentOrange: '#F29A78', accentOrangeLight: 'rgba(242, 154, 120, 0.18)',
+  accentOrangeGlow: 'rgba(242, 154, 120, 0.4)', accentDark: '#A2492A',
+  accentBlue: '#2C6E8A', accentBlueLight: '#DDEFF6',
   successLight: 'rgba(21, 127, 85, 0.12)', warningLight: 'rgba(154, 106, 0, 0.12)',
   dangerLight: 'rgba(198, 47, 67, 0.12)',
-  textPrimary: '#26262B', textSecondary: '#55545C', textMuted: '#6B6A72', textMutedLight: '#9A99A3',
-  textDarkPrimary: '#FFFFFF', textDarkSecondary: '#D9D9E0', textDarkMuted: '#9A99A3',
+  textPrimary: '#131416', textSecondary: '#4A5361', textMuted: '#5C6675', textMutedLight: '#9AA2AE',
+  textDarkPrimary: '#FFFFFF', textDarkSecondary: '#D9D9E0', textDarkMuted: '#9AA2AE',
 };
 
 export const RADII = { xs: 8, sm: 14, md: 20, lg: 28, xl: 36, pill: 999 };
@@ -87,9 +87,9 @@ export const TYPE = {
 
 // Soft, diffuse shadows only.
 export const SHADOWS = {
-  sm: { shadowColor: '#543418', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
-  md: { shadowColor: '#543418', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
-  lg: { shadowColor: '#543418', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
+  sm: { shadowColor: '#131416', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
+  md: { shadowColor: '#131416', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
+  lg: { shadowColor: '#131416', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
 };
 
 export const MOTION = {

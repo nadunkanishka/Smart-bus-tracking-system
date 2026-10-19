@@ -18,7 +18,7 @@ export function ShiftScreen({
         <Text style={D.screenTitle}>{busRegistration}</Text>
         <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
         {/* CHANGED (illustration only): the bus shows a z while off duty; the toggle text still states the status. */}
-        <Vehicle name="bus" livery="purple" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
+        <Vehicle name="bus" livery="coral" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
       </OverlapHeader>
 
       <OverlapSheet>
