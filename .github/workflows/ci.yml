@@ -48,3 +48,23 @@ jobs:
           node-version: 22
       - run: node shared/sync.js
       - run: git diff --exit-code
+
+  mobile:
+    # The Expo apps have no tests, so bundling them for web and Android is the check: it fails on broken imports or syntax.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [driver-app, passenger-app]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npx expo export --platform web --platform android
