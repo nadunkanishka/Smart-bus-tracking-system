@@ -132,7 +132,7 @@ function App() {
 
   const currentPageTitle =
     activePage === 'dashboard'
-      ? 'System Admin Dashboard'
+      ? 'Administrator Dashboard'
       : activePage === 'live'
         ? 'Live Monitor'
         : activePage === 'analytics'
@@ -145,14 +145,13 @@ function App() {
 
   return (
     <div className="admin-shell">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} sidebarCollapsed={sidebarCollapsed} summary={summary} user={user} />
+      <Sidebar activePage={activePage} setActivePage={setActivePage} sidebarCollapsed={sidebarCollapsed} handleLogout={handleLogout} />
 
       <div className="main-panel">
         <Header
           currentPageTitle={currentPageTitle}
           clock={clock}
           backendConnected={backendConnected}
-          handleLogout={handleLogout}
           user={user}
           setSidebarCollapsed={setSidebarCollapsed}
         />
@@ -169,7 +168,7 @@ function App() {
         )}
 
         <main className="page-scroll">
-          {activePage === 'dashboard' && <DashboardPage summary={summary} fetchBackendData={fetchBackendData} showNotification={showNotification} openModal={openModal} />}
+          {activePage === 'dashboard' && <DashboardPage user={user} summary={summary} drivers={drivers} buses={buses} routes={routes} fetchBackendData={fetchBackendData} showNotification={showNotification} openModal={openModal} setActivePage={setActivePage} />}
 
           {activePage === 'live' && <LiveMonitor api={api} routes={routes} />}
           {activePage === 'analytics' && <Analytics api={api} routes={routes} />}

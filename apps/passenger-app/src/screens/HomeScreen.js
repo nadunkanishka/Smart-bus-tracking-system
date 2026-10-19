@@ -34,7 +34,7 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
             <BellIcon color={COLORS.ink} size={20} hasBadge={!!bus} />
           </IconButton>
         </View>
-        <Vehicle name="bus" livery="purple" width={132} style={S.homeHeaderBus} label="Illustrated city bus" />
+        <Vehicle name="bus" livery="coral" width={132} style={S.homeHeaderBus} label="Illustrated city bus" />
       </OverlapHeader>
 
       <OverlapSheet style={S.homeSheet}>
