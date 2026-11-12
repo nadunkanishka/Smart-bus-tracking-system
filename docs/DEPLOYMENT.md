@@ -99,6 +99,25 @@ EXPO_PUBLIC_API_URL=<api url> eas build --platform android --profile preview
 
 The `preview` profile in `eas.json` produces an installable `.apk`. Background GPS, which keeps tracking with the screen off, only works in this installed build, not in Expo Go. On first use the driver must choose **Allow all the time** for location.
 
+## 4b. Passenger APK
+
+The passenger app builds the same way (it has its own `eas.json`, package `lk.smartbus.passenger`):
+
+```bash
+cd apps/passenger-app
+eas build:configure            # once, links the project to your Expo account
+EXPO_PUBLIC_API_URL=<api url> GOOGLE_MAPS_API_KEY=<key> eas build --platform android --profile preview
+```
+
+The native map uses Google Maps on Android, so the build needs a Maps SDK for Android key (free; create it in Google Cloud and restrict it to the package name). Without a real key an installed build shows a blank map; Expo Go does not need one. For a build on EAS, set both values as EAS environment variables (`eas env:create`) instead of typing them each time, so they are not committed.
+
+## 4c. Free hosting while building and piloting
+
+Everything above runs on free plans (`render.yaml` already asks for `free`): Render web service and Key Value, MongoDB Atlas M0, Expo/EAS free builds. Two things to do because of it:
+
+- Render's free web service sleeps after about 15 minutes without traffic and takes up to a minute to wake. Add a free uptime monitor (for example UptimeRobot) that requests `<api url>/api/health` every 5 minutes, and open the app a minute before a shift.
+- Free tiers have no backups. Export the collections before and after every pilot day (`mongoexport`), and do not run the 500-driver stress test against the free instance. When the system is ready for real use, change `plan: free` to a paid plan in `render.yaml` and move MongoDB to a paid tier; nothing else changes.
+
 ## 5. Checks after deploying
 
 - `GET /api/health` returns `status: ok`.

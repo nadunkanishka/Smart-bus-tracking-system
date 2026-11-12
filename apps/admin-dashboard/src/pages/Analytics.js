@@ -54,6 +54,42 @@ export default function Analytics({ api, routes }) {
       </div>
 
       <div className="panel table-shell">
+        <div className="panel-head" style={{ padding: '16px 20px 4px' }}>
+          <div>
+            <h2>ETA engine vs a plain estimate</h2>
+            <p>The plain estimate is the straight-line distance to the stop at a fixed 20 km/h. Both are scored on the same arrivals.</p>
+          </div>
+        </div>
+        <table className="data-table">
+          <thead>
+            <tr><th>Predicted ahead</th><th>Arrivals</th><th>Engine error</th><th>Plain estimate error</th></tr>
+          </thead>
+          <tbody>
+            {!eta?.compared?.samples ? (
+              <tr><td colSpan="4" className="cell-empty"><div className="empty-state">No arrivals recorded yet. Drive a bus on duty past a stop to see the comparison.</div></td></tr>
+            ) : (
+              <>
+                {eta.byHorizon.map((h) => (
+                  <tr key={h.horizon}>
+                    <td className="table-strong">{h.horizon}</td>
+                    <td>{h.samples}</td>
+                    <td>{h.engineMaeSec} s</td>
+                    <td>{h.baselineMaeSec} s</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="table-strong">All</td>
+                  <td>{eta.compared.samples}</td>
+                  <td className="table-strong">{eta.compared.engineMaeSec} s</td>
+                  <td className="table-strong">{eta.compared.baselineMaeSec} s{eta.compared.improvementPct != null ? ` (engine ${eta.compared.improvementPct >= 0 ? `${eta.compared.improvementPct}% better` : `${-eta.compared.improvementPct}% worse`})` : ''}</td>
+                </tr>
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="panel table-shell">
         <table className="data-table">
           <thead>
             <tr>

@@ -5,6 +5,7 @@ const { prepareRoute, computeEta } = require('./lib/eta');
 const { haversine } = require('./lib/geo');
 const { validateFix, MAX_SPEED_MPS } = require('./lib/validate');
 const { startTrip, advance } = require('./lib/tripTracker');
+const { smoothFix, SMOOTHING } = require('./lib/smooth');
 const { readToken } = require('./lib/auth');
 
 const Route = require('./models/Route');
@@ -18,6 +19,8 @@ const LIVE_MAX_AGE_MS = 15000; // a fix older than this is historical (offline b
 const GPS_FLUSH_MS = 5000;
 const MIN_FIX_GAP_MS = 900; // drivers send every 3 s; anything faster than ~1/s is dropped
 const room = (routeId) => `route:${routeId}`;
+// GPS smoothing is on unless GPS_SMOOTHING=off (switch it off to compare raw against smoothed on the same route).
+const SMOOTHING_ON = String(process.env.GPS_SMOOTHING || 'on').toLowerCase() !== 'off';
 
 function createRealtime(io, store) {
   const buses = new Map(); // busId -> live state for this process
@@ -75,18 +78,25 @@ function createRealtime(io, store) {
     bus.lastFix = fix;
     bus.lastSeen = recvTs;
 
+    // The raw fix is kept (jump checks, GpsLog.location); everything downstream (ETA, passengers) uses the smoothed point.
+    const sm = smoothFix(bus.smooth, fix, { ...SMOOTHING, enabled: SMOOTHING_ON });
+    bus.smooth = sm.state;
+    const used = SMOOTHING_ON ? { ...fix, lat: sm.lat, lng: sm.lng } : fix;
+
     const route = await getRoute(bus.routeId);
     let eta = null;
     if (route) {
-      eta = computeEta(route, fix, bus.distAlong);
+      eta = computeEta(route, used, bus.distAlong);
       bus.distAlong = eta.distAlong;
       bus.nextStopIndex = Math.min(eta.segIndex + 1, route.stops.length - 1);
-      await track(bus, route, eta, fix);
+      await track(bus, route, eta, used);
     }
 
     gpsBuffer.push({
       busId: bus.busId, routeId: bus.routeId, tripId: bus.trip?.tripId,
-      location: { type: 'Point', coordinates: [fix.lng, fix.lat] },
+      location: { type: 'Point', coordinates: [fix.lng, fix.lat] }, // as the phone reported it
+      smoothed: { type: 'Point', coordinates: [used.lng, used.lat] }, // what the ETA engine and passengers used
+      accuracy: fix.accuracy,
       speed: fix.speed, heading: fix.heading, deviceTs: new Date(fix.ts), buffered,
     });
 
@@ -100,7 +110,7 @@ function createRealtime(io, store) {
       registration: bus.registration,
       driverName: bus.driverName || null,
       routeId: bus.routeId,
-      lat: fix.lat, lng: fix.lng, speed: fix.speed, heading: fix.heading,
+      lat: used.lat, lng: used.lng, speed: fix.speed, heading: fix.heading,
       deviceTs: fix.ts,
       buffered,
       serverRecvTs: recvTs,
@@ -138,6 +148,7 @@ function createRealtime(io, store) {
     if (res.etaLogs.length) {
       await EtaLog.insertMany(res.etaLogs.map((l) => ({
         ...base, ...l, predictedAt: new Date(l.predictedAt), predictedArrival: new Date(l.predictedArrival), actualArrival: new Date(l.actualArrival),
+        baselineArrival: l.baselineArrival == null ? undefined : new Date(l.baselineArrival),
       })));
     }
     if (res.ended) {
@@ -161,6 +172,7 @@ function createRealtime(io, store) {
     if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date() });
     bus.trip = null;
     bus.lastFix = null;
+    bus.smooth = null;
     bus.distAlong = undefined;
     await store.remove(bus.busId);
     io.to(room(bus.routeId)).emit('bus:offline', { busId: bus.busId });

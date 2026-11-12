@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "passenger-app",
+    "name": "SmartBus Passenger",
     "slug": "passenger-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "lk.smartbus.passenger",
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
@@ -16,6 +17,7 @@
       }
     },
     "android": {
+      "package": "lk.smartbus.passenger",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
