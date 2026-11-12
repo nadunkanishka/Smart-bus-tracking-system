@@ -7,15 +7,17 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 
 **Built and checked in this repository**
 
-- Backend: Node/Express, Socket.IO rooms per route, MongoDB (GeoJSON), Redis-or-memory latest-fix cache, JWT roles, the ETA engine (polyline snapping, live speed, historical segment times, dwell), trip and ETA logging, metrics endpoint, 23 automated tests including CRUD against a real database.
+- Backend: Node/Express, Socket.IO rooms per route, MongoDB (GeoJSON), Redis-or-memory latest-fix cache, JWT roles, the ETA engine (polyline snapping, live speed, historical segment times, dwell), trip and ETA logging, metrics endpoint, 36 automated tests including CRUD against a real database, the GPS smoother and the baseline.
 - Admin dashboard: drivers, buses, routes with a map editor, live monitor, trip analytics, passenger and administrator accounts, settings, light and dark mode.
 - Driver app (Expo, Android): 3-second GPS, offline buffer with sequence numbers, on/off duty, background tracking in an installed build.
 - Passenger app (Expo, web and native): live map, ETA per stop, route and stop selection, account screens.
-- Tooling: GPS replay simulator, Artillery load test, Render blueprint, EAS profile for the APK, CI on every push.
+- GPS smoothing (Kalman filter with spike gate and stop hold) and a straight-line baseline logged beside every ETA prediction, compared on Trip Analytics.
+- 25 Colombo routes seeded with road lines; Route 138 is Pettah to Homagama.
+- Tooling: GPS replay simulator (with GPS noise), Artillery load test, Render blueprint, EAS profiles for both apps, CI on every push.
 
 **Not done or never verified**
 
-- Nothing has run on a phone on a real road, and nothing is deployed. All evidence so far is local or simulated.
+- A two-phone test in Expo Go over Wi-Fi worked (reported, 12 Nov 2026), but no installed build has run on a road and nothing is deployed. The test's data did not reach the database checked afterwards, so the smoother and baseline are not yet verified on real GPS. All numbers so far are simulated.
 - Redis has never been exercised here (this machine has no Docker or WSL), so the Redis path is untested.
 - No measured latency, ETA error or load figures exist yet. The report must not claim any until they do.
 - The reports describe two things the code does not do (see section 1).
@@ -23,10 +25,10 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 ## 1. Decisions (made)
 
 - [x] **D1. GPS smoothing: build it.** Add server-side smoothing before the ETA engine (a distance-threshold filter, and a basic Kalman filter if it measurably helps) so the interim report's claim becomes true. New work items:
-  - [ ] Design: where it sits (after validation, before trip tracking and the ETA engine), per-bus state, reset on a new trip or a long gap.
-  - [ ] Implement with the thresholds in one config block, and keep the raw fix next to the smoothed one in the log so both can be compared.
-  - [ ] Unit tests: a jittery track becomes smoother, a real turn is not cut off, a genuine stop stays a stop, an out-of-order fix is ignored.
-  - [ ] Measure drift before and after on a recorded or replayed noisy track (10-25 m noise, as in the report) and keep the figures for the evaluation.
+  - [x] Design: where it sits (after validation, before trip tracking and the ETA engine), per-bus state, reset on a new trip or a long gap. Done: after validation and the jump checks, before trip tracking and the ETA engine; state per bus in `bus.smooth`, reset on going off duty or a gap over 30 s.
+  - [x] Implement with the thresholds in one config block, and keep the raw fix next to the smoothed one in the log so both can be compared. Done: `backend/lib/smooth.js`; `gpslogs` keep `location` (raw) and `smoothed`.
+  - [x] Unit tests: a jittery track becomes smoother, a real turn is not cut off, a genuine stop stays a stop, an out-of-order fix is ignored. Done: `backend/test/smooth.test.js` (7 tests).
+  - [x] Measure drift before and after on a recorded or replayed noisy track (10-25 m noise, as in the report) and keep the figures for the evaluation. Done on simulated tracks: see `docs/EVALUATION.md` section 2b (15 m noise: 15.6 m to 11.9 m). Repeat on the pilot logs.
 - [x] **D2. Pilot route: Pettah to Homagama (Route 138).** The route data must say this everywhere.
   - [ ] **(you)** Ride the corridor once and note the real stops in order (Pettah, Borella and so on through Nugegoda, Maharagama and Pannipitiya to Homagama; use whatever the real service stops at).
   - [x] Seed data replaced (branch `pilot-routes`): the seed now loads the 25 Colombo routes from the owner's list, Route 138 being Pettah to Homagama via the High Level Road, with road lines from OSRM. Stops are provisional until the ride; replace them in `backend/scripts/data/routes.js` and run `node scripts/geocode-places.js` then `npm run seed`.
@@ -43,9 +45,9 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
   - [ ] Free tiers have no backups: export the database collections before and after every pilot day.
   - [ ] Keep an eye on the free limits (monthly hours, Key Value size, Atlas storage) while the pilot runs.
 - [x] **D6. Compare the ETA engine with a plain Haversine baseline.**
-  - [ ] Log the baseline estimate (straight-line distance divided by the bus's speed) next to the engine's prediction for each stop, using the same inputs.
-  - [ ] Extend the analytics (`/api/analytics/eta`) and the Trip Analytics page to show both errors side by side.
-  - [ ] Unit tests for the baseline calculation.
+  - [x] Log the baseline estimate (straight-line distance divided by the bus's speed) next to the engine's prediction for each stop, using the same inputs. Done: straight-line distance / 20 km/h, stored in `etalogs`.
+  - [x] Extend the analytics (`/api/analytics/eta`) and the Trip Analytics page to show both errors side by side. Done: `compared` and `byHorizon`, and a table on Trip Analytics.
+  - [x] Unit tests for the baseline calculation. Done in `backend/test/engine.test.js`.
 
 ## 2. Make it run end to end (locally, first)
 
@@ -96,7 +98,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 ## 7. Pilot (proposal phase 9)
 
 - [ ] **(you)** Written permission from the operator and each volunteer driver; a short consent note saying location is shared only while on duty and what is stored.
-- [ ] Decide how long positions (`GpsLog`) are kept and write it down; delete or anonymise after the study.
+- [x] Decide how long positions (`GpsLog`) are kept and write it down; delete or anonymise after the study. Decided: 14 days (TTL index), written in `docs/DATABASE.md`. Delete the study copy afterwards.
 - [ ] Pilot days and hours agreed; a person checking Live Monitor during each run.
 - [ ] Each run logs: date, bus, driver, signal problems, battery level at start and end, anything odd.
 - [ ] Use the 2-week contingency the interim report names, and write the dates down as they happen.
