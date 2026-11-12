@@ -141,7 +141,7 @@ export function TrackingScreen({
             {/* Predicted arrival at every stop, updated on each GPS fix */}
             <ScrollView style={S.etaList} showsVerticalScrollIndicator={false}>
               {bus.stops.map((stop) => {
-                const mine = stop.index === boardingIndex || stop.index === destinationIndex;
+                const mine = stop.name === boardingStop || stop.name === destinationStop;
                 return (
                   <View key={stop.index} style={[S.etaRow, mine && S.etaRowOn]}>
                     <View style={[S.etaDot, stop.status === 'passed' && S.etaDotPassed, mine && S.etaDotOn]} />
