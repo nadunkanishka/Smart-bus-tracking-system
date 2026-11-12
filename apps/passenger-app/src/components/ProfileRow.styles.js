@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS } from '../shared/theme';
+import { COLORS, SPACE } from '../shared/theme';
 import { type } from '../styles/common';
 
 export const useS = createStyles(() => StyleSheet.create({
   profileRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: SPACE[4],
     minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLORS.line,
   },
   profileRowLast: { borderBottomWidth: 0 },

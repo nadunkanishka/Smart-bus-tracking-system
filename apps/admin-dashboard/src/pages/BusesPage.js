@@ -4,7 +4,7 @@ import Icon from '../components/Icon';
 import StatusBadge from '../components/StatusBadge';
 import TableShell from '../components/TableShell';
 
-export default function BusesPage({ currentPageTitle, buses, drivers, openModal, openConfirm }) {
+export default function BusesPage({ currentPageTitle, loading, buses, drivers, openModal, openConfirm }) {
   return (
     <section className="page-section" data-page="buses">
       <div className="section-header">
@@ -35,7 +35,7 @@ export default function BusesPage({ currentPageTitle, buses, drivers, openModal,
             {buses.length === 0 ? (
               <tr>
                 <td colSpan="8" className="cell-empty">
-                  <div className="empty-state"><Vehicle name="bus" width={120} label="Nothing here yet" />No buses registered yet. Click "Add New Bus" to register a bus!</div>
+                  <div className="empty-state"><Vehicle name="bus" width={120} label="Nothing here yet" />{loading ? 'Loading buses…' : 'No buses registered yet. Click "Add New Bus" to register a bus!'}</div>
                 </td>
               </tr>
             ) : (

@@ -4,7 +4,7 @@ import Icon from '../components/Icon';
 import StatusBadge from '../components/StatusBadge';
 import TableShell from '../components/TableShell';
 
-export default function DriversPage({ currentPageTitle, drivers, openModal, openConfirm }) {
+export default function DriversPage({ currentPageTitle, loading, drivers, openModal, openConfirm }) {
   return (
     <section className="page-section" data-page="drivers">
       <div className="section-header">
@@ -34,7 +34,7 @@ export default function DriversPage({ currentPageTitle, drivers, openModal, open
             {drivers.length === 0 ? (
               <tr>
                 <td colSpan="7" className="cell-empty">
-                  <div className="empty-state"><Vehicle name="minibus" width={120} label="Nothing here yet" />No drivers registered yet. Click "Add New Driver" to add one!</div>
+                  <div className="empty-state"><Vehicle name="minibus" width={120} label="Nothing here yet" />{loading ? 'Loading drivers…' : 'No drivers registered yet. Click "Add New Driver" to add one!'}</div>
                 </td>
               </tr>
             ) : (

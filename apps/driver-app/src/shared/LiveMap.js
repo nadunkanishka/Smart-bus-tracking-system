@@ -103,7 +103,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
 
   useEffect(() => {
     const dark = mode === 'dark';
-    const theme = { mode, bg: COLORS.bg, route: COLORS.orange, stop: dark ? COLORS.orange : COLORS.ink, stopRing: dark ? '#110C0B' : '#FFFFFF', violet: COLORS.violet, attr: dark ? 'rgba(17,12,11,.75)' : 'rgba(255,255,255,.7)', attrText: dark ? '#A89A93' : '#333' };
+    const theme = { mode, bg: COLORS.bg, route: COLORS.orange, stop: dark ? COLORS.orange : COLORS.ink, stopRing: COLORS.surface, violet: COLORS.violet, attr: COLORS.mapChrome, attrText: COLORS.muted };
     if (ready) frame.current?.contentWindow?.postMessage({ type: 'sb-map', path, stops, buses, highlightStop, padding, theme }, '*');
   }, [ready, path, stops, buses, highlightStop, padding, mode]);
 

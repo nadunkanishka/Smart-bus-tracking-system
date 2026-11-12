@@ -19,6 +19,7 @@ export function useAdminData({ user, onSessionExpired }) {
     },
   });
   const [backendConnected, setBackendConnected] = useState(false);
+  const [loading, setLoading] = useState(true); // true until the first answer (or failure) arrives
 
   // Fetch live MongoDB backend data & summary metrics
   const fetchBackendData = async () => {
@@ -111,6 +112,7 @@ export function useAdminData({ user, onSessionExpired }) {
     } catch (err) {
       setBackendConnected(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -119,5 +121,5 @@ export function useAdminData({ user, onSessionExpired }) {
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { drivers, buses, routes, summary, backendConnected, fetchBackendData };
+  return { drivers, buses, routes, summary, backendConnected, loading, fetchBackendData };
 }
