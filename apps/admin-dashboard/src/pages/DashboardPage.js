@@ -1,67 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Icon from '../components/Icon';
 
-const LIVE_MS = 5000; // how often the dashboard asks the backend for the live numbers
-const QUALITY_MS = 30000; // ETA accuracy changes slowly
+const MAX_BARS = 7;
 const MAX_FLEET_ROWS = 3;
 const MAX_DRIVER_ROWS = 1;
-const HORIZON_LABEL = { 'under 2 min': '< 2 min', '2 to 5 min': '2-5 min', '5 to 10 min': '5-10 min', '10 to 20 min': '10-20 min', 'over 20 min': '20+ min' };
-const clock = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-// The operator's first look: is the system receiving positions, are buses on the road, and how good are the predictions.
-export default function DashboardPage({ api, user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
+export default function DashboardPage({ user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
   const [driverFilter, setDriverFilter] = useState('Active'); // 'Active' | 'On Leave'
-  const [view, setView] = useState('activity'); // the big chart: 'activity' | 'accuracy'
-  const [live, setLive] = useState(null); // { buses, serverTs }
-  const [metrics, setMetrics] = useState(null);
-  const [eta, setEta] = useState(null);
+  const fleet = { active: 0, idle: 0, maintenance: 0, ...summary.fleetDistribution };
+  const fleetTotal = fleet.active + fleet.idle + fleet.maintenance;
+  const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
+  const readyRoutes = routes.filter((r) => r.path.length > 1 && r.stopPoints.length > 1).length;
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
-  useEffect(() => {
-    if (!api) return undefined;
-    let stop = false;
-    const load = async () => {
-      try {
-        const [a, b] = await Promise.all([api('/live'), api('/metrics')]);
-        if (stop) return;
-        if (a.ok) setLive(await a.json());
-        if (b.ok) setMetrics(await b.json());
-      } catch (err) { /* keep the last values */ }
-    };
-    const loadQuality = async () => {
-      try {
-        const r = await api('/analytics/eta');
-        if (!stop && r.ok) setEta(await r.json());
-      } catch (err) { /* ignore */ }
-    };
-    load();
-    loadQuality();
-    const t1 = setInterval(load, LIVE_MS);
-    const t2 = setInterval(loadQuality, QUALITY_MS);
-    return () => { stop = true; clearInterval(t1); clearInterval(t2); };
-  }, [api]);
+  // Stops per route as bars; the tallest bar carries a small card with its details.
+  const bars = routes.slice(0, MAX_BARS).map((r) => ({ id: r.id, label: r.routeNumber || r.id, name: r.name, stops: r.stopPoints.length, distance: r.distance }));
+  const topStops = Math.max(1, ...bars.map((b) => b.stops));
+  const topIndex = bars.findIndex((b) => b.stops === topStops);
+  const totalStops = routes.reduce((n, r) => n + r.stopPoints.length, 0);
 
-  const onRoad = (live?.buses || []).filter((b) => b.connected && b.onDuty);
-  const onDutyIds = new Set(onRoad.map((b) => b.busId));
-  const routeLabel = (id) => { const r = routes.find((x) => x.id === id); return r ? (r.routeNumber ? `Route ${r.routeNumber}` : r.name) : 'No route'; };
-  const seen = (ts) => { if (!ts) return 'never'; const sec = Math.max(0, Math.round(((live?.serverTs || Date.now()) - ts) / 1000)); return sec < 60 ? `${sec}s ago` : `${Math.floor(sec / 60)} min ago`; };
-  const cmp = eta?.compared;
-  const processing = metrics?.latencyMs?.serverProcessing;
+  // Fleet split: green = running, violet = idle, red = maintenance. The ring is a conic gradient built from the shares.
+  const split = [
+    { key: 'active', label: 'Running', color: 'var(--green)', n: fleet.active },
+    { key: 'idle', label: 'Idle', color: 'var(--violet)', n: fleet.idle },
+    { key: 'maintenance', label: 'Service', color: 'var(--danger)', n: fleet.maintenance },
+  ];
+  let at = 0;
+  const ring = fleetTotal
+    ? `conic-gradient(${split.map((s) => { const from = at; at += (s.n / fleetTotal) * 100; return `${s.color} ${from}% ${at}%`; }).join(', ')})`
+    : 'conic-gradient(var(--a-line) 0 100%)';
 
-  // Chart 1: GPS positions received per minute, the last 12 minutes.
-  const minutes = metrics?.fixesPerMinute || [];
-  const topMinute = Math.max(1, ...minutes.map((m) => m.n));
-  const topIndex = minutes.findIndex((m) => m.n === topMinute && m.n > 0);
-  const received = minutes.reduce((n, m) => n + m.n, 0);
-
-  // Chart 2: ETA error by how far ahead the prediction was made, the engine against the plain straight-line estimate.
-  const groups = (eta?.byHorizon || []).map((h) => ({ key: h.horizon, label: HORIZON_LABEL[h.horizon] || h.horizon, n: h.samples, engine: h.engineMaeSec, plain: h.baselineMaeSec }));
-  const topError = Math.max(1, ...groups.flatMap((g) => [g.engine || 0, g.plain || 0]));
-
-  const busRoute = (b) => { const r = routes.find((x) => (x.assignedBus || '').includes(b.registration)); return r ? routeLabel(r.id) : 'no route'; };
   const driverName = (id) => drivers.find((d) => d.id === id)?.name || 'No driver assigned';
+  const statusClass = (s) => (s === 'Active' ? 'badge-green' : s === 'Maintenance' ? 'badge-red' : 'badge-amber');
   const shownDrivers = drivers.filter((d) => d.status === driverFilter).slice(0, MAX_DRIVER_ROWS);
-  const frontBus = onRoad[0];
+  const frontRoute = routes[0];
 
   const cardActions = [
     { label: 'All routes', icon: 'route', onClick: () => setActivePage('routes') },
@@ -83,90 +55,57 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
         <div className="panel chart-card">
           <div className="panel-head">
             <div>
-              <h2>{view === 'activity' ? 'GPS positions per minute' : 'ETA error by horizon'}</h2>
-              {view === 'activity' ? (
-                <p className="big-number">{received}<small>in the last 12 min · {onRoad.length} {onRoad.length === 1 ? 'bus' : 'buses'} on duty</small></p>
-              ) : (
-                <p className="big-number">{cmp?.engineMaeSec == null ? '—' : `${cmp.engineMaeSec} s`}<small>{cmp?.engineMaeSec == null ? 'fills in after buses complete stops' : `plain estimate ${cmp.baselineMaeSec} s · ${cmp.samples} arrivals`}</small></p>
-              )}
+              <h2>Stops per route</h2>
+              <p className="big-number">{totalStops}<small>{routes.length} routes · {readyRoutes} ready</small></p>
             </div>
             <div className="round-btns">
-              <button type="button" className="round-btn" onClick={() => openModal('bus')} aria-label="Add bus" title="Add bus"><Icon type="plus" /></button>
+              <button type="button" className="round-btn" onClick={() => openModal('route')} aria-label="Add route" title="Add route"><Icon type="plus" /></button>
               <button type="button" className="round-btn" onClick={() => { fetchBackendData(); showNotification('Refreshed data from MongoDB.'); }} aria-label="Refresh data" title="Refresh data"><Icon type="sync" /></button>
             </div>
           </div>
-
-          <div className="pills chart-tabs" role="group" aria-label="Chart">
-            <button type="button" className={`pill-toggle ${view === 'activity' ? 'on' : ''}`} aria-pressed={view === 'activity'} onClick={() => setView('activity')}>Live activity</button>
-            <button type="button" className={`pill-toggle ${view === 'accuracy' ? 'on' : ''}`} aria-pressed={view === 'accuracy'} onClick={() => setView('accuracy')}>ETA accuracy</button>
-          </div>
-
-          {view === 'activity' ? (
-            minutes.length === 0 ? (
-              <div className="bar-chart empty-state">Waiting for the backend.</div>
-            ) : (
-              <div className="bar-chart" role="img" aria-label={minutes.map((m) => `${clock(m.t)}: ${m.n} positions`).join(', ')}>
-                {minutes.map((m, i) => (
-                  <div key={m.t} className={`bar-col ${i === topIndex ? 'top' : ''}`}>
-                    {i === topIndex && (
-                      <span className="bar-tip">
-                        <small>{clock(m.t)}</small>
-                        <b><i />{m.n} positions</b>
-                      </span>
-                    )}
-                    <span className="bar" style={{ height: `${Math.max(6, (m.n / topMinute) * 100)}%` }} />
-                    <span className="bar-label">{clock(m.t)}</span>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : groups.length === 0 ? (
-            <div className="bar-chart empty-state">No arrivals recorded yet. Drive a bus on duty past a stop and it fills in.</div>
+          {bars.length === 0 ? (
+            <div className="bar-chart empty-state">No routes yet. Create one to see it here.</div>
           ) : (
-            <>
-              <div className="acc-chart" role="img" aria-label={groups.map((g) => `${g.label}: engine ${g.engine} s, plain estimate ${g.plain} s`).join('; ')}>
-                {groups.map((g) => (
-                  <div key={g.key} className="acc-group" title={`${g.n} arrivals`}>
-                    <div className="acc-bars">
-                      <span className="acc-col"><em>{g.engine} s</em><i className="acc-bar engine" style={{ height: `${Math.max(4, ((g.engine || 0) / topError) * 100)}%` }} /></span>
-                      <span className="acc-col"><em>{g.plain} s</em><i className="acc-bar plain" style={{ height: `${Math.max(4, ((g.plain || 0) / topError) * 100)}%` }} /></span>
-                    </div>
-                    <span className="acc-label">{g.label}</span>
-                  </div>
-                ))}
-              </div>
-              <ul className="legend acc-legend">
-                <li><span className="legend-dot" style={{ background: 'var(--orange)' }} />Engine</li>
-                <li><span className="legend-dot" style={{ background: 'var(--violet)' }} />Plain estimate</li>
-                <li>lower is better</li>
-              </ul>
-            </>
+            <div className="bar-chart" role="img" aria-label={bars.map((b) => `${b.name}: ${b.stops} stops`).join(', ')}>
+              {bars.map((b, i) => (
+                <div key={b.id} className={`bar-col ${i === topIndex ? 'top' : ''}`}>
+                  {i === topIndex && (
+                    <span className="bar-tip">
+                      <small>{b.name}</small>
+                      <b><i />{b.stops} stops</b>
+                      <b><i />{b.distance}</b>
+                    </span>
+                  )}
+                  <span className="bar" style={{ height: `${Math.max(14, (b.stops / topStops) * 100)}%` }} />
+                  <span className="bar-label" title={b.name}>{b.label}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
         <div className="panel card-panel">
           <div className="panel-head">
-            <h2>Live bus</h2>
-            <button type="button" className="pill-outline" onClick={() => setActivePage('live')}>
-              Open live map <Icon type="pulse" />
+            <h2>Front route</h2>
+            <button type="button" className="pill-outline" onClick={() => setActivePage('routes')}>
+              Open routes <Icon type="route" />
             </button>
           </div>
-          {frontBus ? (
-            <button type="button" className="route-card-big" onClick={() => setActivePage('live')}>
-              <span className="rcb-top"><span>{frontBus.driverName || 'On duty'}</span><span>{frontBus.speed == null ? '—' : `${Math.round(frontBus.speed * 3.6)} km/h`}</span></span>
-              <span className="rcb-number">{frontBus.registration}</span>
-              <span className="rcb-name">{routeLabel(frontBus.routeId)}{onRoad.length > 1 ? ` · +${onRoad.length - 1} more on the road` : ''}</span>
+          {frontRoute ? (
+            <button type="button" className="route-card-big" onClick={() => setActivePage('routes')}>
+              <span className="rcb-top"><span>{frontRoute.id}</span><span>{frontRoute.stopPoints.length} STOPS</span></span>
+              <span className="rcb-number">{frontRoute.routeNumber ? `Route ${frontRoute.routeNumber}` : frontRoute.name}</span>
+              <span className="rcb-name">{frontRoute.start} → {frontRoute.end} · {frontRoute.distance}</span>
               <span className="rcb-foot">
-                <span className="rcb-bus">Last position {seen(frontBus.lastSeen)}</span>
+                <span className="rcb-bus">{frontRoute.assignedBus || 'No bus assigned'}</span>
                 <span className="rcb-brand">SmartBus</span>
               </span>
             </button>
           ) : (
-            <button type="button" className="route-card-big idle" onClick={() => setActivePage('live')}>
-              <span className="rcb-top"><span>{buses.length} registered</span><span>OFF DUTY</span></span>
-              <span className="rcb-number">No bus on duty</span>
-              <span className="rcb-name">A bus shows here when its driver goes on duty.</span>
-              <span className="rcb-foot"><span className="rcb-bus">Open live map</span><span className="rcb-brand">SmartBus</span></span>
+            <button type="button" className="route-card-big" onClick={() => openModal('route')}>
+              <span className="rcb-number">No routes yet</span>
+              <span className="rcb-name">Create the first route to see it here.</span>
+              <span className="rcb-foot"><span className="rcb-bus">Add route</span><span className="rcb-brand">SmartBus</span></span>
             </button>
           )}
           <div className="card-actions">
@@ -190,34 +129,39 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
             <p className="empty-line">No buses registered yet.</p>
           ) : (
             <ul className="rows">
-              {buses.slice(0, MAX_FLEET_ROWS).map((b) => {
-                const running = onDutyIds.has(b.id);
-                return (
-                  <li key={b.id} className="row">
-                    <span className="row-icon"><Icon type="bus" /></span>
-                    <span className="row-main">
-                      <strong>{b.registration}</strong>
-                      <small>{driverName(b.assignedDriver)} · {busRoute(b)}</small>
-                    </span>
-                    <span className={`badge ${running ? 'badge-green' : 'badge-amber'}`}>{running ? 'On duty' : 'Off duty'}</span>
-                  </li>
-                );
-              })}
+              {buses.slice(0, MAX_FLEET_ROWS).map((b) => (
+                <li key={b.id} className="row">
+                  <span className="row-icon"><Icon type="bus" /></span>
+                  <span className="row-main">
+                    <strong>{b.registration}</strong>
+                    <small>{b.id} · {driverName(b.assignedDriver)}</small>
+                  </span>
+                  <span className={`badge ${statusClass(b.status)}`}>{b.status}</span>
+                </li>
+              ))}
             </ul>
           )}
         </div>
 
         <div className="panel">
           <div className="panel-head">
-            <h2>System health</h2>
-            <button type="button" className="link-btn" onClick={() => setActivePage('live')}>Live monitor</button>
+            <h2>Fleet split</h2>
+            <span className="chip chip-plain">{fleetTotal} buses</span>
           </div>
-          <ul className="kv">
-            <li><span>ETA error</span><strong>{cmp?.engineMaeSec == null ? 'No arrivals yet' : `${cmp.engineMaeSec} s (plain ${cmp.baselineMaeSec} s)`}</strong></li>
-            <li><span>Time to passengers</span><strong>{processing?.p95 == null ? '—' : `${processing.p95} ms (p95)`}</strong></li>
-            <li><span>GPS positions</span><strong>{metrics?.fixes ? `${metrics.fixes.accepted} ok, ${metrics.fixes.rejected} rejected` : '—'}</strong></li>
-            <li><span>Live cache</span><strong>{metrics ? (metrics.store === 'redis' ? 'Redis' : 'In memory') : '—'}</strong></li>
-          </ul>
+          <div className="ring-wrap">
+            <div className="donut" style={{ background: ring }} role="img" aria-label={split.map((s) => `${s.label}: ${pct(s.n, fleetTotal)}%`).join(', ')}>
+              <div className="donut-hole">
+                <small>Running now</small>
+                <strong>{fleet.active}</strong>
+                <small>of {fleetTotal}</small>
+              </div>
+            </div>
+            <ul className="legend">
+              {split.map((s) => (
+                <li key={s.key}><span className="legend-dot" style={{ background: s.color }} />{s.label} <strong>{pct(s.n, fleetTotal)}%</strong></li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="panel">
