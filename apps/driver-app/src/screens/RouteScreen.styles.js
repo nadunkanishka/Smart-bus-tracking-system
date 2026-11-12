@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const D = {
-  ...common,
+export const useD = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     mapCard: { height: 260, borderRadius: RADII.lg, overflow: 'hidden', marginTop: 16, backgroundColor: COLORS.surfaceSoft, ...SHADOWS.sm },
     routeHeaderCardWrap: { marginBottom: 0 },
@@ -15,16 +16,16 @@ export const D = {
     routeCardSub: { ...type('small'), color: COLORS.inkSoft },
     statusPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: RADII.pill },
     statusPillActive: { backgroundColor: COLORS.successSoft },
-    statusPillOff: { backgroundColor: COLORS.surface },
+    statusPillOff: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine },
     statusPillText: { ...type('caption') },
     statusPillTextActive: { color: COLORS.success },
     statusPillTextOff: { color: COLORS.muted },
-    timelineCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
+    timelineCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
     timelineRow: { flexDirection: 'row', minHeight: 56 },
     timelineLeft: { alignItems: 'center', width: 24, marginRight: 12 },
     timelineDot: {
       width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.mutedLight,
-      backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center',
+      backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, alignItems: 'center', justifyContent: 'center',
     },
     dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
     dotCurrent: { borderColor: COLORS.accent, backgroundColor: COLORS.accentSoft },
@@ -36,4 +37,4 @@ export const D = {
     timelineStopActive: { color: COLORS.accentText },
     timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
   }),
-};
+}));

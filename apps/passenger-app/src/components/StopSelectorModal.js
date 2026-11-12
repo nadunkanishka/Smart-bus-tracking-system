@@ -3,13 +3,14 @@ import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../shared/theme';
 import { Button, Chip, Sheet } from '../shared/ui';
 import { CheckIcon, ChevronDownIcon, FlagIcon, MapPinIcon } from '../shared/icons';
-import { S } from './StopSelectorModal.styles';
+import { useS } from './StopSelectorModal.styles';
 
 export function StopSelectorModal({
   isStopModalOpen, setIsStopModalOpen, routes, selectedRoute, selectRoute, isBoardingOpen,
   setIsBoardingOpen, isDestOpen, setIsDestOpen, boardingStop, setBoardingStop, destinationStop,
   setDestinationStop, tracked, boardingIndex, destinationIndex,
 }) {
+  const S = useS();
   return (
     <Modal
       visible={isStopModalOpen}
@@ -31,7 +32,7 @@ export function StopSelectorModal({
 
           <View style={S.modalHeaderRow}>
             <Text style={S.modalTitle}>Select Your Stops</Text>
-            <Button title="Done" tone="ink" size="sm" full={false} onPress={() => setIsStopModalOpen(false)} />
+            <Button title="Done" tone="primary" size="sm" full={false} onPress={() => setIsStopModalOpen(false)} />
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -43,7 +44,7 @@ export function StopSelectorModal({
                   key={r.id}
                   label={r.shortName}
                   selected={selectedRoute.id === r.id}
-                  tone="ink"
+                  tone="primary"
                   onPress={() => {
                     selectRoute(r);
                     setIsBoardingOpen(false);
@@ -132,7 +133,7 @@ export function StopSelectorModal({
                         isDestination && S.dotDestination,
                         isActive && !isDestination && S.dotActive,
                       ]}>
-                        {isPassed ? <CheckIcon color="#FFF" size={7} /> : null}
+                        {isPassed ? <CheckIcon color={COLORS.onBright} size={7} /> : null}
                       </View>
                       {idx < selectedRoute.stops.length - 1 && (
                         <View style={[S.timelineLineV, isPassed && S.lineVPassed]} />

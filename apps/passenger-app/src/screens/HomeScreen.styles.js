@@ -1,10 +1,11 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const S = {
-  ...common,
+export const useS = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     homeScroll: { paddingBottom: 120 },
     homeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: TOP_INSET },
@@ -15,7 +16,7 @@ export const S = {
     homeSheet: { minHeight: 600 },
     travelCard: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-      backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 16, marginBottom: 24,
+      backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 16, marginBottom: 24,
       ...SHADOWS.sm,
     },
     travelCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
@@ -25,7 +26,7 @@ export const S = {
     quickRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
     quickItem: { flex: 1, alignItems: 'center', gap: 8 },
     quickTile: {
-      width: 64, height: 64, borderRadius: RADII.lg, backgroundColor: COLORS.surface,
+      width: 64, height: 64, borderRadius: RADII.lg, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine,
       alignItems: 'center', justifyContent: 'center', ...SHADOWS.sm,
     },
     quickLabel: { ...type('caption'), color: COLORS.ink, textAlign: 'center' },
@@ -36,16 +37,16 @@ export const S = {
     journeyPress: { padding: 20 },
     journeyCardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 8 },
     journeyBus: { marginTop: 8, marginRight: -16 },
-    journeyBusId: { ...type('h2'), color: COLORS.ink },
-    journeyRouteName: { ...type('small'), color: COLORS.muted, marginTop: 2 },
+    journeyBusId: { ...type('h2'), color: COLORS.onBright },
+    journeyRouteName: { ...type('small'), color: COLORS.onBright, opacity: 0.75, marginTop: 2 },
     journeyKv: { flexDirection: 'row', gap: 24, marginTop: 12 },
-    journeyKvLabel: { ...type('caption'), color: COLORS.muted },
-    journeyKvVal: { ...type('smallBold'), color: COLORS.ink },
+    journeyKvLabel: { ...type('caption'), color: COLORS.onBright, opacity: 0.7 },
+    journeyKvVal: { ...type('smallBold'), color: COLORS.onBright },
     journeyTerminals: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
     journeyTerminalRight: { flex: 1, alignItems: 'flex-end' },
-    journeyTerminalLabel: { ...type('caption'), color: COLORS.muted },
-    journeyTerminalName: { ...type('smallBold'), color: COLORS.ink },
-    routeSummaryCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
+    journeyTerminalLabel: { ...type('caption'), color: COLORS.onBright, opacity: 0.7 },
+    journeyTerminalName: { ...type('smallBold'), color: COLORS.onBright },
+    routeSummaryCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 20, ...SHADOWS.sm },
     routeSummaryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 12 },
     routeBadge: { backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill },
     routeBadgeText: { ...type('caption'), color: COLORS.white },
@@ -54,4 +55,4 @@ export const S = {
     routeTerminalRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     routeTerminalText: { ...type('small'), color: COLORS.muted, flex: 1 },
   }),
-};
+}));

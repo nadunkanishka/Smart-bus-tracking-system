@@ -1,10 +1,11 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const S = {
-  ...common,
+export const useS = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     mapCanvas: { ...StyleSheet.absoluteFillObject },
     mapHeader: {
@@ -13,7 +14,7 @@ export const S = {
     },
     mapHeaderInner: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      backgroundColor: COLORS.surface, borderRadius: RADII.lg, paddingLeft: 16, paddingRight: 8, paddingVertical: 8,
+      backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, paddingLeft: 16, paddingRight: 8, paddingVertical: 8,
       ...SHADOWS.md,
     },
     mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -22,7 +23,7 @@ export const S = {
     stopSelectorBar: {
       position: 'absolute', top: TOP_INSET + 8 + 60 + 8, left: 16, right: 16, zIndex: 20,
       flexDirection: 'row', alignItems: 'flex-start',
-      backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 12,
+      backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 12,
       ...SHADOWS.md,
     },
     stopDotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primaryStrong },
@@ -31,7 +32,7 @@ export const S = {
     // Bottom summary card
     summaryCard: {
       position: 'absolute', left: 16, right: 16, bottom: 104,
-      backgroundColor: COLORS.surface, borderRadius: RADII.xl, padding: 20,
+      backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.xl, padding: 20,
       ...SHADOWS.lg,
     },
     sheetTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
@@ -68,12 +69,12 @@ export const S = {
     // Arrival time at every stop
     etaList: { maxHeight: 176, marginBottom: 12 },
     etaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, paddingHorizontal: 12, borderRadius: RADII.sm },
-    etaRowOn: { backgroundColor: COLORS.accentSoft },
+    etaRowOn: { backgroundColor: COLORS.greenSoft },
     etaDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.ink },
     etaDotPassed: { backgroundColor: COLORS.mutedLight },
-    etaDotOn: { backgroundColor: COLORS.accent },
+    etaDotOn: { backgroundColor: COLORS.green },
     etaStop: { ...type('small'), color: COLORS.ink, flex: 1 },
     etaVal: { ...type('smallBold'), color: COLORS.ink, fontVariant: ['tabular-nums'] },
     etaPassed: { color: COLORS.muted },
   }),
-};
+}));

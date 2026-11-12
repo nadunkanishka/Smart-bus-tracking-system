@@ -1,73 +1,170 @@
 // SmartBus design tokens — single source of truth. `npm run sync` copies this into every app
 // (RN apps: src/shared/theme.js, admin: src/design/tokens.css generated from these values).
 
-export const COLORS = {
-  // Surfaces: cool grey screens, white cards, a pale blue backdrop for headers and the sign-in hero
-  bg: '#EEF0F4',
-  surface: '#FFFFFF',
-  surfaceSoft: '#F3F4F7',
-  surfaceTint: '#E6F3F8',
-  line: '#E6E8EE',
-  backdrop: '#CBE8F2',
+// ── Palette: "Ember" ─────────────────────────────────────────────────────────
+// Night (warm brown-black), Cream (warm off-white), Orange (the one action colour) and Violet (the second voice:
+// negative bars, secondary chips). Peach is a tint of orange; red is only for destructive actions.
+// Green marks anything active or live (a running bus, a connected server, a driver on duty): it is a status colour, not a brand colour.
+// Cards are glass on a glowing dark page: a faint white fill with a hairline border. Light mode is the same set on cream.
+export const PALETTE = { night: '#130E0D', cream: '#FFF3EB', orange: '#FF6B35', violet: '#A25BE0', peach: '#FFB59A', red: '#FF5A6E', green: '#34D17A' };
 
-  // Brand: ink carries primary actions, blue is the brand tone, peach is the accent
-  primary: '#2C6E8A', // white text on this = 5.7:1 (AA)
-  primaryLight: '#BFE3F1', // pale blue: ink text only
-  primaryDeep: '#245B73',
-  primaryStrong: '#245B73', // white text on this = 7.2:1 (AA). Use for blue buttons/chips with text.
-  primarySoft: '#DDEFF6',
-  accent: '#F29A78', // fills and highlights. Text on it must be ink, never white.
-  accentText: '#A2492A', // warm brown for text/links on white (6.4:1)
-  accentSoft: '#FBE1D5',
+// Semantic names stay the same in both modes. Two rules the apps rely on:
+//   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
+//   onBright is always night: use it for text on orange, peach or violet fills, never `ink` or `white`.
+const LIGHT = {
+  bg: '#F5E9E2',
+  surface: '#FFFAF6',
+  surfaceSoft: '#EBDCD3',
+  surfaceTint: '#FDE6DA',
+  line: '#E2D2C8',
+  outline: '#CDB9AC', // input borders
+  ring: 'rgba(19, 14, 13, 0.5)', // keyboard focus ring
+  glass: 'rgba(255, 255, 255, 0.7)',
+  glassLine: 'rgba(19, 14, 13, 0.08)',
+  glowA: 'rgba(255, 107, 53, 0.26)', // page backdrop glows (orange top-left, violet bottom-right)
+  glowB: 'rgba(162, 91, 224, 0.14)',
+  orange: PALETTE.orange,
+  violet: PALETTE.violet,
+  peach: PALETTE.peach,
+  heroFrom: '#FF7B4A', // the orange hero card
+  heroTo: '#FF5D2A',
+  heroShape: '#FFB59A', // its light shapes
+  backdrop: '#FF9A6E', // hero and header blocks on mobile (night text)
 
-  // Ink
-  ink: '#131416',
-  inkSoft: '#1F2733',
-  muted: '#5C6675', // 5.3:1 on --bg
-  mutedLight: '#9AA2AE', // decorative only (placeholders, disabled)
+  primary: PALETTE.orange, // orange carries the main action in both modes; text on it is onBright
+  primaryLight: '#FFD9C9', // pale orange: night text only
+  primaryDeep: '#8A2F0A',
+  primaryStrong: PALETTE.orange,
+  primarySoft: '#FFE6DA',
+  accent: PALETTE.violet, // fills and highlights. Text on it must be onBright.
+  accentText: '#7B32B8', // violet darkened for text on cream (6:1)
+  accentSoft: '#EBD9F8',
 
-  // Status
-  success: '#157F55',
-  successSoft: '#DDF5EA',
-  warning: '#9A6A00',
-  warningSoft: '#FFF1D6',
-  danger: '#C62F43',
-  dangerSoft: '#FDE3E6',
+  ink: PALETTE.night,
+  inkSoft: '#2E2321',
+  muted: '#76665F', // 4.9:1 on bg
+  mutedLight: '#A8998F', // decorative only
 
-  // Illustration extras
-  taxi: '#FFC857',
-  headlight: '#FFE08A',
-  window: '#245B73',
-  tire: '#131416',
+  green: '#2FBF71', // fills and dots (night text on it)
+  greenText: '#0E7A3F', // text on cream (5.3:1)
+  greenSoft: '#D6F3E1',
+  success: '#0E7A3F',
+  successSoft: '#D6F3E1',
+  warning: '#7B32B8',
+  warningSoft: '#EBD9F8',
+  danger: '#C8283F',
+  dangerSoft: '#FDDDE1',
 
-  // Soft wash pairs for status cards: [from, to], each with a 1.5px outline colour in tintLines
+  onBright: PALETTE.night,
+  glow: 'rgba(255, 107, 53, 0.45)',
+  taxi: PALETTE.violet,
+  headlight: '#FFE2B8',
+  window: '#2E2321',
+  tire: PALETTE.night,
+
   tints: {
-    bus: ['#D3ECF6', '#E6F3F8'],
-    train: ['#FBDCCB', '#FCEBDD'],
-    delivery: ['#FBDCCB', '#FCEBDD'],
-    taxi: ['#FCE6C8', '#FDF1DF'],
-    green: ['#E0F2CE', '#EEF7E4'],
+    bus: ['#FFD9C9', '#FFE8DD'],
+    train: ['#E9D6F8', '#F2E6FB'],
+    delivery: ['#E9D6F8', '#F2E6FB'],
+    taxi: ['#EBDCD3', '#F5EBE4'],
+    green: ['#D3F2DF', '#E6F8EE'],
   },
-  tintLines: { bus: '#BFE3F1', train: '#F8CDB8', delivery: '#F8CDB8', taxi: '#F5D9AE', green: '#CDE8B4' },
+  tintLines: { bus: '#FFC4A8', train: '#D9BDF0', delivery: '#D9BDF0', taxi: '#DCCABF', green: '#B5E6C8' },
 
   white: '#FFFFFF',
   black: '#000000',
-
-  // ── Legacy keys (kept so older imports keep compiling) ──
-  bgBase: '#EEF0F4', bgSurface: '#FFFFFF', bgSurfaceMuted: '#F3F4F7', bgSurfaceSubtle: '#F3F4F7',
-  bgDark: '#131416', bgDarkElevated: '#1F2733', bgDarkCard: '#2A2F38',
-  borderDark: '#3A3D44', borderDarkSubtle: 'rgba(255, 255, 255, 0.08)',
-  borderColor: '#E6E8EE', borderLight: '#EEF0F4',
-  accentOrange: '#F29A78', accentOrangeLight: 'rgba(242, 154, 120, 0.18)',
-  accentOrangeGlow: 'rgba(242, 154, 120, 0.4)', accentDark: '#A2492A',
-  accentBlue: '#2C6E8A', accentBlueLight: '#DDEFF6',
-  successLight: 'rgba(21, 127, 85, 0.12)', warningLight: 'rgba(154, 106, 0, 0.12)',
-  dangerLight: 'rgba(198, 47, 67, 0.12)',
-  textPrimary: '#131416', textSecondary: '#4A5361', textMuted: '#5C6675', textMutedLight: '#9AA2AE',
-  textDarkPrimary: '#FFFFFF', textDarkSecondary: '#D9D9E0', textDarkMuted: '#9AA2AE',
 };
 
-export const RADII = { xs: 8, sm: 14, md: 20, lg: 28, xl: 36, pill: 999 };
+const DARK = {
+  bg: '#110C0B',
+  surface: '#1E1614',
+  surfaceSoft: '#2B201D',
+  surfaceTint: '#2A1B16',
+  line: '#35292A',
+  outline: '#4A3A36',
+  ring: 'rgba(255, 107, 53, 0.65)',
+  glass: 'rgba(255, 255, 255, 0.045)',
+  glassLine: 'rgba(255, 255, 255, 0.08)',
+  glowA: 'rgba(255, 107, 53, 0.2)',
+  glowB: 'rgba(70, 90, 160, 0.22)', // the page fades to a cool blue-black at the bottom
+  orange: PALETTE.orange,
+  violet: PALETTE.violet,
+  peach: PALETTE.peach,
+  heroFrom: '#FF7B4A',
+  heroTo: '#FF5D2A',
+  heroShape: '#FFB59A',
+  backdrop: '#1E1614',
+
+  primary: PALETTE.orange,
+  primaryLight: '#3A2016',
+  primaryDeep: '#FF8A5C',
+  primaryStrong: PALETTE.orange,
+  primarySoft: '#2D1A13',
+  accent: PALETTE.violet,
+  accentText: '#C58BF0',
+  accentSoft: '#2E1B40',
+
+  ink: '#F7EEE8',
+  inkSoft: '#E0D2CA',
+  muted: '#A89A93', // 6.6:1 on surface
+  mutedLight: '#6F625C',
+
+  green: '#3DDC84',
+  greenText: '#5BE39A',
+  greenSoft: '#12301F',
+  success: '#5BE39A',
+  successSoft: '#12301F',
+  warning: '#C58BF0',
+  warningSoft: '#2E1B40',
+  danger: '#FF7A8A',
+  dangerSoft: '#3F1C26',
+
+  onBright: PALETTE.night,
+  glow: 'rgba(255, 107, 53, 0.35)',
+  taxi: PALETTE.violet,
+  headlight: '#FFE2B8',
+  window: '#110C0B',
+  tire: PALETTE.night,
+
+  tints: {
+    bus: ['#3A2014', '#2A180F'],
+    train: ['#2E1B40', '#231532'],
+    delivery: ['#2E1B40', '#231532'],
+    taxi: ['#2B201D', '#201815'],
+    green: ['#12331F', '#0E281A'],
+  },
+  tintLines: { bus: '#5A3321', train: '#4A2D66', delivery: '#4A2D66', taxi: '#3F312D', green: '#1F5A36' },
+
+  white: PALETTE.night, // "text on ink": night on the near-white fills
+  black: '#000000',
+};
+
+// Older keys, derived so they always follow the current mode.
+const withLegacy = (c) => ({
+  ...c,
+  bgBase: c.bg, bgSurface: c.surface, bgSurfaceMuted: c.surfaceSoft, bgSurfaceSubtle: c.surfaceSoft,
+  bgDark: c.ink, bgDarkElevated: c.inkSoft, bgDarkCard: c.inkSoft,
+  borderDark: c.line, borderDarkSubtle: 'rgba(255, 255, 255, 0.08)',
+  borderColor: c.line, borderLight: c.bg,
+  accentOrange: c.accent, accentOrangeLight: c.accentSoft, accentOrangeGlow: c.glow, accentDark: c.accentText,
+  accentBlue: c.primary, accentBlueLight: c.primarySoft,
+  successLight: c.successSoft, warningLight: c.warningSoft, dangerLight: c.dangerSoft,
+  textPrimary: c.ink, textSecondary: c.inkSoft, textMuted: c.muted, textMutedLight: c.mutedLight,
+  textDarkPrimary: c.white, textDarkSecondary: c.inkSoft, textDarkMuted: c.mutedLight,
+});
+
+export const THEMES = { light: withLegacy(LIGHT), dark: withLegacy(DARK) };
+
+// The live colour object every style reads. `applyTheme('dark' | 'light')` swaps its values in place, so code that
+// reads COLORS when it renders (not when the file loads) always sees the current mode.
+export const COLORS = { ...THEMES.light };
+export function applyTheme(mode) {
+  const next = THEMES[mode] || THEMES.light;
+  Object.assign(COLORS, next);
+  return mode in THEMES ? mode : 'light';
+}
+
+export const RADII = { xs: 10, sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
 
@@ -87,9 +184,9 @@ export const TYPE = {
 
 // Soft, diffuse shadows only.
 export const SHADOWS = {
-  sm: { shadowColor: '#131416', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
-  md: { shadowColor: '#131416', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
-  lg: { shadowColor: '#131416', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
+  sm: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
+  md: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
+  lg: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
 };
 
 export const MOTION = {

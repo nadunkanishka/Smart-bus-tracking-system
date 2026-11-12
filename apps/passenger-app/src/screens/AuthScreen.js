@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
 import { AuthLayout, Banner, Button, Checkbox, StrengthMeter, TextField } from '../shared/ui';
 import { LockIcon, PhoneCallIcon, UserIcon } from '../shared/icons';
-import { S } from './AuthScreen.styles';
+import { useS } from './AuthScreen.styles';
 
 // One component for both forms, so switching between them keeps the same layout instance mounted.
 export function AuthScreen({
@@ -13,6 +13,7 @@ export function AuthScreen({
   regPassword, setRegPassword, regConfirm, setRegConfirm, regTerms, setRegTerms,
   passwordTooShort, confirmMismatch, registerBlocked, handleRegister,
 }) {
+  const S = useS();
   return authMode === 'login' ? (
     <AuthLayout
       scene="login"

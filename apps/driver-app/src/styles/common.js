@@ -7,7 +7,7 @@ import { TOP_INSET } from '../constants';
 export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 
 // Styles used by more than one screen.
-export const common = StyleSheet.create({
+export const buildCommon = () => StyleSheet.create({
   flex: { flex: 1 },
   routeScroll: { paddingBottom: 120 },
   screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
@@ -16,5 +16,5 @@ export const common = StyleSheet.create({
   sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: 24, marginBottom: 12 },
   emptyLogBox: { alignItems: 'center', paddingVertical: 24, gap: 8 },
   emptyLog: { ...type('small'), color: COLORS.muted, textAlign: 'center' },
-  profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
+  profileCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
 });

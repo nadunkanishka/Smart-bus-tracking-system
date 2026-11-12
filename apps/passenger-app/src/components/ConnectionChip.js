@@ -1,8 +1,9 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { S } from './ConnectionChip.styles';
+import { useS } from './ConnectionChip.styles';
 
 export function ConnectionChip({ conn }) {
+  const S = useS();
   const live = conn === 'connected';
   return (
     <View style={[S.liveChip, !live && S.liveChipOff]} accessibilityLabel={live ? 'Live connection' : conn === 'connecting' ? 'Connecting' : 'Disconnected'}>

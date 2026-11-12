@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { Banner, Button, TextField } from '../shared/ui';
 import { COLORS, TYPE } from '../shared/theme';
-import { S } from '../screens/ProfileScreen.styles';
+import { useS } from '../screens/ProfileScreen.styles';
 
 // Edit details, change password and delete account, one form open at a time.
 // onSaveProfile / onChangePassword / onDelete throw Error(message) on failure; showToast reports success.
 export function AccountActions({ user, onSaveProfile, onChangePassword, onDelete, showToast }) {
+  const S = useS();
   const [mode, setMode] = useState(null); // null | 'edit' | 'password' | 'delete'
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');

@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { type } from '../styles/common';
 
-export const S = StyleSheet.create({
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(15,20,25,0.45)', justifyContent: 'flex-end' },
+export const useS = createStyles(() => StyleSheet.create({
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   modalDismissArea: { flex: 1 },
   modalHandleRow: { alignItems: 'center', paddingBottom: 16 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.line },
@@ -19,7 +20,7 @@ export const S = StyleSheet.create({
   },
   dropdownTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dropdownTriggerText: { ...type('bodyBold'), color: COLORS.ink },
-  dropdownList: { backgroundColor: COLORS.surface, borderRadius: RADII.md, marginTop: 8, overflow: 'hidden', ...SHADOWS.md },
+  dropdownList: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.md, marginTop: 8, overflow: 'hidden', ...SHADOWS.md },
   dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 16 },
   dropdownItemActive: { backgroundColor: COLORS.accentSoft },
   dropdownItemText: { ...type('body'), color: COLORS.ink },
@@ -30,7 +31,7 @@ export const S = StyleSheet.create({
   timelineLeft: { alignItems: 'center', width: 24, marginRight: 12 },
   timelineDot: {
     width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.mutedLight,
-    backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, alignItems: 'center', justifyContent: 'center',
   },
   dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
   dotBoarding: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
@@ -43,4 +44,4 @@ export const S = StyleSheet.create({
   timelineStopNameHighlight: { fontWeight: '700', color: COLORS.accentText },
   timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
 // ─── Live states ─────────────────────────────────────────
-});
+}));

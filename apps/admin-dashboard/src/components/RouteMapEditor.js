@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { TILE_ATTRIBUTION, TILE_URL, routeColor, useThemeMode } from '../theme';
 import { MapContainer, Marker, Polyline, TileLayer, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -27,6 +28,7 @@ function ClickCapture({ onClick }) {
 }
 
 export default function RouteMapEditor({ path, stops, onChange }) {
+  const theme = useThemeMode();
   const [mode, setMode] = useState('stop'); // 'stop' | 'path'
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -83,9 +85,9 @@ export default function RouteMapEditor({ path, stops, onChange }) {
 
       <div className="route-editor-map">
         <MapContainer center={center} zoom={13} style={{ width: '100%', height: '100%' }}>
-          <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer key={theme} attribution={TILE_ATTRIBUTION} url={TILE_URL[theme]} />
           <ClickCapture onClick={handleClick} />
-          {path.length > 1 && <Polyline positions={path} pathOptions={{ color: '#F26B85', weight: 5 }} />}
+          {path.length > 1 && <Polyline positions={path} pathOptions={{ color: routeColor(theme), weight: 5 }} />}
           {mode === 'path' && path.length <= 200 && path.map((p, i) => <Marker key={`v${i}`} position={p} icon={vertexIcon} interactive={false} />)}
           {stops.map((s, i) => (
             <Marker

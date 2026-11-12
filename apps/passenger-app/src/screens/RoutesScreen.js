@@ -3,9 +3,10 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { COLORS } from '../shared/theme';
 import { Button, GradientCard, OverlapHeader, OverlapSheet, Vehicle, VehicleLoader } from '../shared/ui';
 import { ArrowRightIcon, NavigationArrowIcon, SearchIcon } from '../shared/icons';
-import { S } from './RoutesScreen.styles';
+import { useS } from './RoutesScreen.styles';
 
 export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteSearchQuery, filteredRoutes, selectedRoute, onSelectRoute }) {
+  const S = useS();
   return (
     <ScrollView
       style={S.flex}
@@ -57,7 +58,7 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
             <Vehicle name="bus" status="maint" width={120} label="Could not load routes" />
             <Text style={S.emptyStateTitle}>Could not load routes</Text>
             <Text style={S.emptyStateSub}>Check your connection and try again.</Text>
-            <Button title="Try again" tone="ink" size="sm" full={false} onPress={onRetry} style={S.emptyBtn} />
+            <Button title="Try again" tone="primary" size="sm" full={false} onPress={onRetry} style={S.emptyBtn} />
           </View>
         ) : filteredRoutes.length === 0 ? (
           <View style={S.emptyState}>
@@ -98,7 +99,7 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
                     ) : (
                       <View style={S.trackRoutePill}>
                         <Text style={S.trackRoutePillText}>Select</Text>
-                        <ArrowRightIcon color={COLORS.primaryStrong} size={12} />
+                        <ArrowRightIcon color={COLORS.primaryDeep} size={12} />
                       </View>
                     )}
                   </View>

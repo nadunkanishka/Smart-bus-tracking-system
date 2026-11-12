@@ -2,9 +2,10 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../shared/theme';
 import { CheckIcon, ChevronDownIcon } from '../shared/icons';
-import { S } from './StopPicker.styles';
+import { useS } from './StopPicker.styles';
 
 export function StopPicker({ label, dotStyle, value, expanded, onToggle, stops, onPick, alignRight }) {
+  const S = useS();
   return (
     <View style={S.stopSelectorCol}>
       <View style={S.stopSelectorHeader}>

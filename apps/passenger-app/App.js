@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
+import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
 import { Toast, VehicleLoader } from './src/shared/ui';
 import { useToast } from './src/hooks/useToast';
 import { useAuth } from './src/hooks/useAuth';
@@ -12,10 +13,12 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { RoutesScreen } from './src/screens/RoutesScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { BottomDock } from './src/components/BottomDock';
-import { S } from './src/styles/app';
+import { useS } from './src/styles/app';
 
 // Root component: wires the hooks together, holds navigation state and switches between the tab screens.
-export default function App() {
+function AppShell() {
+  const S = useS();
+  const { isDark } = useTheme();
   // Navigation: 'home' | 'tracking' | 'routes' | 'profile'
   const [activeTab, setActiveTab] = useState('tracking');
   const [isBoardingExpanded, setIsBoardingExpanded] = useState(false);
@@ -69,7 +72,7 @@ export default function App() {
   return (
     <SafeAreaView style={S.root}>
       <StatusBar
-        barStyle="dark-content"
+        barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
@@ -177,5 +180,14 @@ export default function App() {
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+// Root: the theme provider sits above everything so every screen can read and switch the mode.
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
   );
 }

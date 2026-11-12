@@ -34,6 +34,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarCollapsed, h
                 className={`nav-item ${activePage === item.key ? 'active' : ''}`}
                 onClick={() => setActivePage(item.key)}
                 aria-label={item.label}
+                title={item.label}
               >
                 <Icon type={item.icon} className="nav-icon" />
                 <span className="nav-label">{item.label}</span>

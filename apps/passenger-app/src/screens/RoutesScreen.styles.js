@@ -1,16 +1,17 @@
 import { Platform, StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const S = {
-  ...common,
+export const useS = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     routesScroll: { paddingBottom: 120 },
     screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
     screenSubtitle: { ...type('small'), color: COLORS.ink, marginTop: 4, marginBottom: 16 },
     searchBar: {
-      flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
+      flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine,
       borderRadius: RADII.pill, paddingHorizontal: 20, minHeight: 52, gap: 12, ...SHADOWS.sm,
     },
     searchInput: { flex: 1, ...type('body'), color: COLORS.ink, minHeight: 48, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : null) },
@@ -24,7 +25,7 @@ export const S = {
     activeRouteBannerText: { ...type('smallBold'), color: COLORS.accentText },
     activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.success },
     routeCardWrap: { marginBottom: 16 },
-    routeCardPlain: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, ...SHADOWS.sm },
+    routeCardPlain: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, ...SHADOWS.sm },
     routeCard: { padding: 20 },
     routeCardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
     routeNumBadge: {
@@ -51,4 +52,4 @@ export const S = {
     stopChip: { backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 4, marginRight: 8 },
     stopChipText: { ...type('caption'), color: COLORS.inkSoft },
   }),
-};
+}));

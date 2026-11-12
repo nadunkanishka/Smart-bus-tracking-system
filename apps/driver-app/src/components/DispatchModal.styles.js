@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII } from '../shared/theme';
 import { type } from '../styles/common';
 
-export const D = StyleSheet.create({
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(15,20,25,0.45)', justifyContent: 'flex-end' },
+export const useD = createStyles(() => StyleSheet.create({
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   modalDismiss: { flex: 1 },
   handleRow: { alignItems: 'center', paddingBottom: 16 },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.line },
@@ -33,4 +34,4 @@ export const D = StyleSheet.create({
     backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, paddingHorizontal: 16, minHeight: 56, marginBottom: 8,
   },
   quickMsgText: { ...type('body'), color: COLORS.ink, flex: 1 },
-});
+}));

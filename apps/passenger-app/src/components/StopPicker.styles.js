@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { type } from '../styles/common';
 
-export const S = StyleSheet.create({
+export const useS = createStyles(() => StyleSheet.create({
   stopSelectorCol: { flex: 1, position: 'relative' },
   stopSelectorHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   stopSelectorLabel: { ...type('overline'), color: COLORS.muted },
@@ -13,7 +14,7 @@ export const S = StyleSheet.create({
   stopSelectorValue: { ...type('smallBold'), color: COLORS.ink, flex: 1, marginRight: 4 },
   stopInlineList: {
     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: 8,
-    backgroundColor: COLORS.surface, borderRadius: RADII.md, overflow: 'hidden', minWidth: 190,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.md, overflow: 'hidden', minWidth: 190,
     ...SHADOWS.lg,
   },
   stopInlineListRight: { left: 'auto', right: 0 },
@@ -24,4 +25,4 @@ export const S = StyleSheet.create({
   stopInlineItemActive: { backgroundColor: COLORS.accentSoft },
   stopInlineText: { ...type('small'), color: COLORS.ink },
   stopInlineTextActive: { color: COLORS.accentText, fontWeight: '700' },
-});
+}));

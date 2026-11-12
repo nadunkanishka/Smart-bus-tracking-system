@@ -3,22 +3,26 @@
 // studio and export.mjs writes the images. The apps only ever load the baked images, never WebGL.
 // Units are metres. +x is the front, +y is up, -z is the kerb (door) side: Sri Lanka drives on the left.
 (function () {
-  const TRIM = { glass: '#26323D', tyre: '#22252B', hub: '#F4F6F8', dark: '#2B333B', tail: '#FF6B4A' };
+  const TRIM = { glass: '#2A1F1C', tyre: '#241B19', hub: '#FFF3EB', dark: '#2B201D', tail: '#FF6B35' };
 
   // light = roof cap, stripe, speed bars; main = body; deep = skirt, door frames, cap.
+  // Palette liveries: the ten names are kept (the apps and file names use them) but every body colour now comes from
+  // the SmartBus palette: orange, peach, cream, violet and night, with lighter/darker steps of each.
   const THEMES = {
-    green: { light: '#6FD66F', main: '#3FB65A', deep: '#2A8F46', driverTop: '#F2707F', skin: '#C68B6A' },
-    teal: { light: '#6DBFE8', main: '#3A9BC9', deep: '#1F5F85', driverTop: '#FFC83D', skin: '#8D5B43' },
-    coral: { light: '#FF9DAF', main: '#F26B85', deep: '#C94B66', driverTop: '#FBF6EA', skin: '#EBC2A0' },
-    yellow: { light: '#FFE27A', main: '#FFC83D', deep: '#D9A21F', driverTop: '#3A9BC9', skin: '#8D5B43' },
-    orange: { light: '#FFB074', main: '#FF8A3D', deep: '#D96A1F', driverTop: '#2F4F9E', skin: '#C68B6A' },
-    purple: { light: '#C3A6FF', main: '#8F6BE8', deep: '#6A47BF', driverTop: '#FFC83D', skin: '#EBC2A0' },
-    navy: { light: '#5B7CC9', main: '#2F4F9E', deep: '#1E3470', driverTop: '#FF8A3D', skin: '#C68B6A' },
-    red: { light: '#FF8A80', main: '#E8534A', deep: '#B83A33', driverTop: '#FBF6EA', skin: '#8D5B43' },
-    mint: { light: '#B5F0D8', main: '#6FD4B0', deep: '#46A98A', driverTop: '#F26B85', skin: '#EBC2A0' },
-    cream: { light: '#FFA265', main: '#FBF6EA', deep: '#CFC8B8', driverTop: '#6C6BC6', skin: '#C68B6A' }, // cream body, brand orange stripe
-    off: { light: '#D3D8DE', main: '#B9C0C8', deep: '#8E97A1' }, // offline: no colour, no driver
+    green: { light: '#FF9A70', main: '#FF6B35', deep: '#D9501F', driverTop: '#FFF3EB', skin: '#C68B6A' }, // orange
+    teal: { light: '#4A3A36', main: '#2B201D', deep: '#130E0D', driverTop: '#FF6B35', skin: '#8D5B43' }, // night
+    coral: { light: '#FFD2BF', main: '#FFB59A', deep: '#E8906F', driverTop: '#130E0D', skin: '#EBC2A0' }, // peach
+    yellow: { light: '#FFE0D0', main: '#FFC9B0', deep: '#E8A584', driverTop: '#A25BE0', skin: '#8D5B43' }, // soft peach
+    orange: { light: '#FF8A5C', main: '#E8501C', deep: '#B83A0E', driverTop: '#FFF3EB', skin: '#C68B6A' }, // burnt orange
+    purple: { light: '#C58BF0', main: '#A25BE0', deep: '#7B32B8', driverTop: '#FFF3EB', skin: '#EBC2A0' }, // violet
+    navy: { light: '#3A2C28', main: '#1C1412', deep: '#0C0807', driverTop: '#FF6B35', skin: '#C68B6A' }, // deep night
+    red: { light: '#FF8A7A', main: '#F0503F', deep: '#B83024', driverTop: '#FFF3EB', skin: '#8D5B43' }, // red-orange
+    mint: { light: '#E4C9F8', main: '#CDA6F0', deep: '#A67AD0', driverTop: '#FF6B35', skin: '#EBC2A0' }, // pale violet
+    cream: { light: '#FF8A5C', main: '#FFF3EB', deep: '#D8C8BC', driverTop: '#130E0D', skin: '#C68B6A' }, // cream body, orange stripe
+    off: { light: '#D8CEC8', main: '#BDB2AB', deep: '#908680' }, // offline: no colour, no driver
   };
+
+
   // Add a brand colour with one line: THEMES.lime = tones('#9BD63F').
   function tones(main, extra) {
     const hsl = {}; new THREE.Color(main).getHSL(hsl);
@@ -169,7 +173,7 @@
   // A route: an S-shaped road with three stops and a map pin at each end.
   function buildRoute(themeKey) {
     const theme = THEMES[themeKey], g = new THREE.Group(), add = (...m) => g.add(...m);
-    const road = mat('#56616D', { roughness: 0.85 }), white = mat('#FFFFFF', { roughness: 0.6 });
+    const road = mat('#4A3F3B', { roughness: 0.85 }), white = mat('#FFFFFF', { roughness: 0.6 });
     add(rbox(8.6, 0.14, 1.5, 0.07, road, [-3.55, 0.07, -1.5]), rbox(1.5, 0.14, 4.5, 0.07, road, [0, 0.07, 0]), rbox(4.6, 0.14, 1.5, 0.07, road, [1.55, 0.07, 1.5]));
     for (const [x, z] of [[-5.9, -1.5], [-4.8, -1.5], [-3.7, -1.5], [-2.6, -1.5], [-1.5, -1.5], [0, -0.6], [0, 0.6], [1.5, 1.5], [2.6, 1.5]]) { const d = rbox(z === -1.5 || z === 1.5 ? 0.5 : 0.14, 0.03, z === -1.5 || z === 1.5 ? 0.14 : 0.5, 0.01, white, [x, 0.15, z]); d.castShadow = false; add(d); }
     for (const [x, z] of [[-2.05, -1.5], [0, 0], [0.4, 1.5]]) { const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 28), white); stop.position.set(x, 0.2, z); stop.castShadow = true; add(stop); }

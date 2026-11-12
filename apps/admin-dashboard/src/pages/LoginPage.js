@@ -1,12 +1,14 @@
 import React from 'react';
 import { RoadScene, Vehicle } from '../design/Vehicle';
 import Icon from '../components/Icon';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, setLoginCreds, showPw, setShowPw, loginLoading }) {
   return (
     <div className="login-shell">
       {/* CHANGED: teal hero with vehicles on a road; the white form panel curves up over it on mobile */}
       <section className="login-hero">
+        <ThemeToggle className="login-theme" />
         <div>
           <div className="login-brand">
             <span className="login-brand-icon"><Vehicle name="bus" width={36} label="SmartBus logo" /></span>

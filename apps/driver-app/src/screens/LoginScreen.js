@@ -4,10 +4,11 @@ import { COLORS } from '../shared/theme';
 import { AuthLayout, Banner, Button, TextField } from '../shared/ui';
 import { BusIcon, LockIcon } from '../shared/icons';
 import { DISPATCH_PHONE } from '../constants';
-import { D } from './LoginScreen.styles';
+import { useD } from './LoginScreen.styles';
 
 // No Register screen: bus accounts are created by the admin dashboard.
 export function LoginScreen({ loginError, busRegistration, setBusRegistration, busPassword, setBusPassword, handleLogin, loginLoading }) {
+  const D = useD();
   return (
     <AuthLayout
       scene="driver"

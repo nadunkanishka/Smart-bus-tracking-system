@@ -1,18 +1,19 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Avatar, Button, GradientCard, IconButton, OverlapHeader, OverlapSheet, Vehicle } from '../shared/ui';
+import { Avatar, Button, GradientCard, IconButton, OverlapHeader, OverlapSheet, ThemeToggle, Vehicle } from '../shared/ui';
 import { liveryFor } from '../shared/vehicleShapes';
 import { ArrowRightIcon, BellIcon, MapPinIcon, NavigationArrowIcon, RouteIcon } from '../shared/icons';
 import { trackedSummary } from '../utils';
-import { S } from './HomeScreen.styles';
+import { useS } from './HomeScreen.styles';
 
 export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
+  const S = useS();
   const bus = tracked?.bus;
   const services = [
-    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primary} size={22} /> },
-    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primary} size={22} /> },
-    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primary} size={22} /> },
+    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primaryDeep} size={22} /> },
+    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primaryDeep} size={22} /> },
+    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primaryDeep} size={22} /> },
   ];
   return (
     <ScrollView
@@ -27,6 +28,7 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
             <Text style={S.homeGreeting}>Hello,</Text>
             <Text style={S.homeUserName} numberOfLines={1}>{userProfile?.name || 'Passenger'}</Text>
           </View>
+          <ThemeToggle />
           <IconButton
             label="Notifications"
             onPress={() => showToast(bus ? trackedSummary(tracked, boardingStop, destinationStop) : `No live bus on ${selectedRoute.shortName} right now.`)}
@@ -72,7 +74,7 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
         {/* Active Journey: the live bus for the chosen stops */}
         <Text style={S.sectionTitle}>Active Journey</Text>
         {bus ? (
-          <GradientCard tint="bus" style={S.journeyCard}>
+          <GradientCard tint="hero" style={S.journeyCard}>
             <Pressable
               onPress={onGoTracking}
               accessibilityRole="button"

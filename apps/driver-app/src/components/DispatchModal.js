@@ -4,9 +4,10 @@ import { COLORS } from '../shared/theme';
 import { Button, Sheet } from '../shared/ui';
 import { ArrowRightIcon, MessageCircleIcon, PhoneCallIcon } from '../shared/icons';
 import { DISPATCH_PHONE } from '../constants';
-import { D } from './DispatchModal.styles';
+import { useD } from './DispatchModal.styles';
 
 export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dispatchMode, setDispatchMode, showToast }) {
+  const D = useD();
   return (
     <Modal
       visible={isDispatchModalOpen}
@@ -49,7 +50,7 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
               accessibilityRole="tab"
               accessibilityState={{ selected: dispatchMode === 'call' }}
             >
-              <PhoneCallIcon color={dispatchMode === 'call' ? '#FFF' : COLORS.muted} size={14} />
+              <PhoneCallIcon color={dispatchMode === 'call' ? COLORS.white : COLORS.muted} size={14} />
               <Text style={[D.modeTabText, dispatchMode === 'call' && D.modeTabTextActive]}>
                 Call Dispatch
               </Text>
@@ -61,7 +62,7 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
               accessibilityRole="tab"
               accessibilityState={{ selected: dispatchMode === 'message' }}
             >
-              <MessageCircleIcon color={dispatchMode === 'message' ? '#FFF' : COLORS.muted} size={14} />
+              <MessageCircleIcon color={dispatchMode === 'message' ? COLORS.white : COLORS.muted} size={14} />
               <Text style={[D.modeTabText, dispatchMode === 'message' && D.modeTabTextActive]}>
                 Send Message
               </Text>
@@ -77,7 +78,7 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
               </Text>
               <Button
                 title="Start call"
-                tone="ink"
+                tone="primary"
                 icon={<PhoneCallIcon color={COLORS.accent} size={18} />}
                 onPress={() => {
                   setIsDispatchModalOpen(false);

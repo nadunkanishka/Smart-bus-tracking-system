@@ -4,9 +4,10 @@ import { COLORS } from '../shared/theme';
 import { OverlapHeader, OverlapSheet, Vehicle } from '../shared/ui';
 import { SpeedometerIcon } from '../shared/icons';
 import { formatCoord } from '../utils';
-import { D } from './DiagnosticsScreen.styles';
+import { useD } from './DiagnosticsScreen.styles';
 
 export function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnShift }) {
+  const D = useD();
   const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView

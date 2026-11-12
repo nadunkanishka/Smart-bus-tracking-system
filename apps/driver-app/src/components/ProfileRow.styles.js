@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS } from '../shared/theme';
 import { type } from '../styles/common';
 
-export const D = StyleSheet.create({
+export const useD = createStyles(() => StyleSheet.create({
   profileRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16,
     minHeight: 48, borderBottomWidth: 1, borderBottomColor: COLORS.line,
@@ -11,4 +12,4 @@ export const D = StyleSheet.create({
   profileRowLabel: { ...type('small'), color: COLORS.muted, flexShrink: 0 },
   profileRowValue: { ...type('smallBold'), color: COLORS.ink, flexShrink: 1, textAlign: 'right' },
   profileRowValueAccent: { color: COLORS.success },
-});
+}));
