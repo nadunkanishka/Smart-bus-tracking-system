@@ -145,7 +145,7 @@ export async function startDuty() {
           foregroundService: {
             notificationTitle: 'SmartBus Driver is on duty',
             notificationBody: 'Sharing the live bus location with passengers.',
-            notificationColor: '#3A9BC9',
+            notificationColor: '#D7F34B',
           },
         });
         background = true;

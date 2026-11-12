@@ -3,10 +3,12 @@ import { ScrollView, Text, View } from 'react-native';
 import LiveMap from '../shared/LiveMap';
 import { GradientCard, OverlapHeader, OverlapSheet, Vehicle } from '../shared/ui';
 import { CheckIcon } from '../shared/icons';
+import { COLORS } from '../shared/theme';
 import { MAP_PADDING } from '../constants';
-import { D } from './RouteScreen.styles';
+import { useD } from './RouteScreen.styles';
 
 export function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, currentStopIndex, isOnShift }) {
+  const D = useD();
   return (
     <ScrollView
       style={D.flex}
@@ -65,7 +67,7 @@ export function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeS
                     isPassed && D.dotPassed,
                     isCurrent && D.dotCurrent,
                   ]}>
-                    {isPassed ? <CheckIcon color="#FFF" size={7} /> : null}
+                    {isPassed ? <CheckIcon color={COLORS.white} size={7} /> : null}
                     {isCurrent ? <View style={D.dotCurrentInner} /> : null}
                   </View>
                   {idx < routeStops.length - 1 && (

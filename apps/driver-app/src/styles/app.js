@@ -1,9 +1,10 @@
 import { Platform, StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, SHADOWS } from '../shared/theme';
-import { common } from './common';
+import { buildCommon } from './common';
 
-export const D = {
-  ...common,
+export const useD = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     root: { flex: 1, backgroundColor: COLORS.bg },
     appShell: {
@@ -11,4 +12,4 @@ export const D = {
       backgroundColor: COLORS.bg, ...(Platform.OS === 'web' ? SHADOWS.lg : null),
     },
   }),
-};
+}));

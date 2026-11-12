@@ -1,13 +1,14 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Avatar, Button, GradientCard, IconButton, OverlapHeader, OverlapSheet, Vehicle } from '../shared/ui';
+import { Avatar, Button, GradientCard, IconButton, OverlapHeader, OverlapSheet, ThemeToggle, Vehicle } from '../shared/ui';
 import { liveryFor } from '../shared/vehicleShapes';
 import { ArrowRightIcon, BellIcon, MapPinIcon, NavigationArrowIcon, RouteIcon } from '../shared/icons';
 import { trackedSummary } from '../utils';
-import { S } from './HomeScreen.styles';
+import { useS } from './HomeScreen.styles';
 
 export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
+  const S = useS();
   const bus = tracked?.bus;
   const services = [
     { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primary} size={22} /> },
@@ -27,6 +28,7 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
             <Text style={S.homeGreeting}>Hello,</Text>
             <Text style={S.homeUserName} numberOfLines={1}>{userProfile?.name || 'Passenger'}</Text>
           </View>
+          <ThemeToggle />
           <IconButton
             label="Notifications"
             onPress={() => showToast(bus ? trackedSummary(tracked, boardingStop, destinationStop) : `No live bus on ${selectedRoute.shortName} right now.`)}

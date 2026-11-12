@@ -8,7 +8,7 @@ import { MAP_PADDING } from '../constants';
 import { StopPicker } from '../components/StopPicker';
 import { trackedSummary } from '../utils';
 import { ConnectionChip } from '../components/ConnectionChip';
-import { S } from './TrackingScreen.styles';
+import { useS } from './TrackingScreen.styles';
 
 export function TrackingScreen({
   conn,
@@ -31,6 +31,7 @@ export function TrackingScreen({
   onOpenStops,
   onGoRoutes,
 }) {
+  const S = useS();
   const bus = tracked?.bus;
   // How far along the route the tracked bus is (by segment), for the progress bar.
   const progress = bus?.segIndex != null && routeStops.length > 1
@@ -100,7 +101,7 @@ export function TrackingScreen({
             <Vehicle name="bus" status={routesState === 'error' ? 'maint' : undefined} width={116} label="No routes" />
             <Text style={S.emptyStateTitle}>{routesState === 'error' ? 'Could not load routes' : 'No routes available yet'}</Text>
             <Text style={S.emptyStateSub}>{routesState === 'error' ? 'Check your connection and try again.' : 'Routes appear here once they are published.'}</Text>
-            <Button title="Open routes" tone="ink" size="sm" full={false} onPress={onGoRoutes} style={S.emptyBtn} />
+            <Button title="Open routes" tone="primary" size="sm" full={false} onPress={onGoRoutes} style={S.emptyBtn} />
           </View>
         ) : !selectedRoute.trackable ? (
           <View style={S.emptyState}>

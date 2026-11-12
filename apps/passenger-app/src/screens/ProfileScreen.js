@@ -1,11 +1,12 @@
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { Button, OverlapHeader, OverlapSheet } from '../shared/ui';
+import { Button, OverlapHeader, OverlapSheet, ThemeToggle } from '../shared/ui';
 import { ProfileRow } from '../components/ProfileRow';
 import { AccountActions } from '../components/AccountActions';
-import { S } from './ProfileScreen.styles';
+import { useS } from './ProfileScreen.styles';
 
 export function ProfileScreen({ userProfile, selectedRoute, boardingStop, destinationStop, onResetDefaults, onLogout, onOpenStops, account, showToast }) {
+  const S = useS();
   return (
     <ScrollView
       style={S.flex}
@@ -32,6 +33,14 @@ export function ProfileScreen({ userProfile, selectedRoute, boardingStop, destin
           <ProfileRow label="Full name" value={userProfile?.name || '—'} />
           <ProfileRow label="Username" value={userProfile?.username || '—'} />
           <ProfileRow label="Phone" value={userProfile?.phone || 'Not provided'} last />
+        </View>
+
+        {/* Appearance */}
+        <View style={S.profileCard}>
+          <View style={S.profileCardHeader}>
+            <Text style={S.profileCardTitleFlat}>Dark mode</Text>
+            <ThemeToggle />
+          </View>
         </View>
 
         {/* Journey Preferences */}

@@ -4,13 +4,14 @@ import { COLORS } from '../shared/theme';
 import { Banner, OverlapHeader, OverlapSheet, Vehicle, NotchStat } from '../shared/ui';
 import { BusIcon, NavigationArrowIcon, PlayIcon, RouteIcon, StopIcon } from '../shared/icons';
 import { ProfileRow } from '../components/ProfileRow';
-import { D } from './ShiftScreen.styles';
+import { useD } from './ShiftScreen.styles';
 
 // Intentionally minimal: one large On Duty / Off Duty toggle and the status a driver needs at a glance.
 export function ShiftScreen({
   isOnShift, busy, hasRoute, busRegistration, driverName, routeLabel, routeNumber, nextStop,
   busSpeed, gpsStatus, connected, queued, mode, onToggleShift,
 }) {
+  const D = useD();
   const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
@@ -39,13 +40,13 @@ export function ShiftScreen({
             { transform: [{ scale: pressed ? 0.98 : 1 }] },
           ]}
         >
-          <View style={D.dutyIcon}>
+          <View style={[D.dutyIcon, isOnShift && D.dutyIconOn]}>
             {busy
-              ? <ActivityIndicator color={COLORS.ink} />
-              : isOnShift ? <StopIcon color={COLORS.ink} size={24} /> : <PlayIcon color={COLORS.ink} size={24} />}
+              ? <ActivityIndicator color={isOnShift ? COLORS.lime : COLORS.ink} />
+              : isOnShift ? <StopIcon color={COLORS.lime} size={24} /> : <PlayIcon color={COLORS.ink} size={24} />}
           </View>
-          <Text style={D.dutyState}>{isOnShift ? 'ON DUTY' : 'OFF DUTY'}</Text>
-          <Text style={D.dutyHint}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>
+          <Text style={[D.dutyState, isOnShift && D.dutyTextOn]}>{isOnShift ? 'ON DUTY' : 'OFF DUTY'}</Text>
+          <Text style={[D.dutyHint, isOnShift && D.dutyTextOn]}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>
         </Pressable>
 
         {/* Three-column status panel */}

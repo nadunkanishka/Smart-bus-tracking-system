@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const D = {
-  ...common,
+export const useD = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     sectionLabelFlat: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginBottom: 8 },
     metricsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
@@ -21,4 +22,4 @@ export const D = {
     logRowLast: { borderBottomWidth: 0 },
     logText: { ...type('small'), color: COLORS.inkSoft, fontVariant: ['tabular-nums'] },
   }),
-};
+}));

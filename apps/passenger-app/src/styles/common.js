@@ -6,7 +6,7 @@ import { FONT } from '../shared/ui';
 export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 
 // Styles used by more than one screen.
-export const common = StyleSheet.create({
+export const buildCommon = () => StyleSheet.create({
   flex: { flex: 1 },
   link: { ...type('smallBold'), color: COLORS.accentText },
   linkTap: { minHeight: 44, justifyContent: 'center' },

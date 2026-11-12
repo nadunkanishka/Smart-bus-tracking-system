@@ -1,10 +1,11 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const D = {
-  ...common,
+export const useD = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     dispatchCard: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -29,5 +30,7 @@ export const D = {
     profileName: { ...type('h1'), color: COLORS.ink },
     profileSub: { ...type('small'), color: COLORS.ink, marginTop: 4 },
     profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 4 },
+    profileCardTitleFlat: { ...type('h3'), color: COLORS.ink },
+    profileCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   }),
-};
+}));

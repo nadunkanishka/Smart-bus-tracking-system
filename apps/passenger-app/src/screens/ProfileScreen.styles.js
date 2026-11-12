@@ -1,10 +1,11 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const S = {
-  ...common,
+export const useS = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     profileScroll: { paddingBottom: 120 },
     profileHero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
@@ -21,4 +22,4 @@ export const S = {
     profileCardTitleFlat: { ...type('h3'), color: COLORS.ink },
     profileBtn: { marginBottom: 12 },
   }),
-};
+}));

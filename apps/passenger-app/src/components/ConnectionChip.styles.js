@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII } from '../shared/theme';
 import { type } from '../styles/common';
 
-export const S = StyleSheet.create({
+export const useS = createStyles(() => StyleSheet.create({
   liveChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: COLORS.ink, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADII.pill,
@@ -11,4 +12,4 @@ export const S = StyleSheet.create({
   liveText: { ...type('overline'), color: COLORS.white },
   liveChipOff: { backgroundColor: COLORS.muted },
   liveDotOff: { backgroundColor: COLORS.mutedLight },
-});
+}));

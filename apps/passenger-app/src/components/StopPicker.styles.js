@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { type } from '../styles/common';
 
-export const S = StyleSheet.create({
+export const useS = createStyles(() => StyleSheet.create({
   stopSelectorCol: { flex: 1, position: 'relative' },
   stopSelectorHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   stopSelectorLabel: { ...type('overline'), color: COLORS.muted },
@@ -24,4 +25,4 @@ export const S = StyleSheet.create({
   stopInlineItemActive: { backgroundColor: COLORS.accentSoft },
   stopInlineText: { ...type('small'), color: COLORS.ink },
   stopInlineTextActive: { color: COLORS.accentText, fontWeight: '700' },
-});
+}));

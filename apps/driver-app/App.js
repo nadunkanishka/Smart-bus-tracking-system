@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { request, toRoute } from './src/shared/api';
 import * as telemetry from './src/services/telemetry';
+import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
 import { Toast } from './src/shared/ui';
 import { MAX_LOG_ITEMS } from './src/constants';
 import { formatCoord } from './src/utils';
@@ -12,9 +13,11 @@ import { RouteScreen } from './src/screens/RouteScreen';
 import { DiagnosticsScreen } from './src/screens/DiagnosticsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { DriverDock } from './src/components/DriverDock';
-import { D } from './src/styles/app';
+import { useD } from './src/styles/app';
 
-export default function App() {
+function AppShell() {
+  const D = useD();
+  const { isDark } = useTheme();
   // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [busRegistration, setBusRegistration] = useState('');
@@ -146,7 +149,7 @@ export default function App() {
   return (
     <SafeAreaView style={D.root}>
       <StatusBar
-        barStyle="dark-content"
+        barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
@@ -242,5 +245,14 @@ export default function App() {
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+// Root: the theme provider sits above everything so every screen can read and switch the mode.
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
   );
 }

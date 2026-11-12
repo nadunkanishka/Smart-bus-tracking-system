@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const D = {
-  ...common,
+export const useD = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     mapCard: { height: 260, borderRadius: RADII.lg, overflow: 'hidden', marginTop: 16, backgroundColor: COLORS.surfaceSoft, ...SHADOWS.sm },
     routeHeaderCardWrap: { marginBottom: 0 },
@@ -36,4 +37,4 @@ export const D = {
     timelineStopActive: { color: COLORS.accentText },
     timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
   }),
-};
+}));

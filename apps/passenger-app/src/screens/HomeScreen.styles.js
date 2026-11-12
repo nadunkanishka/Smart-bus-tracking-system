@@ -1,10 +1,11 @@
 import { StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const S = {
-  ...common,
+export const useS = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     homeScroll: { paddingBottom: 120 },
     homeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: TOP_INSET },
@@ -54,4 +55,4 @@ export const S = {
     routeTerminalRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     routeTerminalText: { ...type('small'), color: COLORS.muted, flex: 1 },
   }),
-};
+}));

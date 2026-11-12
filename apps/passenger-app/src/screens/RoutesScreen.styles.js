@@ -1,10 +1,11 @@
 import { Platform, StyleSheet } from 'react-native';
+import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS } from '../shared/theme';
 import { TOP_INSET } from '../constants';
-import { common, type } from '../styles/common';
+import { buildCommon, type } from '../styles/common';
 
-export const S = {
-  ...common,
+export const useS = createStyles(() => ({
+  ...buildCommon(),
   ...StyleSheet.create({
     routesScroll: { paddingBottom: 120 },
     screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
@@ -51,4 +52,4 @@ export const S = {
     stopChip: { backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 4, marginRight: 8 },
     stopChipText: { ...type('caption'), color: COLORS.inkSoft },
   }),
-};
+}));
