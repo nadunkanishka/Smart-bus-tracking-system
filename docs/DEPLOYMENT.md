@@ -99,6 +99,18 @@ EXPO_PUBLIC_API_URL=<api url> eas build --platform android --profile preview
 
 The `preview` profile in `eas.json` produces an installable `.apk`. Background GPS, which keeps tracking with the screen off, only works in this installed build, not in Expo Go. On first use the driver must choose **Allow all the time** for location.
 
+## 3b. Netlify for the admin dashboard and the passenger web app
+
+Both are static sites, free on Netlify. Each has a `netlify.toml` in its folder, so you only choose the folder and one variable. Do this after the backend is up (section 3), because both need its address.
+
+1. Netlify: **Add new site, Import an existing project**, pick this GitHub repository.
+2. **Base directory** `apps/admin-dashboard`. Leave the build command and publish directory as the file sets them. Under **Environment variables** add `REACT_APP_API_URL` = the backend address, `https://...onrender.com`, no trailing slash. Deploy.
+3. Repeat for the passenger web app: a second site with base directory `apps/passenger-app` and the variable `EXPO_PUBLIC_API_URL` (same address).
+4. Back in Render, set the backend's `CORS_ORIGIN` to the two Netlify addresses, comma separated and without trailing slashes, for example `https://smartbus-admin.netlify.app,https://smartbus-passenger.netlify.app`. Render restarts the service.
+5. Open the admin site, sign in with `ADMIN_USERNAME` and `ADMIN_PASSWORD`, and check Live Monitor loads.
+
+A variable is baked into the build, so changing it later needs **Deploys, Trigger deploy, Clear cache and deploy**. The first build can take a few minutes. Netlify serves over https, so the backend must also be https (Render is).
+
 ## 4b. Passenger APK
 
 The passenger app builds the same way (it has its own `eas.json`, package `lk.smartbus.passenger`):
