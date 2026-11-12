@@ -1,23 +1,51 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Icon from '../components/Icon';
 
-const MAX_BARS = 7;
+const LIVE_MS = 5000; // how often the live panel asks the backend
+const QUALITY_MS = 30000; // ETA accuracy changes slowly
+const MAX_LIVE_ROWS = 3;
 const MAX_FLEET_ROWS = 3;
 const MAX_DRIVER_ROWS = 1;
 
-export default function DashboardPage({ user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
+export default function DashboardPage({ api, user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
   const [driverFilter, setDriverFilter] = useState('Active'); // 'Active' | 'On Leave'
   const fleet = { active: 0, idle: 0, maintenance: 0, ...summary.fleetDistribution };
   const fleetTotal = fleet.active + fleet.idle + fleet.maintenance;
   const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
-  const readyRoutes = routes.filter((r) => r.path.length > 1 && r.stopPoints.length > 1).length;
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
-  // Stops per route as bars; the tallest bar carries a small card with its details.
-  const bars = routes.slice(0, MAX_BARS).map((r) => ({ id: r.id, label: r.routeNumber || r.id, name: r.name, stops: r.stopPoints.length, distance: r.distance }));
-  const topStops = Math.max(1, ...bars.map((b) => b.stops));
-  const topIndex = bars.findIndex((b) => b.stops === topStops);
-  const totalStops = routes.reduce((n, r) => n + r.stopPoints.length, 0);
+  // What is happening on the road right now, and how well the system is doing: refreshed from the backend.
+  const [live, setLive] = useState(null); // { buses, serverTs }
+  const [metrics, setMetrics] = useState(null);
+  const [eta, setEta] = useState(null);
+  useEffect(() => {
+    if (!api) return undefined;
+    let stop = false;
+    const load = async () => {
+      try {
+        const [a, b] = await Promise.all([api('/live'), api('/metrics')]);
+        if (stop) return;
+        if (a.ok) setLive(await a.json());
+        if (b.ok) setMetrics(await b.json());
+      } catch (err) { /* the panel keeps the last values */ }
+    };
+    const loadQuality = async () => {
+      try {
+        const r = await api('/analytics/eta');
+        if (!stop && r.ok) setEta(await r.json());
+      } catch (err) { /* ignore */ }
+    };
+    load();
+    loadQuality();
+    const t1 = setInterval(load, LIVE_MS);
+    const t2 = setInterval(loadQuality, QUALITY_MS);
+    return () => { stop = true; clearInterval(t1); clearInterval(t2); };
+  }, [api]);
+  const onRoad = (live?.buses || []).filter((b) => b.connected && b.onDuty);
+  const routeLabel = (id) => { const r = routes.find((x) => x.id === id); return r ? (r.routeNumber ? `Route ${r.routeNumber}` : r.name) : 'No route'; };
+  const seen = (ts) => { if (!ts) return 'never'; const sec = Math.max(0, Math.round(((live?.serverTs || Date.now()) - ts) / 1000)); return sec < 60 ? `${sec}s ago` : `${Math.floor(sec / 60)} min ago`; };
+  const cmp = eta?.compared;
+  const processing = metrics?.latencyMs?.serverProcessing;
 
   // Fleet split: green = running, violet = idle, red = maintenance. The ring is a conic gradient built from the shares.
   const split = [
@@ -55,33 +83,46 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
         <div className="panel chart-card">
           <div className="panel-head">
             <div>
-              <h2>Stops per route</h2>
-              <p className="big-number">{totalStops}<small>{routes.length} routes · {readyRoutes} ready</small></p>
+              <h2>On the road now</h2>
+              <p className="big-number">{onRoad.length}<small>{onRoad.length === 1 ? 'bus' : 'buses'} on duty · {buses.length} registered</small></p>
             </div>
             <div className="round-btns">
-              <button type="button" className="round-btn" onClick={() => openModal('route')} aria-label="Add route" title="Add route"><Icon type="plus" /></button>
+              <button type="button" className="round-btn" onClick={() => openModal('bus')} aria-label="Add bus" title="Add bus"><Icon type="plus" /></button>
               <button type="button" className="round-btn" onClick={() => { fetchBackendData(); showNotification('Refreshed data from MongoDB.'); }} aria-label="Refresh data" title="Refresh data"><Icon type="sync" /></button>
             </div>
           </div>
-          {bars.length === 0 ? (
-            <div className="bar-chart empty-state">No routes yet. Create one to see it here.</div>
-          ) : (
-            <div className="bar-chart" role="img" aria-label={bars.map((b) => `${b.name}: ${b.stops} stops`).join(', ')}>
-              {bars.map((b, i) => (
-                <div key={b.id} className={`bar-col ${i === topIndex ? 'top' : ''}`}>
-                  {i === topIndex && (
-                    <span className="bar-tip">
-                      <small>{b.name}</small>
-                      <b><i />{b.stops} stops</b>
-                      <b><i />{b.distance}</b>
-                    </span>
-                  )}
-                  <span className="bar" style={{ height: `${Math.max(14, (b.stops / topStops) * 100)}%` }} />
-                  <span className="bar-label" title={b.name}>{b.label}</span>
-                </div>
-              ))}
+
+          <div className="live-tiles">
+            <div className="live-tile">
+              <span>ETA error</span>
+              <b>{cmp?.engineMaeSec == null ? '—' : `${cmp.engineMaeSec} s`}</b>
+              <small>{cmp?.engineMaeSec == null ? 'after the first trips' : `plain estimate ${cmp.baselineMaeSec} s`}</small>
             </div>
-          )}
+            <div className="live-tile">
+              <span>Time to passengers</span>
+              <b>{processing?.p95 == null ? '—' : `${processing.p95} ms`}</b>
+              <small>server, 95th percentile</small>
+            </div>
+            <div className="live-tile">
+              <span>GPS positions</span>
+              <b>{metrics?.fixes ? metrics.fixes.accepted : '—'}</b>
+              <small>{metrics?.fixes ? `${metrics.fixes.rejected} rejected` : 'since restart'}</small>
+            </div>
+          </div>
+
+          <div className="live-list">
+            {onRoad.length === 0 ? (
+              <div className="live-empty">No bus is on duty. A bus appears here when its driver goes on duty in the driver app.</div>
+            ) : onRoad.slice(0, MAX_LIVE_ROWS).map((b) => (
+              <button type="button" key={b.busId} className="live-row" onClick={() => setActivePage('live')}>
+                <span className="live-dot" aria-hidden="true" />
+                <span className="live-reg">{b.registration}</span>
+                <span className="live-route">{routeLabel(b.routeId)}</span>
+                <span className="live-speed">{b.speed == null ? '—' : `${Math.round(b.speed * 3.6)} km/h`}</span>
+                <span className="live-seen">{seen(b.lastSeen)}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="panel card-panel">
