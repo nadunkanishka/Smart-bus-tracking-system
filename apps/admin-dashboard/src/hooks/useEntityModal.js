@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { api } from '../api';
 
 const modalDefaults = {
-  driver: { name: '', license: '', expiry: '', phone: '' },
+  driver: { name: '', license: '', expiry: '', phone: '', status: 'Active' },
   bus: { registration: '', capacity: '', mileage: '', password: '', assignedDriver: '', status: 'Active' },
-  route: { name: '', routeNumber: '', start: '', end: '', distance: '', stopPoints: [], path: [], assignedBus: '' },
+  route: { name: '', routeNumber: '', start: '', end: '', distance: '', stopPoints: [], path: [], assignedBus: '', status: 'Active' },
 };
 
 // State and actions for the add/edit dialog and the delete confirmation, shared by drivers, buses and routes.
@@ -40,6 +40,7 @@ export function useEntityModal({ showNotification, fetchBackendData }) {
           license: record.license,
           expiry: record.expiry,
           phone: record.phone,
+          status: record.status || 'Active',
         });
       } else if (entity === 'bus') {
         setFormData({
@@ -60,6 +61,7 @@ export function useEntityModal({ showNotification, fetchBackendData }) {
           stopPoints: record.stopPoints || [],
           path: record.path || [],
           assignedBus: record.assignedBus || '',
+          status: record.status || 'Active',
         });
       }
       return;
@@ -125,7 +127,7 @@ export function useEntityModal({ showNotification, fetchBackendData }) {
 
     if (entity === 'driver') {
       required = missing([[formData.name, 'full name'], [formData.license, 'license number'], [formData.expiry, 'license expiry'], [formData.phone, 'phone number']]);
-      payload = { name: formData.name.trim(), license: formData.license.trim(), expiry: formData.expiry, phone: formData.phone.trim(), status: 'Active' };
+      payload = { name: formData.name.trim(), license: formData.license.trim(), expiry: formData.expiry, phone: formData.phone.trim(), status: formData.status || 'Active' };
       label = `Driver ${payload.name}`;
     } else if (entity === 'bus') {
       required = missing([[formData.registration, 'registration number'], [formData.capacity, 'seating capacity'], [formData.mileage, 'mileage']]);
@@ -153,7 +155,7 @@ export function useEntityModal({ showNotification, fetchBackendData }) {
         stops: stopPoints.map((sp) => sp.name),
         path: formData.path || [],
         assignedBus: formData.assignedBus || '',
-        status: 'Active',
+        status: formData.status || 'Active',
       };
       label = `Route ${payload.name}`;
     }

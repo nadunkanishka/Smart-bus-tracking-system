@@ -78,6 +78,24 @@ export function useAuth({ onSessionStart }) {
     setSession(null);
   }
 
+  // Account management for the signed-in passenger. Each throws Error(message) so the caller can show it.
+  async function updateProfile({ name, phone }) {
+    const data = await request('/passengers/me', { method: 'PUT', body: { name, phone }, token: session.token });
+    const next = { ...session, user: data.user };
+    setSession(next);
+    // only refresh the stored copy when the passenger chose to be remembered
+    AsyncStorage.getItem(SESSION_KEY).then((raw) => { if (raw) AsyncStorage.setItem(SESSION_KEY, JSON.stringify(next)); }).catch(() => {});
+  }
+
+  async function changePassword(currentPassword, newPassword) {
+    await request('/passengers/me/password', { method: 'PUT', body: { currentPassword, newPassword }, token: session.token });
+  }
+
+  async function deleteAccount(password) {
+    await request('/passengers/me', { method: 'DELETE', body: { password }, token: session.token });
+    signOut();
+  }
+
   function switchAuthMode(mode) {
     setAuthError('');
     setAuthMode(mode);
@@ -91,6 +109,9 @@ export function useAuth({ onSessionStart }) {
     booting,
     session,
     signOut,
+    updateProfile,
+    changePassword,
+    deleteAccount,
     // Everything <AuthScreen> needs, except showToast.
     form: {
       authMode, switchAuthMode, authError, authLoading,

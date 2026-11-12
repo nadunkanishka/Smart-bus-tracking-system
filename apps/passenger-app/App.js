@@ -145,6 +145,8 @@ export default function App() {
                 onResetDefaults={handleResetDefaults}
                 onLogout={handleLogout}
                 onOpenStops={() => setIsStopModalOpen(true)}
+                account={auth}
+                showToast={showToast}
               />
             )}
           </View>
