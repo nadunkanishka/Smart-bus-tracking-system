@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import Icon from '../components/Icon';
 
-const LIVE_MS = 5000; // how often the dashboard asks the backend for the live numbers
-const QUALITY_MS = 30000; // ETA accuracy changes slowly
+const LIVE_MS = 5000; // how often the live numbers refresh
+const SLOW_MS = 30000; // ETA accuracy and the passenger count change slowly
+const MAX_ATTENTION = 4;
 const MAX_FLEET_ROWS = 3;
 const MAX_DRIVER_ROWS = 1;
-const HORIZON_LABEL = { 'under 2 min': '< 2 min', '2 to 5 min': '2-5 min', '5 to 10 min': '5-10 min', '10 to 20 min': '10-20 min', 'over 20 min': '20+ min' };
-const clock = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const STALE_MS = 60 * 1000; // a bus on duty that has not reported for this long needs a look
+const SOON_DAYS = 30; // a licence ending within this many days is flagged
 
-// The operator's first look: is the system receiving positions, are buses on the road, and how good are the predictions.
+const ago = (ms) => (ms < 60000 ? `${Math.max(0, Math.round(ms / 1000))}s` : `${Math.floor(ms / 60000)} min`);
+
+// The operator's first look: simple counts that are easy to keep an eye on, the bus on the road, and anything that needs attention.
 export default function DashboardPage({ api, user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
   const [driverFilter, setDriverFilter] = useState('Active'); // 'Active' | 'On Leave'
-  const [view, setView] = useState('activity'); // the big chart: 'activity' | 'accuracy'
   const [live, setLive] = useState(null); // { buses, serverTs }
   const [metrics, setMetrics] = useState(null);
   const [eta, setEta] = useState(null);
+  const [passengers, setPassengers] = useState(null);
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
   useEffect(() => {
@@ -28,40 +31,56 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
         if (b.ok) setMetrics(await b.json());
       } catch (err) { /* keep the last values */ }
     };
-    const loadQuality = async () => {
+    const loadSlow = async () => {
       try {
-        const r = await api('/analytics/eta');
-        if (!stop && r.ok) setEta(await r.json());
+        const [a, b] = await Promise.all([api('/analytics/eta'), api('/passengers')]);
+        if (stop) return;
+        if (a.ok) setEta(await a.json());
+        if (b.ok) { const list = await b.json(); setPassengers(Array.isArray(list) ? list.length : null); }
       } catch (err) { /* ignore */ }
     };
     load();
-    loadQuality();
+    loadSlow();
     const t1 = setInterval(load, LIVE_MS);
-    const t2 = setInterval(loadQuality, QUALITY_MS);
+    const t2 = setInterval(loadSlow, SLOW_MS);
     return () => { stop = true; clearInterval(t1); clearInterval(t2); };
   }, [api]);
 
+  const serverNow = live?.serverTs || Date.now();
   const onRoad = (live?.buses || []).filter((b) => b.connected && b.onDuty);
   const onDutyIds = new Set(onRoad.map((b) => b.busId));
   const routeLabel = (id) => { const r = routes.find((x) => x.id === id); return r ? (r.routeNumber ? `Route ${r.routeNumber}` : r.name) : 'No route'; };
-  const seen = (ts) => { if (!ts) return 'never'; const sec = Math.max(0, Math.round(((live?.serverTs || Date.now()) - ts) / 1000)); return sec < 60 ? `${sec}s ago` : `${Math.floor(sec / 60)} min ago`; };
-  const cmp = eta?.compared;
-  const processing = metrics?.latencyMs?.serverProcessing;
-
-  // Chart 1: GPS positions received per minute, the last 12 minutes.
-  const minutes = metrics?.fixesPerMinute || [];
-  const topMinute = Math.max(1, ...minutes.map((m) => m.n));
-  const topIndex = minutes.findIndex((m) => m.n === topMinute && m.n > 0);
-  const received = minutes.reduce((n, m) => n + m.n, 0);
-
-  // Chart 2: ETA error by how far ahead the prediction was made, the engine against the plain straight-line estimate.
-  const groups = (eta?.byHorizon || []).map((h) => ({ key: h.horizon, label: HORIZON_LABEL[h.horizon] || h.horizon, n: h.samples, engine: h.engineMaeSec, plain: h.baselineMaeSec }));
-  const topError = Math.max(1, ...groups.flatMap((g) => [g.engine || 0, g.plain || 0]));
-
-  const busRoute = (b) => { const r = routes.find((x) => (x.assignedBus || '').includes(b.registration)); return r ? routeLabel(r.id) : 'no route'; };
+  const busRoute = (b) => routes.find((x) => (x.assignedBus || '').includes(b.registration));
+  const seen = (ts) => (ts ? `${ago(serverNow - ts)} ago` : 'never');
   const driverName = (id) => drivers.find((d) => d.id === id)?.name || 'No driver assigned';
   const shownDrivers = drivers.filter((d) => d.status === driverFilter).slice(0, MAX_DRIVER_ROWS);
   const frontBus = onRoad[0];
+
+  const readyRoutes = routes.filter((r) => r.path.length > 1 && r.stopPoints.length > 1).length;
+  const lastSeen = Math.max(0, ...(live?.buses || []).map((b) => b.lastSeen || 0));
+  const cmp = eta?.compared;
+  const miss = cmp?.engineMaeSec ?? eta?.maeSec ?? null;
+
+  // Simple numbers: each says one thing.
+  const cards = [
+    { key: 'duty', icon: 'bus', label: 'Buses on duty', value: onRoad.length, tone: onRoad.length ? 'good' : '', sub: `of ${buses.length} registered`, go: 'live' },
+    { key: 'drivers', icon: 'drivers', label: 'Drivers active', value: summary.activeDrivers, sub: `of ${drivers.length} on the roster`, go: 'drivers' },
+    { key: 'routes', icon: 'route', label: 'Routes ready', value: readyRoutes, sub: `of ${routes.length} (road and stops set)`, go: 'routes' },
+    { key: 'riders', icon: 'user', label: 'Passengers signed up', value: passengers == null ? '—' : passengers, sub: 'registered accounts', go: 'passengers' },
+    { key: 'eta', icon: 'gauge', label: 'Average ETA miss', value: miss == null ? '—' : `${miss} s`, sub: miss == null ? 'after the first trips' : (cmp?.baselineMaeSec != null ? `plain estimate ${cmp.baselineMaeSec} s` : 'predicted against actual'), go: 'analytics' },
+    { key: 'gps', icon: 'pulse', label: 'Last GPS update', value: lastSeen ? ago(serverNow - lastSeen) : '—', sub: metrics?.fixes ? `${metrics.fixes.accepted} positions received` : 'waiting for a driver', go: 'live' },
+  ];
+
+  // Things to look at, most urgent first.
+  const attention = [];
+  onRoad.forEach((b) => { if (b.lastSeen && serverNow - b.lastSeen > STALE_MS) attention.push({ key: `stale-${b.busId}`, tone: 'bad', text: `${b.registration} has not sent a position for ${ago(serverNow - b.lastSeen)}`, go: 'live' }); });
+  buses.forEach((b) => { if (!busRoute(b)) attention.push({ key: `noroute-${b.id}`, tone: 'warn', text: `${b.registration} is not assigned to a route`, go: 'routes' }); });
+  drivers.forEach((d) => {
+    const days = Math.round((new Date(d.expiry).getTime() - Date.now()) / 86400000);
+    if (Number.isFinite(days) && days < 0) attention.push({ key: `lic-${d.id}`, tone: 'bad', text: `${d.name}'s licence has expired`, go: 'drivers' });
+    else if (Number.isFinite(days) && days <= SOON_DAYS) attention.push({ key: `lic-${d.id}`, tone: 'warn', text: `${d.name}'s licence ends in ${days} days`, go: 'drivers' });
+  });
+  if (metrics && metrics.fixes.rejected > 0) attention.push({ key: 'rejected', tone: 'warn', text: `${metrics.fixes.rejected} GPS positions were rejected since the last restart`, go: 'live' });
 
   const cardActions = [
     { label: 'All routes', icon: 'route', onClick: () => setActivePage('routes') },
@@ -77,71 +96,21 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
           <h1 className="greeting"><b>Hello,</b> {user.name || user.username}</h1>
           <p>{today} · Live data from MongoDB</p>
         </div>
+        <div className="round-btns">
+          <button type="button" className="round-btn" onClick={() => openModal('bus')} aria-label="Add bus" title="Add bus"><Icon type="plus" /></button>
+          <button type="button" className="round-btn" onClick={() => { fetchBackendData(); showNotification('Refreshed data from MongoDB.'); }} aria-label="Refresh data" title="Refresh data"><Icon type="sync" /></button>
+        </div>
       </div>
 
       <div className="dash-grid">
-        <div className="panel chart-card">
-          <div className="panel-head">
-            <div>
-              <h2>{view === 'activity' ? 'GPS positions per minute' : 'ETA error by horizon'}</h2>
-              {view === 'activity' ? (
-                <p className="big-number">{received}<small>in the last 12 min · {onRoad.length} {onRoad.length === 1 ? 'bus' : 'buses'} on duty</small></p>
-              ) : (
-                <p className="big-number">{cmp?.engineMaeSec == null ? '—' : `${cmp.engineMaeSec} s`}<small>{cmp?.engineMaeSec == null ? 'fills in after buses complete stops' : `plain estimate ${cmp.baselineMaeSec} s · ${cmp.samples} arrivals`}</small></p>
-              )}
-            </div>
-            <div className="round-btns">
-              <button type="button" className="round-btn" onClick={() => openModal('bus')} aria-label="Add bus" title="Add bus"><Icon type="plus" /></button>
-              <button type="button" className="round-btn" onClick={() => { fetchBackendData(); showNotification('Refreshed data from MongoDB.'); }} aria-label="Refresh data" title="Refresh data"><Icon type="sync" /></button>
-            </div>
-          </div>
-
-          <div className="pills chart-tabs" role="group" aria-label="Chart">
-            <button type="button" className={`pill-toggle ${view === 'activity' ? 'on' : ''}`} aria-pressed={view === 'activity'} onClick={() => setView('activity')}>Live activity</button>
-            <button type="button" className={`pill-toggle ${view === 'accuracy' ? 'on' : ''}`} aria-pressed={view === 'accuracy'} onClick={() => setView('accuracy')}>ETA accuracy</button>
-          </div>
-
-          {view === 'activity' ? (
-            minutes.length === 0 ? (
-              <div className="bar-chart empty-state">Waiting for the backend.</div>
-            ) : (
-              <div className="bar-chart" role="img" aria-label={minutes.map((m) => `${clock(m.t)}: ${m.n} positions`).join(', ')}>
-                {minutes.map((m, i) => (
-                  <div key={m.t} className={`bar-col ${i === topIndex ? 'top' : ''}`}>
-                    {i === topIndex && (
-                      <span className="bar-tip">
-                        <small>{clock(m.t)}</small>
-                        <b><i />{m.n} positions</b>
-                      </span>
-                    )}
-                    <span className="bar" style={{ height: `${Math.max(6, (m.n / topMinute) * 100)}%` }} />
-                    <span className="bar-label">{clock(m.t)}</span>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : groups.length === 0 ? (
-            <div className="bar-chart empty-state">No arrivals recorded yet. Drive a bus on duty past a stop and it fills in.</div>
-          ) : (
-            <>
-              <div className="acc-chart" role="img" aria-label={groups.map((g) => `${g.label}: engine ${g.engine} s, plain estimate ${g.plain} s`).join('; ')}>
-                {groups.map((g) => (
-                  <div key={g.key} className="acc-group" title={`${g.n} arrivals`}>
-                    <div className="acc-bars">
-                      <span className="acc-col"><em>{g.engine} s</em><i className="acc-bar engine" style={{ height: `${Math.max(4, ((g.engine || 0) / topError) * 100)}%` }} /></span>
-                      <span className="acc-col"><em>{g.plain} s</em><i className="acc-bar plain" style={{ height: `${Math.max(4, ((g.plain || 0) / topError) * 100)}%` }} /></span>
-                    </div>
-                    <span className="acc-label">{g.label}</span>
-                  </div>
-                ))}
-              </div>
-              <ul className="legend acc-legend">
-                <li><span className="legend-dot" style={{ background: 'var(--orange)' }} />Engine</li>
-                <li><span className="legend-dot" style={{ background: 'var(--violet)' }} />Plain estimate</li>
-                <li>lower is better</li>
-              </ul>
-            </>
-          )}
+        <div className="kpi-grid">
+          {cards.map((c) => (
+            <button key={c.key} type="button" className={`panel kpi ${c.tone}`} onClick={() => setActivePage(c.go)}>
+              <span className="kpi-top"><span className="kpi-label">{c.label}</span><span className="kpi-icon"><Icon type={c.icon} /></span></span>
+              <span className="kpi-value">{c.value}</span>
+              <span className="kpi-sub">{c.sub}</span>
+            </button>
+          ))}
         </div>
 
         <div className="panel card-panel">
@@ -192,12 +161,13 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
             <ul className="rows">
               {buses.slice(0, MAX_FLEET_ROWS).map((b) => {
                 const running = onDutyIds.has(b.id);
+                const r = busRoute(b);
                 return (
                   <li key={b.id} className="row">
                     <span className="row-icon"><Icon type="bus" /></span>
                     <span className="row-main">
                       <strong>{b.registration}</strong>
-                      <small>{driverName(b.assignedDriver)} · {busRoute(b)}</small>
+                      <small>{driverName(b.assignedDriver)} · {r ? routeLabel(r.id) : 'no route'}</small>
                     </span>
                     <span className={`badge ${running ? 'badge-green' : 'badge-amber'}`}>{running ? 'On duty' : 'Off duty'}</span>
                   </li>
@@ -209,15 +179,23 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
 
         <div className="panel">
           <div className="panel-head">
-            <h2>System health</h2>
-            <button type="button" className="link-btn" onClick={() => setActivePage('live')}>Live monitor</button>
+            <h2>Needs attention <sup>{attention.length}</sup></h2>
           </div>
-          <ul className="kv">
-            <li><span>ETA error</span><strong>{cmp?.engineMaeSec == null ? 'No arrivals yet' : `${cmp.engineMaeSec} s (plain ${cmp.baselineMaeSec} s)`}</strong></li>
-            <li><span>Time to passengers</span><strong>{processing?.p95 == null ? '—' : `${processing.p95} ms (p95)`}</strong></li>
-            <li><span>GPS positions</span><strong>{metrics?.fixes ? `${metrics.fixes.accepted} ok, ${metrics.fixes.rejected} rejected` : '—'}</strong></li>
-            <li><span>Live cache</span><strong>{metrics ? (metrics.store === 'redis' ? 'Redis' : 'In memory') : '—'}</strong></li>
-          </ul>
+          {attention.length === 0 ? (
+            <p className="all-clear"><span className="live-dot" aria-hidden="true" />All clear. Nothing needs your attention right now.</p>
+          ) : (
+            <ul className="rows">
+              {attention.slice(0, MAX_ATTENTION).map((a) => (
+                <li key={a.key}>
+                  <button type="button" className="row attn" onClick={() => setActivePage(a.go)}>
+                    <span className={`attn-dot ${a.tone}`} aria-hidden="true" />
+                    <span className="row-main"><strong>{a.text}</strong></span>
+                  </button>
+                </li>
+              ))}
+              {attention.length > MAX_ATTENTION ? <li className="attn-more">+{attention.length - MAX_ATTENTION} more</li> : null}
+            </ul>
+          )}
         </div>
 
         <div className="panel">

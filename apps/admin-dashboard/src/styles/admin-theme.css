@@ -617,32 +617,30 @@ select.form-input { appearance: none; background-image: linear-gradient(45deg, t
 .segmented button:active { transform: scale(0.97); }
 @media (max-width: 900px) { .settings-grid { grid-template-columns: 1fr; } }
 
-/* ══ ETA error by horizon: engine against the plain estimate, as grouped bars ══ */
-.acc-panel { display: flex; flex-direction: column; min-height: 0; }
-.acc-chart { flex: 1; min-height: 110px; margin-top: var(--space-3); display: flex; gap: var(--space-3); align-items: stretch; border-bottom: 1px dashed var(--a-line); }
-.acc-group { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; position: relative; }
-.acc-bars { flex: 1; width: 100%; display: flex; gap: 4px; align-items: flex-end; justify-content: center; padding-top: 18px; }
-.acc-col { flex: 1; max-width: 26px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
-.acc-col em { font-style: normal; font-size: 11px; color: var(--a-muted); font-variant-numeric: tabular-nums; }
-.acc-bar { display: block; width: 100%; border-radius: 10px 10px 4px 4px; transition: height 500ms var(--ease-out); }
-.acc-bar.engine { background: linear-gradient(to top, color-mix(in srgb, var(--orange) 55%, transparent), var(--orange)); }
-.acc-bar.plain { background: linear-gradient(to top, color-mix(in srgb, var(--violet) 45%, transparent), var(--violet)); }
-.acc-label { font-size: 11px; color: var(--a-muted); white-space: nowrap; padding-bottom: 4px; }
-.acc-legend { display: flex; gap: var(--space-4); justify-content: center; margin-top: var(--space-2); }
-.acc-empty { flex: 1; display: grid; place-items: center; text-align: center; padding: var(--space-4); color: var(--a-muted); font-size: 13px; }
-@media (prefers-reduced-motion: reduce) { .acc-bar { transition: none; } }
-
-/* ══ Dashboard rework ══ */
-.chart-tabs { margin: var(--space-2) 0 0; }
-.dash .chart-card .acc-chart { margin-top: var(--space-2); }
-.dash .acc-bars { padding-top: 22px; }
-.dash .acc-col em { font-size: 12px; }
-.acc-legend li:last-child { color: var(--a-muted); font-size: 12px; }
-.route-card-big.idle { background: linear-gradient(135deg, color-mix(in srgb, var(--violet) 55%, var(--a-surface)), color-mix(in srgb, var(--orange) 35%, var(--a-surface))); box-shadow: none; }
-.dash .kv li { padding: 8px 0; font-size: 13px; }
-.bar-tip { max-width: 220px; }
-
 /* Cards are not blurred: the page behind them is a smooth glow, so the blur added nothing visible, but Chromium drew a faint
    vertical seam across large blurred cards (and clipped a hovered card's shadow). The card colour is translucent enough to
    keep the glow showing through. */
 .panel { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ══ Dashboard: six simple counts, the live bus, and what needs attention ══ */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: var(--space-3); min-height: 0; }
+.dash .panel.kpi { font: inherit; text-align: left; cursor: pointer; color: var(--a-ink); justify-content: space-between; gap: 2px; border-radius: 26px; transition: transform 160ms var(--ease-out); }
+.dash .panel.kpi:active { transform: scale(0.98); }
+.kpi-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.kpi-label { font-size: 13px; color: var(--a-muted); }
+.kpi-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--a-soft); display: grid; place-items: center; flex-shrink: 0; }
+.kpi-icon svg { width: 16px; height: 16px; }
+.kpi-value { font-size: clamp(30px, 3.4vw, 44px); line-height: 1.05; font-weight: 500; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.kpi.good .kpi-value { color: var(--green-text); }
+.kpi-sub { font-size: 12px; color: var(--a-muted); }
+.attn { background: var(--a-soft); text-align: left; cursor: pointer; font: inherit; color: var(--a-ink); transition: transform 160ms var(--ease-out); }
+.attn:active { transform: scale(0.985); }
+.attn-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: var(--orange); }
+.attn-dot.bad { background: var(--danger); }
+.attn-dot.warn { background: var(--orange); }
+.attn .row-main strong { font-weight: 500; font-size: 13px; white-space: normal; }
+.attn-more { color: var(--a-muted); font-size: 12px; padding: 2px var(--space-3); }
+.all-clear { display: flex; align-items: center; gap: var(--space-3); color: var(--a-muted); font-size: 14px; padding: var(--space-4) 0; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 22%, transparent); flex-shrink: 0; }
+@media (prefers-reduced-motion: reduce) { .dash .panel.kpi { transition: none; } }
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
