@@ -94,8 +94,10 @@ npm install -g eas-cli
 cd apps/driver-app
 eas login
 eas build:configure            # once, links the project to your Expo account
-EXPO_PUBLIC_API_URL=<api url> eas build --platform android --profile preview
+eas build --platform android --profile preview
 ```
+
+The backend address is set in each app's `eas.json` (`env.EXPO_PUBLIC_API_URL` in the `preview` and `production` profiles). **A variable typed in your own terminal is not sent to EAS**: the build runs on Expo's servers, so without it in `eas.json` the app is built pointing at the emulator address and shows "cannot reach the server". When the backend address changes, edit it in `eas.json` and rebuild.
 
 The `preview` profile in `eas.json` produces an installable `.apk`. Background GPS, which keeps tracking with the screen off, only works in this installed build, not in Expo Go. On first use the driver must choose **Allow all the time** for location.
 
@@ -118,7 +120,8 @@ The passenger app builds the same way (it has its own `eas.json`, package `lk.sm
 ```bash
 cd apps/passenger-app
 eas build:configure            # once, links the project to your Expo account
-EXPO_PUBLIC_API_URL=<api url> GOOGLE_MAPS_API_KEY=<key> eas build --platform android --profile preview
+eas env:create --name GOOGLE_MAPS_API_KEY --value <key> --environment preview --visibility secret   # once
+eas build --platform android --profile preview
 ```
 
 The native map uses Google Maps on Android, so the build needs a Maps SDK for Android key (free; create it in Google Cloud and restrict it to the package name). Without a real key an installed build shows a blank map; Expo Go does not need one. For a build on EAS, set both values as EAS environment variables (`eas env:create`) instead of typing them each time, so they are not committed.
