@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
-import { Toast, VehicleLoader } from './src/shared/ui';
+import { ScreenFade, Toast, VehicleLoader } from './src/shared/ui';
 import { useToast } from './src/hooks/useToast';
 import { useAuth } from './src/hooks/useAuth';
 import { useRoutes } from './src/hooks/useRoutes';
@@ -12,6 +12,7 @@ import { TrackingScreen } from './src/screens/TrackingScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { RoutesScreen } from './src/screens/RoutesScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { BottomDock } from './src/components/BottomDock';
 import { useS } from './src/styles/app';
 
@@ -93,7 +94,7 @@ function AppShell() {
         ═══════════════════════════════════════════════════ */
         <View style={S.appShell}>
           {/* ─── SCREEN AREA ──────────────────────────── */}
-          <View style={S.flex}>
+          <ScreenFade key={activeTab}>
             {activeTab === 'tracking' ? (
               <TrackingScreen
                 conn={conn}
@@ -127,6 +128,7 @@ function AppShell() {
                 onGoTracking={() => setActiveTab('tracking')}
                 onGoRoutes={() => setActiveTab('routes')}
                 onOpenStops={() => setIsStopModalOpen(true)}
+                onOpenSettings={() => setActiveTab('settings')}
                 showToast={showToast}
               />
             ) : activeTab === 'routes' ? (
@@ -139,23 +141,34 @@ function AppShell() {
                 selectedRoute={selectedRoute}
                 onSelectRoute={handleSelectRoute}
               />
+            ) : activeTab === 'settings' ? (
+              <SettingsScreen
+                userProfile={userProfile}
+                selectedRoute={selectedRoute}
+                boardingStop={boardingStop}
+                destinationStop={destinationStop}
+                onResetDefaults={handleResetDefaults}
+                onOpenStops={() => setIsStopModalOpen(true)}
+                onBack={() => setActiveTab('profile')}
+                onLogout={handleLogout}
+                account={auth}
+                showToast={showToast}
+              />
             ) : (
               <ProfileScreen
                 userProfile={userProfile}
                 selectedRoute={selectedRoute}
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
-                onResetDefaults={handleResetDefaults}
                 onLogout={handleLogout}
                 onOpenStops={() => setIsStopModalOpen(true)}
-                account={auth}
-                showToast={showToast}
+                onOpenSettings={() => setActiveTab('settings')}
               />
             )}
-          </View>
+          </ScreenFade>
 
           {/* ─── BOTTOM DOCK ──────────────────────────── */}
-          <BottomDock activeTab={activeTab} setActiveTab={setActiveTab} />
+          <BottomDock activeTab={activeTab === 'settings' ? 'profile' : activeTab} setActiveTab={setActiveTab} />
 
           {/* ─── STOP SELECTOR MODAL ──────────────────── */}
           <StopSelectorModal

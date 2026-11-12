@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Button, Chip, Sheet } from '../shared/ui';
+import { Button, Chip, Sheet, Tap, SheetModal } from '../shared/ui';
 import { CheckIcon, ChevronDownIcon, FlagIcon, MapPinIcon } from '../shared/icons';
 import { useS } from './StopSelectorModal.styles';
 
@@ -12,19 +12,7 @@ export function StopSelectorModal({
 }) {
   const S = useS();
   return (
-    <Modal
-      visible={isStopModalOpen}
-      animationType="slide"
-      transparent
-      onRequestClose={() => setIsStopModalOpen(false)}
-    >
-      <View style={S.modalBackdrop}>
-        <TouchableOpacity
-          style={S.modalDismissArea}
-          onPress={() => setIsStopModalOpen(false)}
-          activeOpacity={1}
-          accessibilityLabel="Close stop selector"
-        />
+    <SheetModal visible={isStopModalOpen} onClose={() => setIsStopModalOpen(false)}>
         <Sheet>
           <View style={S.modalHandleRow}>
             <View style={S.modalHandle} />
@@ -56,21 +44,20 @@ export function StopSelectorModal({
 
             {/* Boarding */}
             <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Boarding stop</Text>
-            <TouchableOpacity
+            <Tap
               style={S.dropdownTrigger}
               onPress={() => { setIsBoardingOpen(p => !p); setIsDestOpen(false); }}
-              activeOpacity={0.8}
             >
               <View style={S.dropdownTriggerLeft}>
                 <MapPinIcon color={COLORS.accent} size={18} />
                 <Text style={S.dropdownTriggerText}>{boardingStop || '—'}</Text>
               </View>
               <ChevronDownIcon color={COLORS.muted} size={16} />
-            </TouchableOpacity>
+            </Tap>
             {isBoardingOpen && (
               <View style={S.dropdownList}>
                 {selectedRoute.stops.map((stop, idx) => (
-                  <TouchableOpacity
+                  <Tap
                     key={idx}
                     style={[S.dropdownItem, boardingStop === stop && S.dropdownItemActive]}
                     onPress={() => { setBoardingStop(stop); setIsBoardingOpen(false); }}
@@ -79,28 +66,27 @@ export function StopSelectorModal({
                       {stop}
                     </Text>
                     {boardingStop === stop && <CheckIcon color={COLORS.accentText} size={14} />}
-                  </TouchableOpacity>
+                  </Tap>
                 ))}
               </View>
             )}
 
             {/* Destination */}
             <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Destination stop</Text>
-            <TouchableOpacity
+            <Tap
               style={S.dropdownTrigger}
               onPress={() => { setIsDestOpen(p => !p); setIsBoardingOpen(false); }}
-              activeOpacity={0.8}
             >
               <View style={S.dropdownTriggerLeft}>
                 <FlagIcon color={COLORS.accent} size={18} />
                 <Text style={S.dropdownTriggerText}>{destinationStop || '—'}</Text>
               </View>
               <ChevronDownIcon color={COLORS.muted} size={16} />
-            </TouchableOpacity>
+            </Tap>
             {isDestOpen && (
               <View style={S.dropdownList}>
                 {selectedRoute.stops.map((stop, idx) => (
-                  <TouchableOpacity
+                  <Tap
                     key={idx}
                     style={[S.dropdownItem, destinationStop === stop && S.dropdownItemActive]}
                     onPress={() => { setDestinationStop(stop); setIsDestOpen(false); }}
@@ -109,7 +95,7 @@ export function StopSelectorModal({
                       {stop}
                     </Text>
                     {destinationStop === stop && <CheckIcon color={COLORS.accentText} size={14} />}
-                  </TouchableOpacity>
+                  </Tap>
                 ))}
               </View>
             )}
@@ -157,7 +143,6 @@ export function StopSelectorModal({
             </View>
           </ScrollView>
         </Sheet>
-      </View>
-    </Modal>
+    </SheetModal>
   );
 }

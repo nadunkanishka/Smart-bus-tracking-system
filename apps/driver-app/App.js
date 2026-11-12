@@ -3,7 +3,7 @@ import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { request, toRoute } from './src/shared/api';
 import * as telemetry from './src/services/telemetry';
 import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
-import { Toast } from './src/shared/ui';
+import { ScreenFade, Toast } from './src/shared/ui';
 import { MAX_LOG_ITEMS } from './src/constants';
 import { formatCoord } from './src/utils';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -12,6 +12,7 @@ import { ShiftScreen } from './src/screens/ShiftScreen';
 import { RouteScreen } from './src/screens/RouteScreen';
 import { DiagnosticsScreen } from './src/screens/DiagnosticsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { DriverDock } from './src/components/DriverDock';
 import { useD } from './src/styles/app';
 
@@ -177,7 +178,7 @@ function AppShell() {
         ═══════════════════════════════════════════════════ */
         <View style={D.appShell}>
           {/* ─── SCREENS ───────────────────────────────── */}
-          <View style={D.flex}>
+          <ScreenFade key={activeTab}>
           {activeTab === 'shift' ? (
             <ShiftScreen
               isOnShift={isOnShift}
@@ -213,6 +214,18 @@ function AppShell() {
               logs={logs}
               isOnShift={isOnShift}
             />
+          ) : activeTab === 'settings' ? (
+            <SettingsScreen
+              busRegistration={authenticatedBus?.registration || busRegistration}
+              driverName={driverName}
+              routeNumber={routeNumber}
+              routeLabel={routeLabel}
+              connected={tele.connected}
+              trackingMode={tele.mode}
+              onOpenDispatch={openDispatch}
+              onBack={() => setActiveTab('profile')}
+              onLogout={handleLogout}
+            />
           ) : (
             <ProfileScreen
               busRegistration={authenticatedBus?.registration || busRegistration}
@@ -222,14 +235,15 @@ function AppShell() {
               isOnShift={isOnShift}
               onLogout={handleLogout}
               onOpenDispatch={openDispatch}
+              onOpenSettings={() => setActiveTab('settings')}
             />
           )}
 
-          </View>
+          </ScreenFade>
 
           {/* ─── BOTTOM DOCK ─────────────────────────── */}
           <DriverDock
-            activeTab={activeTab}
+            activeTab={activeTab === 'settings' ? 'profile' : activeTab}
             setActiveTab={setActiveTab}
             isOnShift={isOnShift}
           />

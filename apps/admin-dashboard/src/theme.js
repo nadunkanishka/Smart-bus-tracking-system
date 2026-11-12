@@ -36,6 +36,16 @@ export function setTheme(next) {
   emit();
 }
 export const toggleTheme = () => setTheme(mode === 'dark' ? 'light' : 'dark');
+// 'system' | 'light' | 'dark': what the person chose (system = no saved choice, follow the device).
+export function setPreference(p) {
+  if (p !== 'system') { setTheme(p); return; }
+  saved = null;
+  try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+  mode = query && query.matches ? 'dark' : 'light';
+  apply(true);
+  emit();
+}
+export const useThemePreference = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => saved || 'system');
 export const useThemeMode = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => mode);
 
 // OpenStreetMap tiles for Leaflet; the colour comes from a CSS filter (see admin-theme.css). Route colour follows the mode.

@@ -2,7 +2,7 @@
 // copied to apps/*/src/shared/ui.js by `npm run sync` (so imports below are app-relative).
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Platform, Pressable, StyleSheet, Text, TextInput,
+  AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Modal, Platform, Pressable, StyleSheet, Text, TextInput,
   View, useWindowDimensions, ScrollView, KeyboardAvoidingView, Keyboard,
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
@@ -10,7 +10,7 @@ import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { COLORS, RADII, SHADOWS, TYPE } from './theme';
 import { useTheme } from './themeRuntime';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
-import { Activity, ChartColumn, Gauge, House, Navigation, Route as RouteGlyph, User, Users, Bus as BusGlyph } from 'lucide-react-native';
+import { Activity, ChartColumn, ChevronRight, Gauge, House, Navigation, Route as RouteGlyph, User, Users, Bus as BusGlyph } from 'lucide-react-native';
 import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
@@ -40,6 +40,29 @@ export function useReducedMotion() {
 
 const webRing = (focused, color = COLORS.ring) =>
   (Platform.OS === 'web' && focused ? { boxShadow: `0 0 0 3px ${color}` } : null);
+
+// Press feel shared by every tappable thing: instant scale(0.97) on press; on the web the release eases back
+// over 160ms (strong ease-out). Native releases instantly.
+export const PRESS_WEB = Platform.OS === 'web'
+  ? { transitionProperty: 'transform, background-color, opacity', transitionDuration: '160ms', transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }
+  : null;
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const EASE_DRAWER = Easing.bezier(0.32, 0.72, 0, 1);
+const native = Platform.OS !== 'web';
+
+// Drop-in for TouchableOpacity: scale feedback instead of an opacity flash, plus the keyboard focus ring.
+export function Tap({ onPress, style, children, scale = 0.97, ...rest }) {
+  useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      {...rest}
+      style={(state) => [typeof style === 'function' ? style(state) : style, PRESS_WEB, { transform: [{ scale: state.pressed ? scale : 1 }] }, webRing(state.focused)]}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 // ─── Vehicles ───────────────────────────────────────────────────────────────
 // Clay buses: pre-rendered images chosen by vehicleShapes.pick(). status ('idle' | 'maint' | 'off') adds a
@@ -173,6 +196,7 @@ export function Button({ title, onPress, tone = 'primary', size = 'lg', loading,
           alignSelf: full ? 'stretch' : 'flex-start', opacity: off ? 0.55 : hovered ? 0.92 : 1,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
+        PRESS_WEB,
         webRing(focused),
         style,
       ]}
@@ -199,6 +223,7 @@ export function IconButton({ children, onPress, label, tone = 'glass', size = 44
       hitSlop={size < 44 ? (44 - size) / 2 : 0}
       style={({ pressed, focused }) => [
         { width: size, height: size, borderRadius: size / 2, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }], ...SHADOWS.sm },
+        PRESS_WEB,
         webRing(focused),
         style,
       ]}
@@ -245,6 +270,7 @@ export function Chip({ label, selected, onPress, tone = 'primary', style }) {
       accessibilityState={{ selected: !!on }}
       style={({ pressed, focused }) => [
         { minHeight: 36, paddingHorizontal: 14, borderRadius: RADII.pill, justifyContent: 'center', backgroundColor: on ? (tone === 'primary' ? COLORS.primaryStrong : COLORS.ink) : COLORS.surfaceSoft, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        PRESS_WEB,
         webRing(focused),
         style,
       ]}
@@ -451,7 +477,7 @@ export function FloatingDock({ items, active, onChange }) {
               accessibilityRole="button"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: on }}
-              style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused)]}
+              style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, PRESS_WEB, webRing(focused)]}
             >
               <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.orange : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon(on)}
@@ -485,14 +511,147 @@ export function Sheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.surface, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, padding: 24, maxHeight: '88%', width: '100%', maxWidth: 560, alignSelf: 'center', ...SHADOWS.lg }, style]}>{children}</View>;
 }
 
+// Toast: slides down 10px and fades in (220ms strong ease-out); leaves faster (160ms), as the system responding.
 export function Toast({ message }) {
   useTheme();
-  if (!message) return null;
+  const reduced = useReducedMotion();
+  const [shown, setShown] = useState(message || null);
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (message) {
+      setShown(message);
+      Animated.timing(v, { toValue: 1, duration: reduced ? 0 : 220, easing: EASE_OUT, useNativeDriver: native }).start();
+    } else {
+      Animated.timing(v, { toValue: 0, duration: reduced ? 0 : 160, easing: EASE_OUT, useNativeDriver: native }).start(({ finished }) => { if (finished) setShown(null); });
+    }
+  }, [message, reduced, v]);
+  if (!shown) return null;
   return (
-    <View style={{ position: 'absolute', top: 56, left: 20, right: 20, zIndex: 999, alignItems: 'center' }} pointerEvents="none" accessibilityLiveRegion="polite">
+    <Animated.View
+      style={{ position: 'absolute', top: 56, left: 20, right: 20, zIndex: 999, alignItems: 'center', opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }] }}
+      pointerEvents="none"
+      accessibilityLiveRegion="polite"
+    >
       <View style={{ backgroundColor: COLORS.ink, borderRadius: RADII.pill, paddingHorizontal: 20, paddingVertical: 12, maxWidth: 520, ...SHADOWS.md }}>
-        <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.white, textAlign: 'center' }}>{message}</Text>
+        <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.white, textAlign: 'center' }}>{shown}</Text>
       </View>
+    </Animated.View>
+  );
+}
+
+// A tab's screen arrives with a short fade and 8px rise (180ms). Tabs are used often, so it stays small. Key it by tab.
+export function ScreenFade({ children, style }) {
+  const reduced = useReducedMotion();
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: 1, duration: reduced ? 0 : 180, easing: EASE_OUT, useNativeDriver: native }).start();
+  }, [reduced, v]);
+  return (
+    <Animated.View style={[{ flex: 1, opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }, style]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+// List item entrance: fades up 10px, staggered 40ms per item (the first six only), once when it mounts.
+export function Reveal({ index = 0, children, style }) {
+  const reduced = useReducedMotion();
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: 1, duration: reduced ? 0 : 260, delay: reduced ? 0 : Math.min(index, 6) * 40, easing: EASE_OUT, useNativeDriver: native }).start();
+  }, [index, reduced, v]);
+  return <Animated.View style={[{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }, style]}>{children}</Animated.View>;
+}
+
+// Bottom sheet host. The backdrop fades while the sheet itself rises (the stock "slide" animation drags the backdrop
+// up with it). Opens in 280ms on the drawer curve, closes faster (180ms).
+export function SheetModal({ visible, onClose, children }) {
+  const reduced = useReducedMotion();
+  const [mounted, setMounted] = useState(visible);
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.timing(v, { toValue: 1, duration: reduced ? 0 : 280, easing: EASE_DRAWER, useNativeDriver: native }).start();
+    } else {
+      Animated.timing(v, { toValue: 0, duration: reduced ? 0 : 180, easing: EASE_OUT, useNativeDriver: native }).start(({ finished }) => { if (finished) setMounted(false); });
+    }
+  }, [visible, reduced, v]);
+  return (
+    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: v, backgroundColor: 'rgba(0,0,0,0.55)' }]}>
+          <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
+        </Animated.View>
+        <Animated.View style={{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [64, 0] }) }] }}>{children}</Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Settings building blocks ────────────────────────────────────────────────
+// Choose one of a few options; the pill slides to the choice (200ms strong ease-out).
+export function Segmented({ options, value, onChange, label }) {
+  useTheme();
+  const reduced = useReducedMotion();
+  const n = options.length;
+  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const [width, setWidth] = useState(0);
+  const x = useRef(new Animated.Value(index)).current;
+  useEffect(() => {
+    Animated.timing(x, { toValue: index, duration: reduced ? 0 : 200, easing: EASE_OUT, useNativeDriver: native }).start();
+  }, [index, reduced, x]);
+  const seg = width ? (width - 8) / n : 0;
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={{ flexDirection: 'row', padding: 4, borderRadius: RADII.pill, backgroundColor: COLORS.surfaceSoft, borderWidth: 1, borderColor: COLORS.glassLine }}
+    >
+      {seg ? <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 4, bottom: 4, left: 4, width: seg, borderRadius: RADII.pill, backgroundColor: COLORS.primaryStrong, transform: [{ translateX: x.interpolate({ inputRange: [0, n - 1 || 1], outputRange: [0, seg * (n - 1)] }) }] }} /> : null}
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <Tap key={o.value} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={o.label} style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ ...TYPE.smallBold, ...FONT, color: on ? COLORS.onBright : COLORS.muted }}>{o.label}</Text>
+          </Tap>
+        );
+      })}
     </View>
   );
+}
+
+// A titled group of rows on one card.
+export function SettingsSection({ title, note, children }) {
+  useTheme();
+  const rows = React.Children.toArray(children).filter(Boolean);
+  return (
+    <View style={{ marginBottom: 20 }}>
+      {title ? <Text style={{ ...TYPE.overline, ...FONT, color: COLORS.muted, marginBottom: 8, marginLeft: 8, textTransform: 'uppercase' }}>{title}</Text> : null}
+      <View style={{ backgroundColor: COLORS.surface, borderRadius: RADII.lg, borderWidth: 1, borderColor: COLORS.glassLine, overflow: 'hidden' }}>
+        {rows.map((row, i) => (React.isValidElement(row) && row.type === SettingsRow ? React.cloneElement(row, { first: i === 0 }) : row))}
+      </View>
+      {note ? <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.muted, marginTop: 8, marginHorizontal: 8 }}>{note}</Text> : null}
+    </View>
+  );
+}
+
+// One row: optional icon, label, a value on the right, a chevron when it opens something. tone="danger" for destructive rows.
+export function SettingsRow({ icon, label, value, onPress, tone, first, children }) {
+  useTheme();
+  const danger = tone === 'danger';
+  const body = (
+    <View style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: first ? 0 : 1, borderTopColor: COLORS.glassLine }}>
+      {icon ? <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: danger ? COLORS.dangerSoft : COLORS.surfaceSoft, alignItems: 'center', justifyContent: 'center' }}>{icon}</View> : null}
+      <View style={value ? { flexShrink: 0, maxWidth: '58%' } : { flex: 1, minWidth: 0 }}>
+        <Text style={{ ...TYPE.bodyBold, ...FONT, color: danger ? COLORS.danger : COLORS.ink }}>{label}</Text>
+        {children}
+      </View>
+      {value ? <Text style={{ ...TYPE.small, ...FONT, color: COLORS.muted, flex: 1, textAlign: 'right' }} numberOfLines={2}>{value}</Text> : null}
+      {onPress ? <ChevronRight size={18} color={COLORS.mutedLight} strokeWidth={1.75} /> : null}
+    </View>
+  );
+  if (!onPress) return body;
+  return <Tap onPress={onPress} accessibilityRole="button" accessibilityLabel={label} scale={0.99}>{body}</Tap>;
 }
