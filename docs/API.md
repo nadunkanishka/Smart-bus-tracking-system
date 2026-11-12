@@ -15,16 +15,25 @@ Protected endpoints need `Authorization: Bearer <token>`. Login endpoints are li
 | POST | `/api/auth/driver-login` | open | `registration` (or `busId`), `password` | `token`, `bus`, `driver`, `assignedRoute` (with `path` and `stopPoints`) |
 | POST | `/api/passengers/register` | open | `name`, `username` (3–30 chars), `password` (6+), `phone` optional | `token`, `user` |
 | POST | `/api/passengers/login` | open | `username`, `password` | `token`, `user` |
+| GET | `/api/passengers/me` | passenger | – | `user` |
+| PUT | `/api/passengers/me` | passenger | `name`, `phone` (username cannot change) | `user` |
+| PUT | `/api/passengers/me/password` | passenger | `currentPassword`, `newPassword` (6+) | `message` |
+| DELETE | `/api/passengers/me` | passenger | `password` (confirms the delete) | `message` |
+| GET | `/api/passengers` | admin | – | all passenger accounts (no passwords) |
+| DELETE | `/api/passengers/:id` | admin | – | `:id` is the `_id` or username |
 
 ### Routes
 
 | Method | Path | Access | Notes |
 |---|---|---|---|
 | GET | `/api/routes` | open | All routes with geometry |
+| GET | `/api/routes/:id` | open | One route, `:id` is the `routeId` or Mongo `_id` |
 | GET | `/api/routes/:id/buses` | open | Live buses on a route, read from the latest-fix cache |
 | POST | `/api/routes` | admin | See body below |
 | PUT | `/api/routes/:id` | admin | `:id` is the `routeId` (e.g. `RT-001`) or the Mongo `_id` |
 | DELETE | `/api/routes/:id` | admin | |
+
+`assignedBus` must name an existing bus (`NB-4712 (BUS-002)`, a registration or a bus id), otherwise the request is rejected. Only the listed fields can be changed: `routeId` and `_id` are ignored.
 
 Route body: `name`, `routeNumber`, `start`, `end`, `distance` (km), `assignedBus`, `status`, plus geometry as plain arrays:
 
@@ -42,12 +51,24 @@ Route body: `name`, `routeNumber`, `start`, `end`, `distance` (km), `assignedBus
 | Method | Path | Notes |
 |---|---|---|
 | GET / POST | `/api/drivers` | `name`, `license`, `expiry`, `phone`, `status` |
-| PUT / DELETE | `/api/drivers/:id` | `:id` is `driverId` or `_id` |
+| GET / PUT / DELETE | `/api/drivers/:id` | `:id` is `driverId` or `_id`. Deleting a driver clears `assignedDriver` on their buses (`unassignedBuses` in the response) |
 | GET / POST | `/api/buses` | `registration`, `capacity`, `mileage`, `password`, `assignedDriver` (a `driverId`), `status` |
-| PUT / DELETE | `/api/buses/:id` | A blank `password` keeps the current one |
+| GET / PUT / DELETE | `/api/buses/:id` | A blank `password` keeps the current one. `assignedDriver` must be an existing driver. Renaming the registration updates the routes that point at the bus; deleting the bus clears `assignedBus` on its routes (`unassignedRoutes` in the response) |
 | GET | `/api/dashboard/summary` | Counts for the dashboard |
 
 Bus responses never include the password. They carry `hasPassword: true/false`.
+
+### Admin accounts (admin)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET / POST | `/api/admins` | Create with `username` (3–30), `password` (8+), `name`, `role` |
+| GET / PUT / DELETE | `/api/admins/:id` | PUT changes `name`, `role`, or resets the password when `password` is sent. A signed-in admin cannot delete themself, and the last admin cannot be deleted |
+| PUT | `/api/admins/me/password` | `currentPassword`, `newPassword` (8+) |
+
+### Errors on writes
+
+`400` validation (field message), `404` unknown id, `409` a unique value (license, registration, username) is already used.
 
 ### Monitoring and analytics (admin)
 
