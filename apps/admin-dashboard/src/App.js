@@ -177,7 +177,7 @@ function App() {
         )}
 
         <main className={`page-scroll ${activePage === 'dashboard' ? 'fit' : ''}`}>
-          {activePage === 'dashboard' && <DashboardPage user={user} summary={summary} drivers={drivers} buses={buses} routes={routes} fetchBackendData={fetchBackendData} showNotification={showNotification} openModal={openModal} setActivePage={setActivePage} />}
+          {activePage === 'dashboard' && <DashboardPage api={api} user={user} summary={summary} drivers={drivers} buses={buses} routes={routes} fetchBackendData={fetchBackendData} showNotification={showNotification} openModal={openModal} setActivePage={setActivePage} />}
 
           {activePage === 'settings' && <SettingsPage user={user} backendConnected={backendConnected} fetchBackendData={fetchBackendData} showNotification={showNotification} setActivePage={setActivePage} handleLogout={handleLogout} />}
           {activePage === 'live' && <LiveMonitor api={api} routes={routes} />}
