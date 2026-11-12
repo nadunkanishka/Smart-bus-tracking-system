@@ -1,26 +1,26 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS, RADII, SHADOWS } from '../shared/theme';
+import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
 import { type } from '../styles/common';
 
 export const useS = createStyles(() => StyleSheet.create({
   stopSelectorCol: { flex: 1, position: 'relative' },
-  stopSelectorHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  stopSelectorHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACE[2], marginBottom: SPACE[1] },
   stopSelectorLabel: { ...type('overline'), color: COLORS.muted },
   stopSelectorBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.sm, paddingHorizontal: 12, minHeight: 44,
+    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.sm, paddingHorizontal: SPACE[3], minHeight: 44,
   },
-  stopSelectorValue: { ...type('smallBold'), color: COLORS.ink, flex: 1, marginRight: 4 },
+  stopSelectorValue: { ...type('smallBold'), color: COLORS.ink, flex: 1, marginRight: SPACE[1] },
   stopInlineList: {
-    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: 8,
+    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: SPACE[2],
     backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.md, overflow: 'hidden', minWidth: 190,
     ...SHADOWS.lg,
   },
   stopInlineListRight: { left: 'auto', right: 0 },
   stopInlineItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    minHeight: 44, paddingHorizontal: 16,
+    minHeight: 44, paddingHorizontal: SPACE[4],
   },
   stopInlineItemActive: { backgroundColor: COLORS.accentSoft },
   stopInlineText: { ...type('small'), color: COLORS.ink },

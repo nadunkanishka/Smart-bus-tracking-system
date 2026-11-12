@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS, RADII, SHADOWS } from '../shared/theme';
+import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
 import { TOP_INSET } from '../constants';
 import { buildCommon, type } from '../styles/common';
 
@@ -11,16 +11,16 @@ export const useS = createStyles(() => ({
     profileHero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
     profileAvatar: {
       width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine,
-      alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
+      alignItems: 'center', justifyContent: 'center', marginBottom: SPACE[3], ...SHADOWS.md,
     },
     profileGear: { position: 'absolute', right: 0, top: TOP_INSET + 4, zIndex: 2 },
     profileAvatarText: { ...type('display'), color: COLORS.primaryDeep },
     profileName: { ...type('h1'), color: COLORS.ink },
-    profileUsername: { ...type('small'), color: COLORS.ink, marginTop: 4 },
-    profileCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
-    profileCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-    profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: 4 },
+    profileUsername: { ...type('small'), color: COLORS.ink, marginTop: SPACE[1] },
+    profileCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[5], marginBottom: SPACE[4], ...SHADOWS.sm },
+    profileCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[1] },
+    profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: SPACE[1] },
     profileCardTitleFlat: { ...type('h3'), color: COLORS.ink },
-    profileBtn: { marginBottom: 12 },
+    profileBtn: { marginBottom: SPACE[3] },
   }),
 }));

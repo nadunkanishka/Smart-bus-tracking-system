@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { COLORS, TYPE } from '../shared/theme';
+import { COLORS, TYPE, SPACE } from '../shared/theme';
 import { FONT } from '../shared/ui';
 
 // CHANGED: every value comes from shared tokens (COLORS / RADII / SHADOWS / TYPE); spacing is on the 4px scale.
@@ -10,8 +10,8 @@ export const buildCommon = () => StyleSheet.create({
   flex: { flex: 1 },
   link: { ...type('smallBold'), color: COLORS.accentText },
   linkTap: { minHeight: 44, justifyContent: 'center' },
-  emptyState: { alignItems: 'center', paddingVertical: 24, gap: 4 },
-  emptyStateTitle: { ...type('h3'), color: COLORS.ink, marginTop: 16 },
+  emptyState: { alignItems: 'center', paddingVertical: SPACE[6], gap: SPACE[1] },
+  emptyStateTitle: { ...type('h3'), color: COLORS.ink, marginTop: SPACE[4] },
   emptyStateSub: { ...type('small'), color: COLORS.muted },
-  emptyBtn: { marginTop: 12, alignSelf: 'center' },
+  emptyBtn: { marginTop: SPACE[3], alignSelf: 'center' },
 });
