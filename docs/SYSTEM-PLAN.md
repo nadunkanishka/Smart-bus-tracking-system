@@ -14,10 +14,12 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 - GPS smoothing (Kalman filter with spike gate and stop hold) and a straight-line baseline logged beside every ETA prediction, compared on Trip Analytics.
 - 25 Colombo routes seeded with road lines; Route 138 is Pettah to Homagama.
 - Tooling: GPS replay simulator (with GPS noise), Artillery load test, Render blueprint, EAS profiles for both apps, CI on every push.
+- **Deployed (13 Nov 2026, free tiers):** MongoDB Atlas, the backend on Railway (`/api/health` says mongo connected, cache memory), the admin dashboard and the passenger web app on Netlify, CORS locked to those two sites. The 25 routes are loaded; bus NA-9001 with its driver is on Route 138.
+- Step-by-step guides for the database, the backend and the APK builds: `docs/SETUP-MONGODB.md`, `SETUP-RAILWAY.md`, `SETUP-APKS.md`.
 
 **Not done or never verified**
 
-- A two-phone test in Expo Go over Wi-Fi worked (reported, 12 Nov 2026), but no installed build has run on a road and nothing is deployed. The test's data did not reach the database checked afterwards, so the smoother and baseline are not yet verified on real GPS. All numbers so far are simulated.
+- Expo Go on two phones against the hosted backend worked (driver on duty, passenger sees the bus and ETAs; reported 13 Nov 2026), and the hosted admin dashboard showed the live bus. No installed APK is in use yet (the first driver APK was built pointing at the emulator address and was thrown away; both apps need a rebuild with the Maps key), nothing has run on a road, and the smoother and baseline are not yet checked on real GPS logs. All accuracy and latency numbers so far are simulated.
 - Redis has never been exercised here (this machine has no Docker or WSL), so the Redis path is untested.
 - No measured latency, ETA error or load figures exist yet. The report must not claim any until they do.
 - The reports describe two things the code does not do (see section 1).
@@ -35,11 +37,11 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
   - [ ] Update the screenshots and report text that still name Maharagama as the terminal.
   - [ ] Check the points marked approximate in `backend/scripts/data/places.json` (Kanatta Junction, Technical College Junction, Thummulla, Makumbura Multimodal Centre) and the three stops left out for lack of a reliable point (Bellanthota, Old Kelani Bridge, Ayurveda Junction).
 - [x] **D3. Pilot both passenger apps, say so in the report.**
-  - [ ] Build the native passenger app as an installable build (EAS), install it on volunteer phones alongside the web app.
+  - [ ] Build the native passenger app as an installable build (EAS), install it on volunteer phones alongside the web app. Config is ready (EAS project, package name, backend address and Maps key setup in `docs/SETUP-APKS.md`); the build itself is still to do.
   - [ ] Add a paragraph to the report describing the web app and the React Native companion (one Expo codebase), as the proposal promises.
 - [x] **D4. Keep passenger and administrator accounts.**
   - [ ] Add one line to the report: these go beyond the approved proposal (self-service passenger accounts, administrator accounts), included for security and usability.
-- [x] **D5. Hosting: free for now.** Decided: stay on free hosting while building and piloting, and move to a paid plan when the system is ready to deploy for real. Render free web service plus the free Key Value (Redis-compatible) and MongoDB Atlas free tier. Free hosting is enough for the pilot's few buses, with these conditions:
+- [x] **D5. Hosting: free for now.** (Render asked for a card even for the free plan, so the backend runs on a Railway trial instead: about 30 days of credit, no sleeping. Netlify serves the two websites, Atlas the database.) Decided: stay on free hosting while building and piloting, and move to a paid plan when the system is ready to deploy for real. Render free web service plus the free Key Value (Redis-compatible) and MongoDB Atlas free tier. Free hosting is enough for the pilot's few buses, with these conditions:
   - [ ] Free Render services sleep after about 15 minutes with no traffic. Keep the API awake before and during every run (a free uptime pinger such as UptimeRobot hitting `/api/health` every 5 minutes), and open the app a minute before each shift so nobody meets a cold start.
   - [ ] Render's free instance is small (512 MB), so the 500-driver and 2,000-passenger stress test must not run against it. Run that test against a temporary instance (a paid instance for a few hours costs very little) or locally, and say in the report where it ran.
   - [ ] Free tiers have no backups: export the database collections before and after every pilot day.
@@ -61,26 +63,26 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 ## 3. Real data for the pilot corridor
 
 - [ ] **(you)** Ride or drive the route once and note the real stops, in order, in both directions if buses run both ways.
-- [ ] In the admin Routes page: draw the road path (use "Build path through stops", then correct it on the map) and place every stop. The ETA engine's accuracy depends on this path; a straight line between stops will not do.
-- [ ] Register the pilot buses and drivers; set a bus password for each; assign each bus to the route.
+- [ ] In the admin Routes page: draw the road path (use "Build path through stops", then correct it on the map) and place every stop. The ETA engine's accuracy depends on this path; a straight line between stops will not do. The 25 routes have road lines from OSRM (Pettah was removed from Route 138 in the admin); correct them after the ride.
+- [x] Register the pilot buses and drivers; set a bus password for each; assign each bus to the route. Done on the cloud admin: bus NA-9001 with a password, a driver, assigned to Route 138.
 - [ ] Run a few slow test drives (or replay) so each segment has recorded trips. Until a segment has trips the engine uses a default speed, and the baseline is not yet real.
 - [ ] Check the route on a phone-sized screen: stop names readable, no duplicate stops, terminals correct.
 
 ## 4. Deploy
 
-- [ ] **(you)** Create a MongoDB Atlas cluster (free tier), allow Render's addresses, copy the connection string.
-- [ ] **(you)** Render: New, Blueprint, this repository. Fill `MONGODB_URI`, `ADMIN_PASSWORD`, `CORS_ORIGIN`. Free instance for the pilot (D5): set up the uptime pinger straight away.
-- [ ] `/api/health` reports `mongo: connected` and `cache: redis`.
-- [ ] Seed or recreate the route on the cloud database (`MONGODB_URI=<atlas> npm run seed`, then edit in the admin).
-- [ ] Deploy the admin as a static site with `REACT_APP_API_URL`; deploy the passenger web export with `EXPO_PUBLIC_API_URL`.
-- [ ] Set `CORS_ORIGIN` to the admin and passenger web addresses only.
-- [ ] Change the default admin password, remove any test accounts and test buses from the cloud database.
+- [x] **(you)** Create a MongoDB Atlas cluster (free tier), allow Render's addresses, copy the connection string. Done (cluster created, network access open, user created).
+- [x] **(you)** Render: New, Blueprint, this repository. Fill `MONGODB_URI`, `ADMIN_PASSWORD`, `CORS_ORIGIN`. Free instance for the pilot (D5): set up the uptime pinger straight away. Done with Railway instead of Render (`docs/SETUP-RAILWAY.md`): `MONGODB_URI`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, root `/backend`, branch `dev`.
+- [ ] `/api/health` reports `mongo: connected` and `cache: redis`. Mongo is connected; the cache is memory until a Redis is added (`REDIS_URL`).
+- [x] Seed or recreate the route on the cloud database (`MONGODB_URI=<atlas> npm run seed`, then edit in the admin). Done: 25 of 25 routes seeded.
+- [x] Deploy the admin as a static site with `REACT_APP_API_URL`; deploy the passenger web export with `EXPO_PUBLIC_API_URL`. Done on Netlify (`smartbusadmin`, `smartbuspassenger`), both built from `dev`.
+- [x] Set `CORS_ORIGIN` to the admin and passenger web addresses only. Done and checked from outside: the two sites are allowed, an unknown origin is blocked.
+- [ ] Change the default admin password, remove any test accounts and test buses from the cloud database. The admin was recreated from the real `ADMIN_PASSWORD` and the login page no longer prints the default; still to do: remove any test accounts and test buses.
 - [ ] Hold the database backup in mind: Atlas free tier has none; export the collections before and after the pilot.
-- [ ] Run section 2's replay against the cloud URL and watch the hosted passenger app.
+- [ ] Run section 2's replay against the cloud URL and watch the hosted passenger app. The hosted system was exercised with two phones in Expo Go instead; the replay needs the Railway `JWT_SECRET` in your own terminal.
 
 ## 5. Driver app on real phones
 
-- [ ] **(you)** Expo account; `eas build --platform android --profile preview` with `EXPO_PUBLIC_API_URL` set to the cloud API; install the APK on each volunteer's Android 10+ phone (`docs/DEPLOYMENT.md`, section 4).
+- [ ] **(you)** Expo account; `eas build --platform android --profile preview` with `EXPO_PUBLIC_API_URL` set to the cloud API; install the APK on each volunteer's Android 10+ phone (`docs/DEPLOYMENT.md`, section 4). Accounts and both EAS projects exist. The backend address now lives in each `eas.json` (a terminal variable never reaches EAS) and a build stops without the Maps key. Rebuild both apps.
 - [ ] On each phone: grant location "all the time" and disable battery optimisation for the app, or background tracking stops.
 - [ ] Test on a bench: sign in, go on duty, screen off for 10 minutes, positions keep arriving.
 - [ ] Test offline: airplane mode for 2 minutes while moving, then reconnect; the buffered positions arrive in order and the bus does not jump.
@@ -128,7 +130,7 @@ All three measures are explained in `docs/EVALUATION.md`.
 - [ ] Architecture diagram (three tiers, Socket.IO rooms, Redis, MongoDB) and the ETA data flow. `docs/ARCHITECTURE.md` has the text; draw the figures.
 - [ ] REST and WebSocket API specification: `docs/API.md` (check it against the final code once more).
 - [ ] MongoDB schema guide: `docs/DATABASE.md` (include the 2dsphere index and the log collections).
-- [ ] Deployment runbooks for Render and Railway: `docs/DEPLOYMENT.md`; run it once from a clean checkout and fix anything that is wrong.
+- [x] Deployment runbooks for Render and Railway: `docs/DEPLOYMENT.md`; run it once from a clean checkout and fix anything that is wrong. Done from a real deployment: `docs/SETUP-MONGODB.md`, `docs/SETUP-RAILWAY.md`, `docs/SETUP-APKS.md`, linked from the README.
 - [ ] Driver APK delivered (file plus the build profile), passenger web and admin deployed with working links, a demo video of one live trip.
 - [ ] Final report in the London Met / ESOFT format, using the corrections in section 11.
 - [ ] Git history tidy: merged branches deleted, tags for the pilot build and the submission build, CI green on `main`.
@@ -152,8 +154,8 @@ All three measures are explained in `docs/EVALUATION.md`.
 Check each proposal deliverable against evidence you can show:
 
 - [ ] Driver APK installed and used on real phones.
-- [ ] Passenger web and mobile app working against the cloud API.
-- [ ] Admin dashboard managing the pilot route, buses and drivers.
+- [ ] Passenger web and mobile app working against the cloud API. The web app and Expo Go work against it; the installed phone app is still to do.
+- [x] Admin dashboard managing the pilot route, buses and drivers. Done on the hosted admin.
 - [ ] Backend deployed with Redis and MongoDB, tested under simulated load (reports saved).
 - [ ] Performance evaluation report: latency, ETA error, throughput, each with method and network.
 - [ ] User study report from the questionnaire.
