@@ -56,10 +56,11 @@ app.use(require('./routes/auth'));
 app.use(require('./routes/passengers'));
 
 // Everything below is admin-only, except reading routes (passengers need the route list and geometry).
-app.use(['/api/dashboard', '/api/drivers', '/api/buses', '/api/live', '/api/metrics', '/api/analytics'], adminOnly);
+app.use(['/api/dashboard', '/api/drivers', '/api/buses', '/api/live', '/api/metrics', '/api/analytics', '/api/admins'], adminOnly);
 app.use('/api/routes', adminWrites);
 
 app.use(require('./routes/monitoring')(state));
+app.use(require('./routes/admins'));
 app.use(require('./routes/drivers'));
 app.use(require('./routes/buses'));
 app.use(require('./routes/routes')(state));
