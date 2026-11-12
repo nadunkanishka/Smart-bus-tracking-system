@@ -33,7 +33,7 @@ Each part has its own `package.json` and `node_modules`. The root `package.json`
 | `npm run dev:backend` | Start the backend with auto-restart |
 | `npm run dev:admin` | Start the admin dashboard |
 | `npm run dev:driver` / `npm run dev:passenger` | Start an Expo app (ports 8081 / 8082) |
-| `npm run seed` | Add the demo route |
+| `npm run seed` | Add the 25 Colombo routes (`npm run seed -- 138` adds just one) |
 | `npm test` | Backend and admin tests |
 | `npm run build` | Production build of the admin dashboard |
 | `npm run sync` | Copy `shared/` into the apps |
@@ -86,7 +86,7 @@ JWT_SECRET=type-any-long-random-text-here
 ADMIN_PASSWORD=choose-a-password-for-the-admin
 ```
 
-Add the demo route (Route 138 with a road line and stops on the map). You only need this once. It is safe to run again:
+Add the Colombo routes (25 routes with road lines and stops on the map; Route 138, Pettah to Homagama, is the pilot route). You only need this once. It is safe to run again:
 
 ```bash
 npm run seed

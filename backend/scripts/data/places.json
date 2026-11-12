@@ -1,0 +1,480 @@
+{
+  "Panadura": {
+    "lat": 6.71241,
+    "lng": 79.90458,
+    "found": "Panadura, Goods Shed Rd, Walana"
+  },
+  "Walana": {
+    "lat": 6.73118,
+    "lng": 79.90475,
+    "found": "Walana, Panadura DS Division, Kalutara District"
+  },
+  "Keselwatta": {
+    "lat": 6.74926,
+    "lng": 79.89777,
+    "found": "Keselwatta Ground, Zaviya Road, Pallimulla"
+  },
+  "Moratuwa": {
+    "lat": 6.76728,
+    "lng": 79.88604,
+    "found": "Moratuwa, Colombo District, Western Province"
+  },
+  "Ratmalana": {
+    "lat": 6.81975,
+    "lng": 79.86826,
+    "found": "Ratmalana, Dehiwala, Colombo District"
+  },
+  "Mount Lavinia": {
+    "lat": 6.83171,
+    "lng": 79.86272,
+    "found": "Mount Lavinia, Station Road, Ratmalana North"
+  },
+  "Dehiwala": {
+    "lat": 6.85128,
+    "lng": 79.86598,
+    "found": "Dehiwala, Colombo District, Western Province"
+  },
+  "Wellawatta": {
+    "lat": 6.87502,
+    "lng": 79.85746,
+    "found": "Wellawatta, Marine Drive, Wellawatte"
+  },
+  "Bambalapitiya": {
+    "lat": 6.90231,
+    "lng": 79.85464,
+    "found": "Bambalapitiya, Colombo, Colombo District"
+  },
+  "Kollupitiya": {
+    "lat": 6.91353,
+    "lng": 79.85081,
+    "found": "Kollupitiya, Slave Island, Colombo"
+  },
+  "Galle Face": {
+    "lat": 6.92496,
+    "lng": 79.84446,
+    "found": "Galle Face Green, Kompannaweediya, Slave Island"
+  },
+  "Fort": {
+    "lat": 6.93373,
+    "lng": 79.85008,
+    "found": "Colombo Fort, Olcott Mawatha, L B Gate"
+  },
+  "Pettah": {
+    "lat": 6.93625,
+    "lng": 79.84996,
+    "found": "Pettah Market, Keyzer Street, L B Gate"
+  },
+  "Slave Island": {
+    "lat": 6.92466,
+    "lng": 79.85027,
+    "found": "Slave Island, Colombo, Colombo District"
+  },
+  "Lake House": {
+    "lat": 6.93288,
+    "lng": 79.84718,
+    "found": "Lake House, D. R. Wijewardene Mawatha, L B Gate"
+  },
+  "Kochchikade": {
+    "lat": 6.94328,
+    "lng": 79.85497,
+    "found": "Kochchikade, St. Bastian, Colombo"
+  },
+  "Kotahena": {
+    "lat": 6.94802,
+    "lng": 79.85982,
+    "found": "Kotahena, St. Bastian, Colombo"
+  },
+  "Narahenpita": {
+    "lat": 6.90573,
+    "lng": 79.88213,
+    "found": "Narahenpita, Colombo, Colombo District"
+  },
+  "Kanatta Junction": {
+    "lat": 6.912,
+    "lng": 79.8795,
+    "found": "manual, approximate"
+  },
+  "Borella": {
+    "lat": 6.91483,
+    "lng": 79.8776,
+    "found": "Borella, Colombo, Colombo District"
+  },
+  "Punchi Borella": {
+    "lat": 6.92135,
+    "lng": 79.8713,
+    "found": "Punchi Borella, Borella, Maligawatte"
+  },
+  "Maradana": {
+    "lat": 6.92843,
+    "lng": 79.86486,
+    "found": "Maradana, P. de S. Kularatne Mawatha, Panchikawatte"
+  },
+  "Technical College Junction": {
+    "lat": 6.93235,
+    "lng": 79.85952,
+    "found": "Maradana Technical College (nearest searchable point)"
+  },
+  "Ja-Ela": {
+    "lat": 7.07938,
+    "lng": 79.89076,
+    "found": "Ja-ela, Gampaha District, Western Province"
+  },
+  "Wattala": {
+    "lat": 6.98987,
+    "lng": 79.89271,
+    "found": "Wattala, Gampaha District, Western Province"
+  },
+  "Peliyagoda": {
+    "lat": 6.96337,
+    "lng": 79.88189,
+    "found": "Peliyagoda, Kolonnawa, Gampaha District"
+  },
+  "New Kelani Bridge": {
+    "lat": 6.95444,
+    "lng": 79.8819,
+    "found": "New Kelani Bridge, Meethotamulla, Sedawatta"
+  },
+  "Orugodawatta": {
+    "lat": 6.94841,
+    "lng": 79.88873,
+    "found": "Ceylon Petroleum Orugodawatta Tank Farm, Kuruniyawatte, Maligawatte"
+  },
+  "Dematagoda": {
+    "lat": 6.93275,
+    "lng": 79.88037,
+    "found": "Dematagoda, Maligawatte, Colombo"
+  },
+  "Bauddhaloka Mawatha": {
+    "lat": 6.89645,
+    "lng": 79.85813,
+    "found": "Bauddhaloka Mawatha, Bambalapitiya, Milagiriya"
+  },
+  "Thummulla": {
+    "lat": 6.898,
+    "lng": 79.865,
+    "found": "Thummulla Junction, manual, approximate"
+  },
+  "Elakanda": {
+    "lat": 6.99461,
+    "lng": 79.87405,
+    "found": "Elakanda Jct., Canal Road (New Negombo Road), Thimbirigasyaya"
+  },
+  "Old Kelani Bridge": null,
+  "Bloemendhal": {
+    "lat": 6.9494,
+    "lng": 79.86765,
+    "found": "Bloemendhal, St. Bastian, Colombo"
+  },
+  "Maharagama": {
+    "lat": 6.84728,
+    "lng": 79.92661,
+    "found": "Maharagama, Colombo District, Western Province"
+  },
+  "Navinna": {
+    "lat": 6.85147,
+    "lng": 79.91909,
+    "found": "DSI Navinna, High Level Road, Gangodawila South"
+  },
+  "Delkanda": {
+    "lat": 6.86367,
+    "lng": 79.9014,
+    "found": "Delkanda, Colombo District, Western Province"
+  },
+  "Nugegoda": {
+    "lat": 6.86997,
+    "lng": 79.88828,
+    "found": "Nugegoda, Colombo District, Western Province"
+  },
+  "Kirillapone": {
+    "lat": 6.87679,
+    "lng": 79.88343,
+    "found": "Poorwarama Mawatha, Edmonton Government Housing Scheme, Kirulapona"
+  },
+  "Havelock Town": {
+    "lat": 6.88623,
+    "lng": 79.86528,
+    "found": "Havelock Town, Colombo, Colombo District"
+  },
+  "Dickmans Road": {
+    "lat": 6.88794,
+    "lng": 79.86374,
+    "found": "Dr. Lester James Peiris Mawatha, Havelock Town"
+  },
+  "Ratmalana Airport": {
+    "lat": 6.82185,
+    "lng": 79.88731,
+    "found": "Ratmalana Airport, Athula Mawatha, Ratmalana North"
+  },
+  "Karagampitiya": {
+    "lat": 6.85049,
+    "lng": 79.87189,
+    "found": "Karagampitiya, Colombo District, Western Province"
+  },
+  "Kalubowila": {
+    "lat": 6.86646,
+    "lng": 79.87729,
+    "found": "Kalubowila, Nugegoda, Colombo District"
+  },
+  "Kohuwala": {
+    "lat": 6.86705,
+    "lng": 79.88489,
+    "found": "podu welandasela,Kohuwala, S. de S. Jayasinghe Road"
+  },
+  "Jubilee Post": {
+    "lat": 6.87586,
+    "lng": 79.90089,
+    "found": "Jubilee Post, Pagoda, Mirihana"
+  },
+  "Pitakotte": {
+    "lat": 6.88407,
+    "lng": 79.90205,
+    "found": "Pitakotte, Sri Jayewardenepura Kotte, Colombo District"
+  },
+  "Beddagana": {
+    "lat": 6.88479,
+    "lng": 79.9076,
+    "found": "Beddagana, Pitakotte, Sri Jayewardenepura Kotte"
+  },
+  "Dehiwala Main Bus Stop": {
+    "lat": 6.85182,
+    "lng": 79.86588,
+    "found": "Dehiwala Junction, Pallidora, Dehiwala"
+  },
+  "Nedimala": {
+    "lat": 6.8499,
+    "lng": 79.87911,
+    "found": "Nedimala, Colombo District, Western Province"
+  },
+  "Bellanthota": null,
+  "Bellanvila": {
+    "lat": 6.84523,
+    "lng": 79.89066,
+    "found": "Bellanvila, Colombo District, Western Province"
+  },
+  "Boralesgamuwa": {
+    "lat": 6.84106,
+    "lng": 79.9017,
+    "found": "Boralesgamuwa, Colombo District, Western Province"
+  },
+  "Town Hall": {
+    "lat": 6.9173,
+    "lng": 79.86481,
+    "found": "Town Hall, Cinnamon Gardens, Slave Island"
+  },
+  "Ibbanwala": {
+    "lat": 6.919,
+    "lng": 79.86097,
+    "found": "Hyde Park Corner, Hunupitiya, Slave Island"
+  },
+  "Darley Road": {
+    "lat": 6.92253,
+    "lng": 79.86209,
+    "found": "T. B. Jayah Mawatha, Suduwella, Slave Island"
+  },
+  "Piliyandala": {
+    "lat": 6.79995,
+    "lng": 79.92312,
+    "found": "Piliyandala, School Lane, Puwakgas Junction"
+  },
+  "Kesbewa": {
+    "lat": 6.79501,
+    "lng": 79.9411,
+    "found": "Kesbewa, Colombo District, Western Province"
+  },
+  "Pannipitiya": {
+    "lat": 6.84644,
+    "lng": 79.94863,
+    "found": "Pannipitiya, Colombo District, Western Province"
+  },
+  "Kottawa": {
+    "lat": 6.84301,
+    "lng": 79.96553,
+    "found": "Kottawa, Colombo District, Western Province"
+  },
+  "Makumbura": {
+    "lat": 6.83936,
+    "lng": 79.97285,
+    "found": "Makumbura, Colombo District, Western Province"
+  },
+  "Homagama": {
+    "lat": 6.84124,
+    "lng": 80.00345,
+    "found": "Homagama, Colombo District, Western Province"
+  },
+  "Meepe": {
+    "lat": 6.85866,
+    "lng": 80.09136,
+    "found": "Meepe, Colombo District, Western Province"
+  },
+  "Kosgama": {
+    "lat": 6.94063,
+    "lng": 80.13706,
+    "found": "Kosgama, Colombo District, Western Province"
+  },
+  "Avissawella": {
+    "lat": 6.93948,
+    "lng": 79.89184,
+    "found": "Avissawella Road, Dematagoda, Kuruniyawatte"
+  },
+  "Thimbirigasyaya": {
+    "lat": 6.8979,
+    "lng": 79.86961,
+    "found": "Thimbirigasyaya, Colombo, Colombo District"
+  },
+  "Godagama": {
+    "lat": 6.85069,
+    "lng": 80.03241,
+    "found": "Godagama, Colombo District, Western Province"
+  },
+  "Meegoda": {
+    "lat": 6.84411,
+    "lng": 80.04603,
+    "found": "Meegoda, Colombo District, Western Province"
+  },
+  "Padukka": {
+    "lat": 6.84154,
+    "lng": 80.09165,
+    "found": "Padukka, Colombo District, Western Province"
+  },
+  "Ingiriya": {
+    "lat": 6.85399,
+    "lng": 80.10464,
+    "found": "Meepe-Ingiriya Road, Pitumpe North, Pitumpe"
+  },
+  "Kelaniya": {
+    "lat": 6.95023,
+    "lng": 79.91719,
+    "found": "Kelaniya, Colombo District, Western Province"
+  },
+  "Pamankada": {
+    "lat": 6.87736,
+    "lng": 79.86957,
+    "found": "Pamankada, Colombo, Colombo District"
+  },
+  "Norris Canal Road": {
+    "lat": 6.92085,
+    "lng": 79.86616,
+    "found": "Norris Canal Road, Maligakanda, Kuppiyawatta"
+  },
+  "Kolonnawa": {
+    "lat": 6.93263,
+    "lng": 79.89031,
+    "found": "Kolonnawa, Colombo District, Western Province"
+  },
+  "Wellampitiya": {
+    "lat": 6.93689,
+    "lng": 79.89657,
+    "found": "Wellampitiya, Colombo District, Western Province"
+  },
+  "W. A. Silva Mawatha": {
+    "lat": 6.87666,
+    "lng": 79.8658,
+    "found": "W. A. Silva Mawatha (High Street), Pamankada, Colombo"
+  },
+  "Baseline Road": {
+    "lat": 6.92351,
+    "lng": 79.8778,
+    "found": "Dr. Danister de Silva Mawatha (Baseline Road), Borella, Maligawatte"
+  },
+  "Ward Place": {
+    "lat": 6.91496,
+    "lng": 79.8761,
+    "found": "Ward Place, Senanayake Junction Borella, Borella"
+  },
+  "Ayurveda Junction": null,
+  "Rajagiriya": {
+    "lat": 6.9095,
+    "lng": 79.89622,
+    "found": "Rajagiriya, Kolonnawa, Colombo District"
+  },
+  "Etul Kotte": {
+    "lat": 6.90456,
+    "lng": 79.90435,
+    "found": "Holy Angels Etul Kotte, Jayanthi Mawatha, Ethulkotte West"
+  },
+  "Pita Kotte": {
+    "lat": 6.88307,
+    "lng": 79.90181,
+    "found": "Pita Kotte Bus Stop, Kotte Road, Ethulkotte"
+  },
+  "Welikada": {
+    "lat": 6.91073,
+    "lng": 79.89306,
+    "found": "Welikada, Rajagiriya, Kolonnawa"
+  },
+  "Angoda": {
+    "lat": 6.93602,
+    "lng": 79.92572,
+    "found": "Angoda, Colombo District, Western Province"
+  },
+  "Angulana": {
+    "lat": 6.79941,
+    "lng": 79.87319,
+    "found": "Angulana, Colombo District, Western Province"
+  },
+  "Kiribathgoda": {
+    "lat": 6.97815,
+    "lng": 79.92699,
+    "found": "Kiribathgoda, Gampaha District, Western Province"
+  },
+  "Battaramulla": {
+    "lat": 6.90218,
+    "lng": 79.91958,
+    "found": "Battaramulla, Colombo District, Western Province"
+  },
+  "Malabe": {
+    "lat": 6.90407,
+    "lng": 79.95462,
+    "found": "Malabe, Colombo District, Western Province"
+  },
+  "Kaduwela": {
+    "lat": 6.9357,
+    "lng": 79.98433,
+    "found": "Kaduwela, Colombo District, Western Province"
+  },
+  "Katunayake Airport": {
+    "lat": 7.17893,
+    "lng": 79.88573,
+    "found": "Bandaranaike International Airport, Katunayake-Veyangoda Road, Avariwatte"
+  },
+  "Athurugiriya": {
+    "lat": 6.87798,
+    "lng": 79.99002,
+    "found": "Athurugiriya, Colombo District, Western Province"
+  },
+  "Mattakkuliya": {
+    "lat": 6.97322,
+    "lng": 79.87658,
+    "found": "Mattakkuliya, Colombo, Colombo District"
+  },
+  "Hendala": {
+    "lat": 6.99641,
+    "lng": 79.88976,
+    "found": "Hendala, Wattala, Gampaha District"
+  },
+  "Makumbura Multimodal Centre": {
+    "lat": 6.83936,
+    "lng": 79.97285,
+    "found": "taken from Makumbura, approximate"
+  },
+  "Apeksha Hospital": {
+    "lat": 6.83732,
+    "lng": 79.92029,
+    "found": "Apeksha Cancer Hospital Maharagama, Ahalape Road, Katuwawala"
+  },
+  "Kelaniya Campus": {
+    "lat": 6.97422,
+    "lng": 79.91539,
+    "found": "University of Kelaniya, Colombo-Kandy Road, Dalugama"
+  },
+  "Kadawatha": {
+    "lat": 7.00214,
+    "lng": 79.95123,
+    "found": "Kadawatha, Gampaha District, Western Province"
+  },
+  "Dharmapala Mawatha": {
+    "lat": 6.91434,
+    "lng": 79.85918,
+    "found": "Srimath Anagarika Dharmapala Mawatha, Suduwella, Slave Island"
+  }
+}
