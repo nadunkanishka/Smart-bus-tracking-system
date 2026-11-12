@@ -39,15 +39,39 @@ module.exports = (state) => {
     }
   });
 
-  // ETA accuracy: mean absolute error of predicted vs actual stop arrivals
+  // ETA accuracy: mean absolute error of predicted vs actual stop arrivals, and the same arrivals predicted by the plain
+  // baseline (straight-line distance at a fixed average speed). `compared` uses only predictions that have both, so the
+  // two errors are measured on exactly the same arrivals; `byHorizon` splits them by how far ahead the prediction was made.
   router.get('/api/analytics/eta', async (req, res) => {
     try {
       const match = req.query.routeId ? { routeId: String(req.query.routeId) } : {};
-      const [row] = await EtaLog.aggregate([
-        { $match: match },
-        { $group: { _id: null, samples: { $sum: 1 }, maeSec: { $avg: { $abs: '$errorSec' } }, biasSec: { $avg: '$errorSec' }, maxAbsSec: { $max: { $abs: '$errorSec' } } } },
+      const withBaseline = { ...match, baselineErrorSec: { $type: 'number' } };
+      const round = (n) => (n == null ? null : Math.round(n));
+      const [[row], [cmp], buckets] = await Promise.all([
+        EtaLog.aggregate([
+          { $match: match },
+          { $group: { _id: null, samples: { $sum: 1 }, maeSec: { $avg: { $abs: '$errorSec' } }, biasSec: { $avg: '$errorSec' }, maxAbsSec: { $max: { $abs: '$errorSec' } } } },
+        ]),
+        EtaLog.aggregate([
+          { $match: withBaseline },
+          { $group: { _id: null, samples: { $sum: 1 }, engine: { $avg: { $abs: '$errorSec' } }, baseline: { $avg: { $abs: '$baselineErrorSec' } } } },
+        ]),
+        EtaLog.aggregate([
+          { $match: withBaseline },
+          { $bucket: { groupBy: '$horizonSec', boundaries: [0, 120, 300, 600], default: 'over', output: { samples: { $sum: 1 }, engine: { $avg: { $abs: '$errorSec' } }, baseline: { $avg: { $abs: '$baselineErrorSec' } } } } },
+        ]),
       ]);
-      return res.json(row ? { samples: row.samples, maeSec: Math.round(row.maeSec), biasSec: Math.round(row.biasSec), maxAbsSec: row.maxAbsSec } : { samples: 0, maeSec: null, biasSec: null, maxAbsSec: null });
+      const labels = { 0: 'under 2 min', 120: '2 to 5 min', 300: '5 to 10 min', 600: '10 to 20 min', over: 'over 20 min' };
+      const order = [0, 120, 300, 600, 'over'];
+      const byHorizon = order
+        .map((k) => buckets.find((b) => b._id === k))
+        .filter(Boolean)
+        .map((b) => ({ horizon: labels[b._id], samples: b.samples, engineMaeSec: round(b.engine), baselineMaeSec: round(b.baseline) }));
+      const compared = cmp
+        ? { samples: cmp.samples, engineMaeSec: round(cmp.engine), baselineMaeSec: round(cmp.baseline), improvementPct: cmp.baseline > 0 ? Math.round(((cmp.baseline - cmp.engine) / cmp.baseline) * 100) : null }
+        : { samples: 0, engineMaeSec: null, baselineMaeSec: null, improvementPct: null };
+      const base = row ? { samples: row.samples, maeSec: Math.round(row.maeSec), biasSec: Math.round(row.biasSec), maxAbsSec: row.maxAbsSec } : { samples: 0, maeSec: null, biasSec: null, maxAbsSec: null };
+      return res.json({ ...base, compared, byHorizon });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }

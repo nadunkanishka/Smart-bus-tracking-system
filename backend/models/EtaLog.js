@@ -9,6 +9,8 @@ const etaLogSchema = new mongoose.Schema({
   predictedAt: Date,
   predictedArrival: Date,
   actualArrival: Date,
+  baselineArrival: Date, // what a plain straight-line distance / average speed estimate said at the same moment
+  baselineErrorSec: Number, // baselineArrival - actual
   horizonSec: Number, // how far ahead the prediction was made
   errorSec: Number, // predicted - actual (negative = bus arrived later than predicted)
 });

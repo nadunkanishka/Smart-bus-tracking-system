@@ -1,15 +1,19 @@
 // Per-bus trip state machine (pure). Turns the stream of ETA results into the records the proposal needs:
 //   - segment logs (traversal + dwell time per segment) that become the ETA engine's historical baseline
 //   - ETA logs (predicted vs actual arrival per stop) for the mean-absolute-error evaluation metric
-const { DEFAULTS } = require('./eta');
+const { DEFAULTS, baselineEtaSec } = require('./eta');
 
 const STOP_RADIUS_M = 40; // slow time this close to a stop counts as dwell
 const MAX_GAP_MS = 30000; // gaps longer than this (offline, off duty) are not counted as dwell
 const START_RADIUS_M = 150; // a trip that begins this close to the first stop counts as starting there
 
-const snapshot = (eta, ts) => eta.stops
+// What was predicted for every upcoming stop at this moment: the engine's answer and, beside it, the plain baseline's.
+const snapshot = (route, eta, fix) => eta.stops
   .filter((s) => s.status === 'upcoming')
-  .map((s) => ({ stopIndex: s.index, predictedAt: ts, predictedArrival: ts + s.etaSec * 1000 }));
+  .map((s) => {
+    const base = baselineEtaSec(route, fix, s.index);
+    return { stopIndex: s.index, predictedAt: fix.ts, predictedArrival: fix.ts + s.etaSec * 1000, baselineArrival: base == null ? null : Math.round(fix.ts + base * 1000) };
+  });
 
 function startTrip(route, eta, fix, tripId) {
   return {
@@ -20,7 +24,7 @@ function startTrip(route, eta, fix, tripId) {
     lastTs: fix.ts,
     // joined mid-segment: its traversal time is not a full sample
     partial: eta.distAlong - route.stopDist[eta.segIndex] > START_RADIUS_M,
-    predictions: snapshot(eta, fix.ts),
+    predictions: snapshot(route, eta, fix),
   };
 }
 
@@ -46,6 +50,8 @@ function advance(state, route, eta, fix) {
         actualArrival: fix.ts,
         horizonSec: Math.round((p.predictedArrival - p.predictedAt) / 1000),
         errorSec: Math.round((p.predictedArrival - fix.ts) / 1000),
+        baselineArrival: p.baselineArrival,
+        baselineErrorSec: p.baselineArrival == null ? null : Math.round((p.baselineArrival - fix.ts) / 1000),
       });
     });
   }
@@ -61,7 +67,7 @@ function advance(state, route, eta, fix) {
   state.segEnteredTs = fix.ts;
   state.dwellMs = 0;
   state.partial = false;
-  state.predictions = state.predictions.filter((p) => p.stopIndex > reached).concat(snapshot(eta, fix.ts));
+  state.predictions = state.predictions.filter((p) => p.stopIndex > reached).concat(snapshot(route, eta, fix));
   out.ended = eta.finished;
   return out;
 }

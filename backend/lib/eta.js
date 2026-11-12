@@ -6,12 +6,13 @@
 //   (b) find the active segment and the distance left in it
 //   (c) time to finish the current segment from instantaneous speed
 //   (d) add historical average traversal + dwell time for every later segment
-const { cumulativeDistances, projectOntoLine } = require('./geo');
+const { cumulativeDistances, projectOntoLine, haversine } = require('./geo');
 
 const DEFAULTS = {
   speedMps: 5.5, // ~20 km/h urban bus average, used when a segment has no history yet
   dwellSec: 20, // default dwell per intermediate stop without history
   minMovingMps: 1.5, // below this the bus is treated as stopped/crawling
+  baselineSpeedMps: 5.5, // the plain comparison estimate: straight-line distance / this average speed (about 20 km/h)
   arriveM: 40, // within this distance of the final stop the trip counts as finished (buses rarely park on the exact point)
 };
 
@@ -81,4 +82,12 @@ function computeEta(route, fix, near) {
   };
 }
 
-module.exports = { prepareRoute, computeEta, DEFAULTS };
+// The baseline the engine is compared with (proposal evaluation): no road, no live speed, no history, no dwell,
+// just the straight-line distance from the bus to the stop at a fixed average speed.
+function baselineEtaSec(route, fix, stopIndex) {
+  const stop = route.stops[stopIndex];
+  if (!stop || !Number.isFinite(fix.lat) || !Number.isFinite(fix.lng)) return null;
+  return haversine([fix.lat, fix.lng], [stop.lat, stop.lng]) / DEFAULTS.baselineSpeedMps;
+}
+
+module.exports = { prepareRoute, computeEta, baselineEtaSec, DEFAULTS };

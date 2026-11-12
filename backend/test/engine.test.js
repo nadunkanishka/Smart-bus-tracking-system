@@ -173,3 +173,34 @@ test('passwords are hashed, legacy plaintext still verifies, tokens round-trip',
   assert.equal(readToken(signToken({ role: 'driver', busId: 'BUS-1' })).busId, 'BUS-1');
   assert.equal(readToken('not-a-token'), null);
 });
+
+test('baseline: straight line over a fixed average speed, ignoring the road, live speed and history', () => {
+  const { baselineEtaSec } = require('../lib/eta');
+  const route = prepareRoute(LINE, STOPS);
+  const fix = { lat: 0, lng: 0, speed: 20 }; // a fast bus: the baseline does not care
+  near(baselineEtaSec(route, fix, 1), LEG / DEFAULTS.baselineSpeedMps, 0.5, 'S1');
+  const crow = haversine([0, 0], [0.009, 0.009]);
+  near(baselineEtaSec(route, fix, 2), crow / DEFAULTS.baselineSpeedMps, 0.5, 'S2 by the crow, not the 2 km road');
+  assert.equal(baselineEtaSec(route, fix, 9), null, 'no such stop');
+  assert.equal(baselineEtaSec(route, { lat: NaN, lng: 0 }, 1), null, 'no position');
+});
+
+test('trip tracker logs the baseline prediction beside the engine prediction and its error', () => {
+  const route = prepareRoute(LINE, STOPS);
+  const t0 = 1_700_000_000_000;
+  const at = (lat, lng, speed, sec) => {
+    const fix = { lat, lng, speed, ts: t0 + sec * 1000 };
+    return { fix, eta: computeEta(route, fix) };
+  };
+  let step = at(0, 0, 10, 0);
+  const state = startTrip(route, step.eta, step.fix, 'TRIP-B');
+  const base = state.predictions.find((p) => p.stopIndex === 1).baselineArrival;
+  near((base - t0) / 1000, LEG / DEFAULTS.baselineSpeedMps, 1, 'baseline arrival at S1');
+
+  step = at(0.009, 0.001, 8, 130); // reaches S1 after 130 s
+  const res = advance(state, route, step.eta, step.fix);
+  const log = res.etaLogs.find((l) => l.stopIndex === 1);
+  assert.equal(log.baselineArrival, base);
+  assert.equal(log.baselineErrorSec, Math.round((base - (t0 + 130000)) / 1000));
+  assert.notEqual(log.baselineErrorSec, log.errorSec, 'the two predictions are different numbers');
+});
