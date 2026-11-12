@@ -38,6 +38,13 @@ export default function DriverForm({ formData, updateField }) {
           />
         </Field>
       </div>
+      <Field label="Driver Status">
+        <select className="form-input" value={formData.status || 'Active'} onChange={(event) => updateField('status', event.target.value)}>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="On Leave">On Leave</option>
+        </select>
+      </Field>
     </div>
   );
 }

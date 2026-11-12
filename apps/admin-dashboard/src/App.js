@@ -16,6 +16,8 @@ import BusesPage from './pages/BusesPage';
 import RoutesPage from './pages/RoutesPage';
 import LiveMonitor from './pages/LiveMonitor';
 import Analytics from './pages/Analytics';
+import PassengersPage from './pages/PassengersPage';
+import AdminsPage from './pages/AdminsPage';
 
 // Root component: sign-in state, the page shell and the switch between pages.
 function App() {
@@ -137,6 +139,10 @@ function App() {
         ? 'Live Monitor'
         : activePage === 'analytics'
           ? 'Trip Analytics'
+      : activePage === 'passengers'
+        ? 'Passenger Accounts'
+        : activePage === 'admins'
+          ? 'Administrator Accounts'
       : activePage === 'drivers'
         ? 'Driver Management'
         : activePage === 'buses'
@@ -172,6 +178,9 @@ function App() {
 
           {activePage === 'live' && <LiveMonitor api={api} routes={routes} />}
           {activePage === 'analytics' && <Analytics api={api} routes={routes} />}
+
+          {activePage === 'passengers' && <PassengersPage currentPageTitle={currentPageTitle} showNotification={showNotification} />}
+          {activePage === 'admins' && <AdminsPage currentPageTitle={currentPageTitle} user={user} showNotification={showNotification} />}
 
           {activePage === 'drivers' && <DriversPage currentPageTitle={currentPageTitle} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
 

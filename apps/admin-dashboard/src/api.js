@@ -8,3 +8,11 @@ export const api = (path, options = {}) => fetch(`${API_BASE}${path}`, {
   ...options,
   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}`, ...options.headers },
 });
+
+// JSON call that throws Error(server message) on a non-2xx response, for pages that manage their own state.
+export async function apiJson(path, method = 'GET', body) {
+  const res = await api(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Server returned ${res.status}`);
+  return data;
+}
