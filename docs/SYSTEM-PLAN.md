@@ -20,14 +20,30 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 - No measured latency, ETA error or load figures exist yet. The report must not claim any until they do.
 - The reports describe two things the code does not do (see section 1).
 
-## 1. Decisions to make first (they change what you build or write)
+## 1. Decisions (made)
 
-- [ ] **(you) D1. Kalman filter and distance-threshold smoothing.** The interim report says drift of 10-25 m is handled with these. The server rejects impossible fixes (bad range, future or stale timestamps, speed over 162 km/h) and each fix carries its accuracy, but nothing smooths the track; there is no Kalman filter anywhere in the code. Either implement a simple smoother (server-side, before the ETA engine) or change the report to say what exists. Do one before the pilot, so the pilot data matches the report.
-- [ ] **(you) D2. What "Route 138" is.** The report says Colombo-Homagama; the seed data is Pettah-Maharagama. Pick the real pilot corridor, name it the same way everywhere (seed, report, screenshots).
-- [ ] **(you) D3. Passenger app wording.** The proposal promises a web app plus a React Native companion. The interim report describes the Leaflet web app only. The code has both (one Expo project builds web and native). Say so in the report, and decide whether the native passenger app is part of the pilot or only the web app.
-- [ ] **(you) D4. Account management scope.** Passenger self-service and administrator accounts go beyond the approved proposal. Keep them (and mention them as extra) or drop them. The code is isolated in `routes/admins.js` and the `/me` parts of `routes/passengers.js`.
-- [ ] **(you) D5. Hosting tier for the pilot.** Free instances sleep and drop driver sockets. The proposal budgets LKR 3,000-5,000 a month for about two months. Decide Render or Railway and pay for the pilot window.
-- [ ] **(you) D6. Baseline comparison.** The report names a plain Haversine estimate as the baseline. Decide whether the evaluation compares the engine against it (recommended: it is the only way to show the engine helps). If yes, the comparison needs a small addition to the analytics.
+- [x] **D1. GPS smoothing: build it.** Add server-side smoothing before the ETA engine (a distance-threshold filter, and a basic Kalman filter if it measurably helps) so the interim report's claim becomes true. New work items:
+  - [ ] Design: where it sits (after validation, before trip tracking and the ETA engine), per-bus state, reset on a new trip or a long gap.
+  - [ ] Implement with the thresholds in one config block, and keep the raw fix next to the smoothed one in the log so both can be compared.
+  - [ ] Unit tests: a jittery track becomes smoother, a real turn is not cut off, a genuine stop stays a stop, an out-of-order fix is ignored.
+  - [ ] Measure drift before and after on a recorded or replayed noisy track (10-25 m noise, as in the report) and keep the figures for the evaluation.
+- [x] **D2. Pilot route: Pettah to Homagama (Route 138).** The route data must say this everywhere.
+  - [ ] **(you)** Ride the corridor once and note the real stops in order (Pettah, Borella and so on through Nugegoda, Maharagama and Pannipitiya to Homagama; use whatever the real service stops at).
+  - [ ] Replace the seed route (`backend/scripts/seed.js`) with these stops and the road path, and update the docs and screenshots that name Maharagama as the terminal.
+- [x] **D3. Pilot both passenger apps, say so in the report.**
+  - [ ] Build the native passenger app as an installable build (EAS), install it on volunteer phones alongside the web app.
+  - [ ] Add a paragraph to the report describing the web app and the React Native companion (one Expo codebase), as the proposal promises.
+- [x] **D4. Keep passenger and administrator accounts.**
+  - [ ] Add one line to the report: these go beyond the approved proposal (self-service passenger accounts, administrator accounts), included for security and usability.
+- [x] **D5. Hosting: free.** Render free web service plus the free Key Value (Redis-compatible) and MongoDB Atlas free tier. Free hosting is enough for the pilot's few buses, with these conditions:
+  - [ ] Free Render services sleep after about 15 minutes with no traffic. Keep the API awake before and during every run (a free uptime pinger such as UptimeRobot hitting `/api/health` every 5 minutes), and open the app a minute before each shift so nobody meets a cold start.
+  - [ ] Render's free instance is small (512 MB), so the 500-driver and 2,000-passenger stress test must not run against it. Run that test against a temporary instance (a paid instance for a few hours costs very little) or locally, and say in the report where it ran.
+  - [ ] Free tiers have no backups: export the database collections before and after every pilot day.
+  - [ ] Keep an eye on the free limits (monthly hours, Key Value size, Atlas storage) while the pilot runs.
+- [x] **D6. Compare the ETA engine with a plain Haversine baseline.**
+  - [ ] Log the baseline estimate (straight-line distance divided by the bus's speed) next to the engine's prediction for each stop, using the same inputs.
+  - [ ] Extend the analytics (`/api/analytics/eta`) and the Trip Analytics page to show both errors side by side.
+  - [ ] Unit tests for the baseline calculation.
 
 ## 2. Make it run end to end (locally, first)
 
@@ -49,7 +65,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 ## 4. Deploy
 
 - [ ] **(you)** Create a MongoDB Atlas cluster (free tier), allow Render's addresses, copy the connection string.
-- [ ] **(you)** Render: New, Blueprint, this repository. Fill `MONGODB_URI`, `ADMIN_PASSWORD`, `CORS_ORIGIN`. Use a paid instance for the pilot (D5).
+- [ ] **(you)** Render: New, Blueprint, this repository. Fill `MONGODB_URI`, `ADMIN_PASSWORD`, `CORS_ORIGIN`. Free instance for the pilot (D5): set up the uptime pinger straight away.
 - [ ] `/api/health` reports `mongo: connected` and `cache: redis`.
 - [ ] Seed or recreate the route on the cloud database (`MONGODB_URI=<atlas> npm run seed`, then edit in the admin).
 - [ ] Deploy the admin as a static site with `REACT_APP_API_URL`; deploy the passenger web export with `EXPO_PUBLIC_API_URL`.
@@ -71,7 +87,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 
 - [ ] Edge cases, each written up as pass or fail: bus joins mid-route, bus stops short of the last stop, GPS jump, duplicate and out-of-order fixes, driver disconnects and returns, passenger reconnects, two buses on one route, a bus with no route.
 - [ ] Load test to the figures the interim report promises: up to 500 simulated drivers and 2,000 passenger sockets. The shipped `loadtest/artillery.yml` peaks at 15 new users per second, so raise the phases and run it from a separate machine against the deployed API, not localhost.
-- [ ] Record Redis memory, Node event-loop lag and socket stability during the peak (Render metrics, and `/api/metrics`). Note the free tier cannot carry this load; say which plan you tested on.
+- [ ] Record Redis memory, Node event-loop lag and socket stability during the peak (Render metrics, and `/api/metrics`). The free tier cannot carry this load (D5): run it against a temporary paid instance or locally, and say which in the report.
 - [ ] Keep the Artillery report files; they are evidence for the report.
 - [ ] Fix what the test finds before the pilot, not after.
 
