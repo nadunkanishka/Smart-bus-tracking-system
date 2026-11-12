@@ -77,7 +77,7 @@ Bus responses never include the password. They carry `hasPassword: true/false`.
 | GET | `/api/live` | Per bus: `connected`, `onDuty`, `lastSeen`, `lat`, `lng`, `speed`, `tripId` |
 | GET | `/api/metrics` | Fix counters, open sockets, cache kind, latency (`deviceToServer`, `serverProcessing`: `avg`, `p95`, `max` in ms) |
 | GET | `/api/analytics/segments?routeId=RT-001` | Per segment: `samples`, `traversalSec` (`avg`, `min`, `p50`, `p90`, `max`), `dwellSecAvg`, raw `values` |
-| GET | `/api/analytics/eta?routeId=RT-001` | `samples`, `maeSec`, `biasSec`, `maxAbsSec` |
+| GET | `/api/analytics/eta?routeId=RT-001` | `samples`, `maeSec`, `biasSec`, `maxAbsSec`, `compared` (`samples`, `engineMaeSec`, `baselineMaeSec`, `improvementPct`: engine against a straight-line estimate on the same arrivals), `byHorizon` (the same split by how far ahead the prediction was made) |
 
 ## Socket.IO events
 

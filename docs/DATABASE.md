@@ -58,11 +58,11 @@ One measured crossing of a segment. The averages are the ETA engine's historical
 
 ### etalogs
 
-Predicted versus actual arrival at a stop: `routeId`, `tripId`, `busId`, `stopIndex`, `predictedAt`, `predictedArrival`, `actualArrival`, `horizonSec` (how far ahead the prediction was made), `errorSec` (predicted minus actual).
+Predicted versus actual arrival at a stop: `routeId`, `tripId`, `busId`, `stopIndex`, `predictedAt`, `predictedArrival`, `actualArrival`, `horizonSec` (how far ahead the prediction was made), `errorSec` (predicted minus actual), and the plain baseline for the same moment: `baselineArrival`, `baselineErrorSec`.
 
 ### gpslogs
 
-Raw accepted fixes: `busId`, `routeId`, `tripId`, `location` (GeoJSON Point, **2dsphere index**), `speed`, `heading`, `deviceTs`, `serverTs`, `buffered`. A TTL index on `serverTs` deletes records after 14 days.
+Accepted fixes: `busId`, `routeId`, `tripId`, `location` (GeoJSON Point as the phone reported it, **2dsphere index**), `smoothed` (GeoJSON Point after smoothing: what the ETA engine and passengers used), `accuracy` (metres), `speed`, `heading`, `deviceTs`, `serverTs`, `buffered`. A TTL index on `serverTs` deletes records after 14 days.
 
 ### counters
 
