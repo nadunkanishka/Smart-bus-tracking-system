@@ -202,6 +202,20 @@ test('relations: deleting or renaming a record never leaves a dangling reference
   await A.del(`/api/routes/${route.routeId}`);
 });
 
+test('driver login finds the route of exactly that bus, not a bus whose registration contains it', async (t) => {
+  if (guard(t)) return;
+  const A = as(admin);
+  const b1 = (await A.post('/api/buses', { registration: 'NB-1', capacity: 40, mileage: 1, password: 'pw1234' })).data;
+  const b12 = (await A.post('/api/buses', { registration: 'NB-12', capacity: 40, mileage: 1, password: 'pw1234' })).data;
+  const route = (await A.post('/api/routes', { name: 'Only NB-12', start: 'A', end: 'B', distance: 1, assignedBus: `NB-12 (${b12.busId})` })).data;
+  const login = (reg) => call('POST', '/api/auth/driver-login', { body: { registration: reg, password: 'pw1234' } });
+  assert.equal((await login('NB-1')).data.assignedRoute, null);
+  assert.equal((await login('NB-12')).data.assignedRoute.routeId, route.routeId);
+  await A.del(`/api/routes/${route.routeId}`);
+  await A.del(`/api/buses/${b1.busId}`);
+  await A.del(`/api/buses/${b12.busId}`);
+});
+
 test('passengers: register, read, update, change password, delete own account', async (t) => {
   if (guard(t)) return;
   const reg = await call('POST', '/api/passengers/register', { body: { username: 'Nimal.P', password: 'secret1', name: 'Nimal P', phone: '0770001111' } });

@@ -67,13 +67,10 @@ router.post('/api/auth/driver-login', authLimiter, async (req, res) => {
     }
     const driver = bus.assignedDriver ? await Driver.findOne({ driverId: bus.assignedDriver }) : null;
 
-    // Find assigned route in MongoDB for this bus
-    // Matches if route.assignedBus includes registration or busId
-    const assignedRoute = await Route.findOne({
-      assignedBus: { $regex: escapeRegex(bus.registration), $options: 'i' },
-    }) || await Route.findOne({
-      assignedBus: { $regex: escapeRegex(bus.busId || 'BUS-'), $options: 'i' },
-    });
+    // The route stores its bus as "NB-4712 (BUS-002)". Match the bus id in brackets, or the exact registration:
+    // a plain substring match would give bus NB-1 the route of bus NB-12.
+    const assignedRoute = await Route.findOne({ assignedBus: new RegExp(`\\(${escapeRegex(bus.busId)}\\)\\s*$`) })
+      || await Route.findOne({ assignedBus: bus.registration });
 
     res.json({
       message: 'Bus authentication successful',
