@@ -2,13 +2,15 @@
 //
 //   npm run replay -- --route RT-001 --buses 3 --speed 12 --interval 3000 --duration 120
 //   npm run replay -- --route RT-001 --offline 20:50      (bus 1 loses signal from second 20 to 50, then flushes)
+//   npm run replay -- --route RT-001 --noise 15           (GPS error of about 15 m on every fix; the summary shows how far
+//                                                          off the passenger's bus is, with and without smoothing: GPS_SMOOTHING=off)
 //
 // Virtual buses (SIM-01, SIM-02, ...) get driver tokens signed with the server's JWT_SECRET, so run this with
 // the same .env as the backend. Latency is measured on one clock (this machine): device timestamp -> passenger receive.
 require('dotenv').config();
 const { io } = require('socket.io-client');
 const { signToken } = require('../lib/auth');
-const { cumulativeDistances } = require('../lib/geo');
+const { cumulativeDistances, haversine } = require('../lib/geo');
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -22,7 +24,9 @@ const INTERVAL = Number(arg('interval', 3000));
 const DURATION = Number(arg('duration', 60)); // seconds
 const [OFF_FROM, OFF_TO] = String(arg('offline', '')).split(':').map(Number);
 const START = Number(arg('start', 0)); // 0..1: where along the route the first bus begins
+const NOISE = Number(arg('noise', 0)); // metres: mean GPS error added to every fix (0 = a perfect track)
 const QUIET = process.argv.includes('--quiet');
+const gauss = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
 
 if (!ROUTE) { console.error('Usage: npm run replay -- --route <routeId> [--buses N] [--offline from:to]'); process.exit(1); }
 
@@ -44,6 +48,8 @@ const pointAt = (line, cum, d) => {
 
   // Passenger: subscribes to the route room and records end-to-end latency.
   const latencies = [];
+  const truth = new Map(); // device timestamp -> where the bus really was
+  const shown = []; // metres between where the bus really was and where the passenger is shown it
   let updates = 0;
   let lastPrint = 0;
   const passenger = io(URL, { transports: ['websocket'] });
@@ -52,6 +58,7 @@ const pointAt = (line, cum, d) => {
   passenger.on('bus:update', (u) => {
     updates += 1;
     if (!u.buffered) latencies.push(Date.now() - u.deviceTs);
+    if (truth.has(u.deviceTs)) shown.push(haversine(truth.get(u.deviceTs), [u.lat, u.lng]));
     if (!QUIET && Date.now() - lastPrint > 5000) {
       lastPrint = Date.now();
       const etas = u.stops.map((s) => (s.status === 'passed' ? `${s.name}: passed` : `${s.name}: ${s.etaMin} min`)).join(' | ');
@@ -74,7 +81,12 @@ const pointAt = (line, cum, d) => {
       if (d.dist >= total) { d.dist = 0; d.socket.emit('driver:duty', { onDuty: false }); }
       else d.dist = Math.min(total, d.dist + SPEED * (INTERVAL / 1000));
       const [lat, lng] = pointAt(line, cum, d.dist);
-      const fix = { lat, lng, speed: SPEED, heading: 0, ts: Date.now(), seq: d.sent += 1 };
+      const ts = Date.now();
+      truth.set(ts, [lat, lng]);
+      if (truth.size > 5000) truth.delete(truth.keys().next().value);
+      const sigma = NOISE / 1.2533; // the mean of a 2-D Gaussian error is sigma * 1.2533
+      const noisy = NOISE > 0 ? { lat: lat + ((gauss() * sigma) / 6371000) * (180 / Math.PI), lng: lng + ((gauss() * sigma) / (6371000 * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI) } : { lat, lng };
+      const fix = { lat: noisy.lat, lng: noisy.lng, speed: SPEED, heading: 0, accuracy: NOISE > 0 ? Math.round(NOISE * 1.2) : 5, ts, seq: d.sent += 1 };
 
       const shouldBeOffline = n === 0 && Number.isFinite(OFF_FROM) && elapsed >= OFF_FROM && elapsed < OFF_TO;
       if (shouldBeOffline && !d.offline) { d.offline = true; console.log(`[${d.busId}] signal lost, buffering fixes`); }
@@ -95,6 +107,10 @@ const pointAt = (line, cum, d) => {
       const avg = s.length ? Math.round(s.reduce((a, b) => a + b, 0) / s.length) : null;
       console.log('\n── Replay summary ──');
       console.log(`drivers: ${BUSES}, fixes sent: ${drivers.reduce((a, d) => a + d.sent, 0)}, passenger updates received: ${updates}`);
+      if (NOISE > 0 && shown.length) {
+        const e = [...shown].sort((a, b) => a - b);
+        console.log(`GPS noise ${NOISE} m: the passenger's bus was ${Math.round((e.reduce((a, b) => a + b, 0) / e.length) * 10) / 10} m from the truth on average (95th percentile ${Math.round(e[Math.floor(e.length * 0.95)] * 10) / 10} m)`);
+      }
       console.log(`end-to-end latency (device -> passenger): avg ${avg} ms, p95 ${s[Math.floor(s.length * 0.95)] ?? null} ms, peak ${s[s.length - 1] ?? null} ms`);
       drivers.forEach((d) => { d.socket.emit('driver:duty', { onDuty: false }); d.socket.close(); });
       passenger.close();

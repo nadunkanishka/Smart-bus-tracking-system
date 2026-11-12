@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 
-// Raw accepted GPS fixes. Written in batches off the live path and expired after 14 days.
+// Accepted GPS fixes, raw and smoothed. Written in batches off the live path and expired after 14 days.
 const gpsLogSchema = new mongoose.Schema({
   busId: { type: String, index: true },
   routeId: String,
   tripId: String,
   location: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] }, // [lng, lat]
+  smoothed: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] }, // after the Kalman smoother, [lng, lat]
+  accuracy: Number, // metres, as the phone reported it
   speed: Number,
   heading: Number,
   deviceTs: Date,
