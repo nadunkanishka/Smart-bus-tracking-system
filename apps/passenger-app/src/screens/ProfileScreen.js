@@ -2,9 +2,10 @@ import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Button, OverlapHeader, OverlapSheet } from '../shared/ui';
 import { ProfileRow } from '../components/ProfileRow';
+import { AccountActions } from '../components/AccountActions';
 import { S } from './ProfileScreen.styles';
 
-export function ProfileScreen({ userProfile, selectedRoute, boardingStop, destinationStop, onResetDefaults, onLogout, onOpenStops }) {
+export function ProfileScreen({ userProfile, selectedRoute, boardingStop, destinationStop, onResetDefaults, onLogout, onOpenStops, account, showToast }) {
   return (
     <ScrollView
       style={S.flex}
@@ -48,6 +49,15 @@ export function ProfileScreen({ userProfile, selectedRoute, boardingStop, destin
 
         {/* Reset Stops Defaults */}
         <Button title="Reset Route Terminals" tone="soft" onPress={onResetDefaults} style={S.profileBtn} />
+
+        {/* Edit details, change password, delete account */}
+        <AccountActions
+          user={userProfile}
+          onSaveProfile={account.updateProfile}
+          onChangePassword={account.changePassword}
+          onDelete={account.deleteAccount}
+          showToast={showToast}
+        />
 
         {/* Sign Out */}
         <Button title="Sign Out" tone="dangerSoft" onPress={onLogout} style={S.profileBtn} />
