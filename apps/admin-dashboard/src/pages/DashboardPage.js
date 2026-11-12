@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
+import { CountUp, useEntrance, useGrowBars, useSweep } from '../motion';
 
 const MAX_BARS = 7;
 const MAX_FLEET_ROWS = 3;
@@ -25,10 +26,18 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
     { key: 'idle', label: 'Idle', color: 'var(--violet)', n: fleet.idle },
     { key: 'maintenance', label: 'Service', color: 'var(--danger)', n: fleet.maintenance },
   ];
-  let at = 0;
-  const ring = fleetTotal
-    ? `conic-gradient(${split.map((s) => { const from = at; at += (s.n / fleetTotal) * 100; return `${s.color} ${from}% ${at}%`; }).join(', ')})`
-    : 'conic-gradient(var(--a-line) 0 100%)';
+  // The ring is drawn for a progress p from 0 to 1 (the motion hook sweeps it round once); p = 1 is the finished ring.
+  const ringAt = (p) => {
+    if (!fleetTotal) return 'conic-gradient(var(--a-line) 0 100%)';
+    let at = 0;
+    const parts = split.filter((x) => x.n > 0).map((x) => { const from = at * p; at += (x.n / fleetTotal) * 100; return `${x.color} ${from}% ${at * p}%`; });
+    return `conic-gradient(${parts.join(', ')}${p < 1 ? `, var(--a-line) ${p * 100}% 100%` : ''})`;
+  };
+  const root = useRef(null);
+  const donut = useRef(null);
+  useEntrance(root);
+  useGrowBars(root, bars.length);
+  useSweep(donut, ringAt, `${fleet.active}-${fleet.idle}-${fleet.maintenance}`);
 
   const driverName = (id) => drivers.find((d) => d.id === id)?.name || 'No driver assigned';
   const statusClass = (s) => (s === 'Active' ? 'badge-green' : s === 'Maintenance' ? 'badge-red' : 'badge-amber');
@@ -43,7 +52,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
   ];
 
   return (
-    <section className="page-section dash" data-page="dashboard">
+    <section ref={root} className="page-section dash" data-page="dashboard">
       <div className="section-header">
         <div>
           <h1 className="greeting"><b>Hello,</b> {user.name || user.username}</h1>
@@ -56,7 +65,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
           <div className="panel-head">
             <div>
               <h2>Stops per route</h2>
-              <p className="big-number">{totalStops}<small>{routes.length} routes · {readyRoutes} ready</small></p>
+              <p className="big-number"><CountUp value={totalStops} /><small>{routes.length} routes · {readyRoutes} ready</small></p>
             </div>
             <div className="round-btns">
               <button type="button" className="round-btn" onClick={() => openModal('route')} aria-label="Add route" title="Add route"><Icon type="plus" /></button>
@@ -149,10 +158,10 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
             <span className="chip chip-plain">{fleetTotal} buses</span>
           </div>
           <div className="ring-wrap">
-            <div className="donut" style={{ background: ring }} role="img" aria-label={split.map((s) => `${s.label}: ${pct(s.n, fleetTotal)}%`).join(', ')}>
+            <div ref={donut} className="donut" role="img" aria-label={split.map((s) => `${s.label}: ${pct(s.n, fleetTotal)}%`).join(', ')}>
               <div className="donut-hole">
                 <small>Running now</small>
-                <strong>{fleet.active}</strong>
+                <strong><CountUp value={fleet.active} /></strong>
                 <small>of {fleetTotal}</small>
               </div>
             </div>
@@ -169,7 +178,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
             <h2>Drivers</h2>
             <button type="button" className="link-btn" onClick={() => setActivePage('drivers')}>See all</button>
           </div>
-          <div className="stat-line"><strong>{summary.activeDrivers}</strong><span>of {drivers.length} on the roster</span></div>
+          <div className="stat-line"><strong><CountUp value={summary.activeDrivers} /></strong><span>of {drivers.length} on the roster</span></div>
           <p className="stat-note">Drivers marked Active can sign a bus in and go on duty.</p>
           <div className="pills" role="group" aria-label="Driver status">
             {['Active', 'On Leave'].map((s) => (

@@ -646,3 +646,6 @@ select.form-input { appearance: none; background-image: linear-gradient(45deg, t
    vertical seam across large blurred cards (and clipped a hovered card's shadow). The card colour is translucent enough to
    keep the glow showing through. */
 .panel { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Motion (anime.js, see src/motion.js): bars scale up from their base, and the cards are not clipped while they move. */
+.bar { transform-origin: 50% 100%; }
