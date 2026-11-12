@@ -5,10 +5,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MARKERS } from './busMarkers';
+import { COLORS } from './theme';
+import { useTheme } from './themeRuntime';
 
 // One baked marker per compass heading (index = heading / 45). Index 3 is the three-quarter view used when a fix has no heading.
 const BUS_SVGS = MARKERS.map((src) => `<img src="${src}" width="52" height="52" alt="">`);
 
+// OpenStreetMap tiles, recoloured with a CSS filter inside the map page: grey in light mode, inverted to a dark map in dark mode.
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 const html = () => `<!DOCTYPE html>
@@ -17,16 +20,18 @@ const html = () => `<!DOCTYPE html>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  html, body, #map { width: 100%; height: 100%; margin: 0; background: #EEF0F4; }
-  .leaflet-tile-pane { filter: grayscale(1) brightness(1.1) contrast(0.78); }
+  html, body, #map { width: 100%; height: 100%; margin: 0; background: var(--bg, #F1EFE6); }
+  .leaflet-tile-pane { filter: grayscale(1) brightness(1.08) contrast(0.8); transition: filter 200ms; }
+  html[data-mode=dark] .leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(0.72) contrast(0.95); }
   .sb-bus { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
   .sb-bus.stale { opacity: .55; }
-  .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: #131416; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(15,20,25,.3); }
-  .sb-stop.on { width: 18px; height: 18px; background: #F29A78; }
+  .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: var(--stop, #15140F); border: 3px solid var(--stop-ring, #fff); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+  .sb-stop.on { width: 18px; height: 18px; background: var(--ember, #FF8A3D); }
   .sb-route { stroke-dasharray: 6000; stroke-dashoffset: 6000; animation: draw 1.4s cubic-bezier(.23,1,.32,1) forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @media (prefers-reduced-motion: reduce) { .sb-route { animation: none; stroke-dashoffset: 0; } }
-  .leaflet-control-attribution { font: 10px system-ui; background: rgba(255,255,255,.7); }
+  .leaflet-control-attribution { font: 10px system-ui; background: var(--attr, rgba(255,255,255,.7)); color: var(--attr-text, #333); }
+  .leaflet-control-attribution a { color: inherit; }
 </style></head><body><div id="map"></div><script>
   var map = L.map('map', { zoomControl: false }).setView([6.9, 79.87], 12);
   L.tileLayer('${TILE_URL}', { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
@@ -53,11 +58,15 @@ const html = () => `<!DOCTYPE html>
   window.addEventListener('message', function (e) {
     var d = e.data; if (!d || d.type !== 'sb-map') return;
     pad = d.padding || pad;
-    var key = JSON.stringify([d.path, d.padding]);
+    var th = d.theme || {}, root = document.documentElement.style;
+    document.documentElement.setAttribute('data-mode', th.mode || 'light');
+    root.setProperty('--bg', th.bg || '#F1EFE6'); root.setProperty('--stop', th.stop || '#15140F'); root.setProperty('--stop-ring', th.stopRing || '#fff');
+    root.setProperty('--ember', th.ember || '#FF8A3D'); root.setProperty('--attr', th.attr || 'rgba(255,255,255,.7)'); root.setProperty('--attr-text', th.attrText || '#333');
+    var key = JSON.stringify([d.path, d.padding, th.route]);
     if (key !== routeKey) {
       routeKey = key;
       if (routeLine) map.removeLayer(routeLine);
-      routeLine = d.path && d.path.length > 1 ? L.polyline(d.path, { color: '#2C6E8A', weight: 6, lineCap: 'round', lineJoin: 'round', className: 'sb-route' }).addTo(map) : null;
+      routeLine = d.path && d.path.length > 1 ? L.polyline(d.path, { color: th.route || '#15140F', weight: 6, lineCap: 'round', lineJoin: 'round', className: 'sb-route' }).addTo(map) : null;
       fit();
     }
     stopLayer.clearLayers();
@@ -81,6 +90,7 @@ const html = () => `<!DOCTYPE html>
 </script></body></html>`;
 
 export default function LiveMap({ path, stops, buses, highlightStop = -1, padding }) {
+  const { mode } = useTheme();
   const frame = useRef(null);
   const [ready, setReady] = useState(false);
   const doc = useMemo(html, []);
@@ -92,17 +102,19 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
   }, []);
 
   useEffect(() => {
-    if (ready) frame.current?.contentWindow?.postMessage({ type: 'sb-map', path, stops, buses, highlightStop, padding }, '*');
-  }, [ready, path, stops, buses, highlightStop, padding]);
+    const dark = mode === 'dark';
+    const theme = { mode, bg: COLORS.bg, route: dark ? COLORS.lime : COLORS.ink, stop: dark ? COLORS.lime : COLORS.ink, stopRing: dark ? '#0F0E0B' : '#FFFFFF', ember: COLORS.ember, attr: dark ? 'rgba(15,14,11,.75)' : 'rgba(255,255,255,.7)', attrText: dark ? '#A5A193' : '#333' };
+    if (ready) frame.current?.contentWindow?.postMessage({ type: 'sb-map', path, stops, buses, highlightStop, padding, theme }, '*');
+  }, [ready, path, stops, buses, highlightStop, padding, mode]);
 
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, { backgroundColor: COLORS.bg }]}>
       <iframe ref={frame} title="Live bus map" srcDoc={doc} style={styles.frame} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#EEF0F4' },
+  fill: { ...StyleSheet.absoluteFillObject },
   frame: { width: '100%', height: '100%', border: 'none' },
 });

@@ -1,7 +1,8 @@
 import React from 'react';
 import Svg, { Circle, Line, Path, Polygon, Polyline, Rect } from 'react-native-svg';
+import { COLORS } from './theme';
 
-export function BusIcon({ color = '#FF5B37', size = 20 }) {
+export function BusIcon({ color = COLORS.accentText, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Rect x="3" y="6" width="18" height="13" rx="2" />
@@ -14,7 +15,7 @@ export function BusIcon({ color = '#FF5B37', size = 20 }) {
   );
 }
 
-export function LockIcon({ color = '#121214', size = 20 }) {
+export function LockIcon({ color = COLORS.ink, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -23,7 +24,7 @@ export function LockIcon({ color = '#121214', size = 20 }) {
   );
 }
 
-export function MapPinIcon({ color = '#FF5B37', size = 18 }) {
+export function MapPinIcon({ color = COLORS.accentText, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -32,7 +33,7 @@ export function MapPinIcon({ color = '#FF5B37', size = 18 }) {
   );
 }
 
-export function FlagIcon({ color = '#FF5B37', size = 18 }) {
+export function FlagIcon({ color = COLORS.accentText, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
@@ -41,7 +42,7 @@ export function FlagIcon({ color = '#FF5B37', size = 18 }) {
   );
 }
 
-export function MapIcon({ color = '#8E8E93', size = 20 }) {
+export function MapIcon({ color = COLORS.muted, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
@@ -51,7 +52,7 @@ export function MapIcon({ color = '#8E8E93', size = 20 }) {
   );
 }
 
-export function SettingsIcon({ color = '#8E8E93', size = 20 }) {
+export function SettingsIcon({ color = COLORS.muted, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Circle cx="12" cy="12" r="3" />
@@ -60,7 +61,7 @@ export function SettingsIcon({ color = '#8E8E93', size = 20 }) {
   );
 }
 
-export function UserIcon({ color = '#8E8E93', size = 20 }) {
+export function UserIcon({ color = COLORS.muted, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -69,7 +70,7 @@ export function UserIcon({ color = '#8E8E93', size = 20 }) {
   );
 }
 
-export function ChevronDownIcon({ color = '#8E8E93', size = 16 }) {
+export function ChevronDownIcon({ color = COLORS.muted, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Polyline points="6 9 12 15 18 9" />
@@ -77,7 +78,7 @@ export function ChevronDownIcon({ color = '#8E8E93', size = 16 }) {
   );
 }
 
-export function PlayIcon({ color = '#FFFFFF', size = 16 }) {
+export function PlayIcon({ color = COLORS.white, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Polygon points="5 3 19 12 5 21 5 3" fill={color} />
@@ -85,7 +86,7 @@ export function PlayIcon({ color = '#FFFFFF', size = 16 }) {
   );
 }
 
-export function StopIcon({ color = '#FFFFFF', size = 16 }) {
+export function StopIcon({ color = COLORS.white, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Rect x="4" y="4" width="16" height="16" rx="2" fill={color} />
@@ -93,7 +94,7 @@ export function StopIcon({ color = '#FFFFFF', size = 16 }) {
   );
 }
 
-export function ArrowRightIcon({ color = '#FF5B37', size = 16 }) {
+export function ArrowRightIcon({ color = COLORS.accentText, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Line x1="5" y1="12" x2="19" y2="12" />
@@ -102,7 +103,7 @@ export function ArrowRightIcon({ color = '#FF5B37', size = 16 }) {
   );
 }
 
-export function CheckIcon({ color = '#FFFFFF', size = 10 }) {
+export function CheckIcon({ color = COLORS.white, size = 10 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
       <Polyline points="20 6 9 17 4 12" />
@@ -111,17 +112,17 @@ export function CheckIcon({ color = '#FFFFFF', size = 10 }) {
 }
 
 // 2025 Orbix Studio Icons
-export function BellIcon({ color = '#121214', size = 20, hasBadge = true }) {
+export function BellIcon({ color = COLORS.ink, size = 20, hasBadge = true }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      {hasBadge ? <Circle cx="19" cy="5" r="3" fill="#FF5B37" stroke="#FFFFFF" strokeWidth="1.5" /> : null}
+      {hasBadge ? <Circle cx="19" cy="5" r="3" fill={COLORS.accent} stroke={COLORS.surface} strokeWidth="1.5" /> : null}
     </Svg>
   );
 }
 
-export function SearchIcon({ color = '#8E8E93', size = 18 }) {
+export function SearchIcon({ color = COLORS.muted, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Circle cx="11" cy="11" r="8" />
@@ -130,7 +131,7 @@ export function SearchIcon({ color = '#8E8E93', size = 18 }) {
   );
 }
 
-export function ScanIcon({ color = '#121214', size = 18 }) {
+export function ScanIcon({ color = COLORS.ink, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M3 7V5a2 2 0 0 1 2-2h2" />
@@ -142,7 +143,7 @@ export function ScanIcon({ color = '#121214', size = 18 }) {
   );
 }
 
-export function PhoneCallIcon({ color = '#FFFFFF', size = 18 }) {
+export function PhoneCallIcon({ color = COLORS.white, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -150,7 +151,7 @@ export function PhoneCallIcon({ color = '#FFFFFF', size = 18 }) {
   );
 }
 
-export function MessageCircleIcon({ color = '#121214', size = 18 }) {
+export function MessageCircleIcon({ color = COLORS.ink, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -158,7 +159,7 @@ export function MessageCircleIcon({ color = '#121214', size = 18 }) {
   );
 }
 
-export function ArrowLeftIcon({ color = '#121214', size = 20 }) {
+export function ArrowLeftIcon({ color = COLORS.ink, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <Line x1="19" y1="12" x2="5" y2="12" />
@@ -167,7 +168,7 @@ export function ArrowLeftIcon({ color = '#121214', size = 20 }) {
   );
 }
 
-export function MoreVerticalIcon({ color = '#121214', size = 20 }) {
+export function MoreVerticalIcon({ color = COLORS.ink, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Circle cx="12" cy="12" r="1.5" fill={color} />
@@ -177,7 +178,7 @@ export function MoreVerticalIcon({ color = '#121214', size = 20 }) {
   );
 }
 
-export function PlusIcon({ color = '#FFFFFF', size = 22 }) {
+export function PlusIcon({ color = COLORS.white, size = 22 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
       <Line x1="12" y1="5" x2="12" y2="19" />
@@ -186,7 +187,7 @@ export function PlusIcon({ color = '#FFFFFF', size = 22 }) {
   );
 }
 
-export function NavigationArrowIcon({ color = '#FFFFFF', size = 16 }) {
+export function NavigationArrowIcon({ color = COLORS.white, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <Polygon points="12 2 19 21 12 17 5 21 12 2" fill={color} />
@@ -194,7 +195,7 @@ export function NavigationArrowIcon({ color = '#FFFFFF', size = 16 }) {
   );
 }
 
-export function SpeedometerIcon({ color = '#71717A', size = 18 }) {
+export function SpeedometerIcon({ color = COLORS.muted, size = 18 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Path d="M12 14v-4" />
@@ -203,7 +204,7 @@ export function SpeedometerIcon({ color = '#71717A', size = 18 }) {
   );
 }
 
-export function ClockIcon({ color = '#71717A', size = 16 }) {
+export function ClockIcon({ color = COLORS.muted, size = 16 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Circle cx="12" cy="12" r="10" />
@@ -212,7 +213,7 @@ export function ClockIcon({ color = '#71717A', size = 16 }) {
   );
 }
 
-export function RouteIcon({ color = '#8E8E93', size = 20 }) {
+export function RouteIcon({ color = COLORS.muted, size = 20 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <Circle cx="6" cy="19" r="3" />

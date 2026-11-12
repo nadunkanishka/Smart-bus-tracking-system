@@ -40,5 +40,6 @@ export const NAV_ICONS = {
   ],
 };
 
-// Item colours: inactive items are two greys, the current item is white with a pale blue accent on the ink circle.
-export const NAV_TONES = { idle: ['#9AA2AE', '#5C6675'], active: ['#FFFFFF', '#8ECCE5'] };
+// Item colours [main, accent]. The current item sits on a lime circle, so it is drawn in ink with an olive accent.
+export const NAV_TONES = { idle: ['#A09C8D', '#6A675B'], active: ['#15140F', '#5E6D14'] };
+export const NAV_TONES_DARK = { idle: ['#6F6C60', '#A5A193'], active: ['#15140F', '#5E6D14'] };
