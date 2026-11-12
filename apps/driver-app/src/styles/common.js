@@ -10,11 +10,11 @@ export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 export const buildCommon = () => StyleSheet.create({
   flex: { flex: 1 },
   routeScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('h1'), color: COLORS.ink, paddingTop: TOP_INSET },
-  screenSubHeader: { ...type('small'), color: COLORS.ink, marginTop: 4, maxWidth: '60%' },
+  screenTitle: { ...type('display'), fontWeight: '500', color: COLORS.ink, paddingTop: TOP_INSET },
+  screenSubHeader: { ...type('small'), color: COLORS.muted, marginTop: 4 },
   headerBus: { position: 'absolute', right: 12, bottom: 34 },
   sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: 24, marginBottom: 12 },
   emptyLogBox: { alignItems: 'center', paddingVertical: 24, gap: 8 },
   emptyLog: { ...type('small'), color: COLORS.muted, textAlign: 'center' },
-  profileCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
+  profileCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 20, marginBottom: 16, ...SHADOWS.sm },
 });

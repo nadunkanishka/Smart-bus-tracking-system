@@ -16,10 +16,8 @@ export function ShiftScreen({
   return (
     <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
       <OverlapHeader minHeight={150}>
-        <Text style={D.screenTitle}>{busRegistration}</Text>
+        <Text style={D.screenTitle}><Text style={D.titleBold}>{busRegistration}</Text></Text>
         <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
-        {/* CHANGED (illustration only): the bus shows a z while off duty; the toggle text still states the status. */}
-        <Vehicle name="bus" livery="coral" status={isOnShift ? undefined : 'idle'} running={isOnShift} width={124} style={D.headerBus} />
       </OverlapHeader>
 
       <OverlapSheet>
@@ -52,9 +50,9 @@ export function ShiftScreen({
         {/* Three-column status panel */}
         {/* CHANGED (visual only): same three values, shown as notch stat cards */}
         <View style={D.specsRow}>
-          <NotchStat label="Server" tone="orange" icon={(c) => <RouteIcon color={c} size={14} />} value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
-          <NotchStat label="GPS" tone="purple" icon={(c) => <NavigationArrowIcon color={c} size={14} />} value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
-          <NotchStat label="Buffered" tone="orange" icon={(c) => <BusIcon color={c} size={14} />} value={String(queued)} valueColor={queued ? COLORS.warning : COLORS.ink} />
+          <NotchStat label="Server" tone="orange" value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
+          <NotchStat label="GPS" tone="purple" value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
+          <NotchStat label="Buffered" tone="orange" value={String(queued)} valueColor={queued ? COLORS.warning : COLORS.ink} />
         </View>
 
         {queued > 0 ? (

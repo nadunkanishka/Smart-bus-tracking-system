@@ -5,7 +5,7 @@ import {
   AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Modal, Platform, Pressable, StyleSheet, Text, TextInput,
   View, useWindowDimensions, ScrollView, KeyboardAvoidingView, Keyboard,
 } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { COLORS, RADII, SHADOWS, TYPE } from './theme';
 import { useTheme } from './themeRuntime';
@@ -434,20 +434,39 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
   );
 }
 
-// Overlapping screen header: pale blue block (ink text only) with a soft light circle in the corner, plus a
-// curved sheet that the screen content sits on.
-export function OverlapHeader({ children, minHeight = 148 }) {
+// Screen header and body. They used to be a coloured block with a curved sheet over it; now they are plain
+// containers on the glowing page (AppBackdrop), the same look as the admin dashboard. The names are kept so every
+// screen keeps working.
+export function OverlapHeader({ children }) {
   useTheme();
-  return (
-    <View style={{ backgroundColor: COLORS.backdrop, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 48, minHeight, overflow: 'hidden' }}>
-      <View pointerEvents="none" style={{ position: 'absolute', right: -60, top: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: COLORS.surfaceSoft, opacity: 0.55 }} />
-      {children}
-    </View>
-  );
+  return <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>{children}</View>;
 }
 export function OverlapSheet({ children, style }) {
   useTheme();
-  return <View style={[{ backgroundColor: COLORS.bg, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 20, paddingTop: 24 }, style]}>{children}</View>;
+  return <View style={[{ paddingHorizontal: 20, paddingTop: 4 }, style]}>{children}</View>;
+}
+
+// The dashboard's page background: an orange glow top-left and a cool glow bottom-right over the base colour.
+export function AppBackdrop() {
+  const { mode } = useTheme();
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.bg }]}>
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <RadialGradient id={`bd-a-${mode}`} cx="6" cy="-4" rx="78" ry="42" gradientUnits="userSpaceOnUse">
+            <Stop offset="0" stopColor={COLORS.glowA} />
+            <Stop offset="1" stopColor={COLORS.glowA} stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id={`bd-b-${mode}`} cx="100" cy="106" rx="80" ry="40" gradientUnits="userSpaceOnUse">
+            <Stop offset="0" stopColor={COLORS.glowB} />
+            <Stop offset="1" stopColor={COLORS.glowB} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100" height="100" fill={`url(#bd-a-${mode})`} />
+        <Rect width="100" height="100" fill={`url(#bd-b-${mode})`} />
+      </Svg>
+    </View>
+  );
 }
 
 // Navigation icon: Lucide outline. The current item sits on an orange circle, so it is drawn in night; idle items are muted.
@@ -462,12 +481,30 @@ export function NavIcon({ name, active, size = 24 }) {
 // shows its label; the current item sits in an ink circle with a white icon. items: [{ id, label, icon(active) }]
 export function FloatingDock({ items, active, onChange }) {
   useTheme();
+  const reduced = useReducedMotion();
+  const n = items.length;
+  const index = Math.max(0, items.findIndex((i) => i.id === active));
+  const [width, setWidth] = useState(0);
+  const x = useRef(new Animated.Value(index)).current;
+  useEffect(() => {
+    Animated.timing(x, { toValue: index, duration: reduced ? 0 : 260, easing: EASE_DRAWER, useNativeDriver: native }).start();
+  }, [index, reduced, x]);
+  const itemW = width ? (width - 12) / n : 0;
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: (Platform.OS === 'ios' ? 28 : 14) + SAFE_BOTTOM, backgroundColor: COLORS.bg, ...SHADOWS.sm, shadowOffset: { width: 0, height: -6 } }}
+      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: (Platform.OS === 'ios' ? 28 : 14) + SAFE_BOTTOM }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.md }}>
+      <View
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.md }}
+      >
+        {itemW ? (
+          <Animated.View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 8, left: 6 + (itemW - 42) / 2, width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.orange, transform: [{ translateX: x.interpolate({ inputRange: [0, n - 1 || 1], outputRange: [0, itemW * (n - 1)] }) }] }}
+          />
+        ) : null}
         {items.map((item) => {
           const on = active === item.id;
           return (
@@ -479,7 +516,7 @@ export function FloatingDock({ items, active, onChange }) {
               accessibilityState={{ selected: on }}
               style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, PRESS_WEB, webRing(focused)]}
             >
-              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.orange : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon(on)}
               </View>
               <Text style={{ ...TYPE.caption, ...FONT, color: on ? COLORS.ink : COLORS.muted }} numberOfLines={1}>{item.label}</Text>
@@ -493,14 +530,97 @@ export function FloatingDock({ items, active, onChange }) {
 
 // Stat card: white card with a round tinted icon, a muted label and a bold value (the admin's KPI card in small).
 // icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue); the names are kept for existing callers.
-export function NotchStat({ label, value, tone = 'orange', icon, valueColor, style }) {
+export function NotchStat({ label, value, tone = 'orange', icon, valueColor, style, pill, pillTone = 'green' }) {
   useTheme();
-  const [wash, ink] = tone === 'purple' ? [COLORS.primaryLight, COLORS.primaryDeep] : [COLORS.accentSoft, COLORS.accentText];
+  const [wash, ink] = tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];
+  const pillBg = pillTone === 'red' ? COLORS.danger : pillTone === 'violet' ? COLORS.violet : COLORS.green;
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 100, backgroundColor: COLORS.surface, borderRadius: RADII.md, padding: 12, gap: 4, ...SHADOWS.sm }, style]}>
-      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: wash, alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>{icon ? icon(ink) : null}</View>
-      <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.muted }} numberOfLines={1}>{label}</Text>
-      <Text style={{ ...TYPE.bodyBold, ...FONT, color: valueColor || COLORS.ink }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 112, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 14, gap: 2, justifyContent: 'space-between', ...SHADOWS.sm }, style]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ ...TYPE.small, ...FONT, color: COLORS.muted, flexShrink: 1 }} numberOfLines={1}>{label}</Text>
+        {icon ? <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: wash, alignItems: 'center', justifyContent: 'center' }}>{icon(ink)}</View> : null}
+      </View>
+      {typeof value === 'string' || typeof value === 'number'
+        ? <Text style={{ ...TYPE.bodyBold, fontSize: 14, ...FONT, color: valueColor || COLORS.ink, letterSpacing: -0.2 }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+        : value}
+      {pill ? <View style={{ alignSelf: 'flex-start', backgroundColor: pillBg, borderRadius: RADII.pill, paddingHorizontal: 10, paddingVertical: 3 }}><Text style={{ ...TYPE.caption, ...FONT, color: COLORS.onBright }}>{pill}</Text></View> : null}
+    </View>
+  );
+}
+
+// ─── Animated pieces ─────────────────────────────────────────────────────────
+// A number that counts up to its value (700ms, strong ease-out). Shows the final number at once with reduced motion.
+export function CountUp({ value, duration = 700, suffix = '', style }) {
+  const reduced = useReducedMotion();
+  const target = Number(value);
+  const v = useRef(new Animated.Value(0)).current;
+  const [text, setText] = useState(reduced ? String(target) : '0');
+  useEffect(() => {
+    if (Number.isNaN(target)) return undefined;
+    const id = v.addListener(({ value: x }) => setText(String(Math.round(x))));
+    if (reduced) { v.setValue(target); } else {
+      Animated.timing(v, { toValue: target, duration, easing: EASE_OUT, useNativeDriver: false }).start();
+    }
+    return () => v.removeListener(id);
+  }, [target, duration, reduced, v]);
+  return <Text style={style}>{Number.isNaN(target) ? '—' : `${text}${suffix}`}</Text>;
+}
+
+// A ring that fills to value/max (600ms ease-out), like the dashboard's fleet donut. Children sit in the middle.
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+export function RingGauge({ value = 0, max = 100, size = 150, stroke = 12, color, track, children }) {
+  useTheme();
+  const reduced = useReducedMotion();
+  const frac = Math.max(0, Math.min(1, Number(value) / max || 0));
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: frac, duration: reduced ? 0 : 600, easing: EASE_OUT, useNativeDriver: false }).start();
+  }, [frac, reduced, v]);
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={track || COLORS.line} strokeWidth={stroke} fill="none" />
+        <AnimatedCircle cx={size / 2} cy={size / 2} r={r} stroke={color || COLORS.orange} strokeWidth={stroke} strokeLinecap="round" fill="none" strokeDasharray={`${c} ${c}`} strokeDashoffset={v.interpolate({ inputRange: [0, 1], outputRange: [c, 0] })} />
+      </Svg>
+      {children}
+    </View>
+  );
+}
+
+// A status dot with a soft ring that expands and fades (1.8s loop). Still with reduced motion.
+export function LiveDot({ color, size = 8 }) {
+  useTheme();
+  const reduced = useReducedMotion();
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduced) return undefined;
+    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: 1800, easing: Easing.out(Easing.ease), useNativeDriver: native }));
+    loop.start();
+    return () => loop.stop();
+  }, [reduced, v]);
+  const c = color || COLORS.green;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {reduced ? null : <Animated.View pointerEvents="none" style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: c, opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] }) }] }} />}
+      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: c }} />
+    </View>
+  );
+}
+
+// A thin progress bar that eases to its value (500ms) instead of jumping.
+export function ProgressTrack({ value = 0, height = 6, color, track, style }) {
+  useTheme();
+  const reduced = useReducedMotion();
+  const frac = Math.max(0, Math.min(1, Number(value) || 0));
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, { toValue: frac, duration: reduced ? 0 : 500, easing: EASE_OUT, useNativeDriver: false }).start();
+  }, [frac, reduced, v]);
+  return (
+    <View style={[{ height, borderRadius: height / 2, backgroundColor: track || COLORS.line, overflow: 'hidden' }, style]}>
+      <Animated.View style={{ height, borderRadius: height / 2, backgroundColor: color || COLORS.orange, width: v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
     </View>
   );
 }
