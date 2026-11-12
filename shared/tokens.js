@@ -183,10 +183,11 @@ export const TYPE = {
 };
 
 // Soft, diffuse shadows only.
+// elevation stays 0: on Android an elevation shadow shows as a solid rectangle behind translucent cards.
 export const SHADOWS = {
-  sm: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
-  md: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
-  lg: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
+  sm: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 0 },
+  md: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 0 },
+  lg: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 0 },
 };
 
 export const MOTION = {

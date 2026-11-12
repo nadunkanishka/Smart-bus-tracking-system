@@ -47,7 +47,7 @@ function AppShell() {
     boardingStop, setBoardingStop, boardingIndex, destinationStop, setDestinationStop, destinationIndex,
   } = useRoutes({ session, showToast });
 
-  const { conn, liveBuses, tracked, mapBuses, clearBuses } = useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex });
+  const { conn, liveBuses, tracked, mapBuses, clearBuses } = useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex, boardingStop, destinationStop });
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 

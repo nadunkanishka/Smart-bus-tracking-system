@@ -9,8 +9,8 @@ export function useRoutes({ session, showToast }) {
   const [routesState, setRoutesState] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [routeSearchQuery, setRouteSearchQuery] = useState('');
   const [selectedRouteId, setSelectedRouteId] = useState(null);
-  const [boardingStop, setBoardingStop] = useState(null);
-  const [destinationStop, setDestinationStop] = useState(null);
+  const [boardingStop, setBoardingStopRaw] = useState(null);
+  const [destinationStop, setDestinationStopRaw] = useState(null);
 
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) || NO_ROUTE;
 
@@ -28,8 +28,22 @@ export function useRoutes({ session, showToast }) {
 
   function selectRoute(route) {
     setSelectedRouteId(route.id);
-    setBoardingStop(route.stops[0] || null);
-    setDestinationStop(route.stops[route.stops.length - 1] || null);
+    setBoardingStopRaw(route.stops[0] || null);
+    setDestinationStopRaw(route.stops[route.stops.length - 1] || null);
+  }
+
+  // A trip goes forward along the route: choosing a boarding stop at or after the destination moves the destination to the
+  // end of the route, and choosing a destination at or before the boarding stop moves the boarding stop to the start.
+  const lastStop = selectedRoute.stops.length - 1;
+  function setBoardingStop(name) {
+    setBoardingStopRaw(name);
+    const i = selectedRoute.stops.indexOf(name);
+    if (i >= 0 && selectedRoute.stops.indexOf(destinationStop) <= i) setDestinationStopRaw(i >= lastStop ? name : selectedRoute.stops[lastStop]);
+  }
+  function setDestinationStop(name) {
+    setDestinationStopRaw(name);
+    const d = selectedRoute.stops.indexOf(name);
+    if (d >= 0 && selectedRoute.stops.indexOf(boardingStop) >= d) setBoardingStopRaw(d === 0 ? name : selectedRoute.stops[0]);
   }
 
   async function loadRoutes() {

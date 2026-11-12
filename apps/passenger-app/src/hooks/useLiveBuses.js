@@ -5,7 +5,7 @@ import { STALE_MS, GONE_MS } from '../constants';
 import { pickBus } from '../utils';
 
 // Live bus positions for the selected route, pushed over Socket.IO, plus the bus that matters to this passenger.
-export function useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex }) {
+export function useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex, boardingStop, destinationStop }) {
   // Live data pushed over Socket.IO for the selected route
   const [buses, setBuses] = useState({}); // busId -> last update (+ recvAt)
   const [conn, setConn] = useState('connecting'); // 'connecting' | 'connected' | 'disconnected'
@@ -18,7 +18,7 @@ export function useLiveBuses({ session, selectedRouteId, selectedRoute, boarding
       .map((b) => ({ ...b, stale: now - b.recvAt > STALE_MS })),
     [buses, now, selectedRoute.id],
   );
-  const tracked = useMemo(() => pickBus(liveBuses, boardingIndex, destinationIndex), [liveBuses, boardingIndex, destinationIndex]);
+  const tracked = useMemo(() => pickBus(liveBuses, boardingIndex, destinationIndex, boardingStop, destinationStop), [liveBuses, boardingIndex, destinationIndex, boardingStop, destinationStop]);
   const mapBuses = useMemo(
     () => liveBuses.map((b) => ({ id: b.busId, lat: b.lat, lng: b.lng, label: b.registration, stale: b.stale, heading: b.heading })),
     [liveBuses],
