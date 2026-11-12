@@ -11,7 +11,7 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
             className="form-input"
             value={formData.name}
             onChange={(event) => updateField('name', event.target.value)}
-            placeholder="e.g. Pettah to Maharagama"
+            placeholder="e.g. Pettah to Homagama"
           />
         </Field>
         <Field label="Route Number">
