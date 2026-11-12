@@ -66,9 +66,12 @@ export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, s
           </button>
         </form>
 
-        <div className="login-hint">
-          Default credentials: <code>admin</code> / <code>admin123</code>
-        </div>
+        {/* The development default is only shown while developing; a deployed site must not advertise a password. */}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="login-hint">
+            Default credentials: <code>admin</code> / <code>admin123</code>
+          </div>
+        )}
       </div>
     </div>
   );
