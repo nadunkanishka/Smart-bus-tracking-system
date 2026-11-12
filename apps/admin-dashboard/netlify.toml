@@ -1,0 +1,22 @@
+# Netlify site for the admin dashboard.
+# In Netlify: Add new site > Import from Git > this repository, set "Base directory" to apps/admin-dashboard,
+# then add the environment variable REACT_APP_API_URL (the backend's https address, no trailing slash).
+[build]
+  command = "npm ci && npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "22" # the lock file is written for npm 10 (Node 22), the same as CI
+
+# One page app: any path loads index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"

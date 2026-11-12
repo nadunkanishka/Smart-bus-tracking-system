@@ -1,0 +1,20 @@
+# Netlify site for the passenger web app (the same Expo code as the phone app, exported for the browser).
+# In Netlify: Add new site > Import from Git > this repository, set "Base directory" to apps/passenger-app,
+# then add the environment variable EXPO_PUBLIC_API_URL (the backend's https address, no trailing slash).
+[build]
+  command = "npm ci && npx expo export --platform web --clear"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
