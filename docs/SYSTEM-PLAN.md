@@ -29,13 +29,15 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
   - [ ] Measure drift before and after on a recorded or replayed noisy track (10-25 m noise, as in the report) and keep the figures for the evaluation.
 - [x] **D2. Pilot route: Pettah to Homagama (Route 138).** The route data must say this everywhere.
   - [ ] **(you)** Ride the corridor once and note the real stops in order (Pettah, Borella and so on through Nugegoda, Maharagama and Pannipitiya to Homagama; use whatever the real service stops at).
-  - [ ] Replace the seed route (`backend/scripts/seed.js`) with these stops and the road path, and update the docs and screenshots that name Maharagama as the terminal.
+  - [x] Seed data replaced (branch `pilot-routes`): the seed now loads the 25 Colombo routes from the owner's list, Route 138 being Pettah to Homagama via the High Level Road, with road lines from OSRM. Stops are provisional until the ride; replace them in `backend/scripts/data/routes.js` and run `node scripts/geocode-places.js` then `npm run seed`.
+  - [ ] Update the screenshots and report text that still name Maharagama as the terminal.
+  - [ ] Check the points marked approximate in `backend/scripts/data/places.json` (Kanatta Junction, Technical College Junction, Thummulla, Makumbura Multimodal Centre) and the three stops left out for lack of a reliable point (Bellanthota, Old Kelani Bridge, Ayurveda Junction).
 - [x] **D3. Pilot both passenger apps, say so in the report.**
   - [ ] Build the native passenger app as an installable build (EAS), install it on volunteer phones alongside the web app.
   - [ ] Add a paragraph to the report describing the web app and the React Native companion (one Expo codebase), as the proposal promises.
 - [x] **D4. Keep passenger and administrator accounts.**
   - [ ] Add one line to the report: these go beyond the approved proposal (self-service passenger accounts, administrator accounts), included for security and usability.
-- [x] **D5. Hosting: free.** Render free web service plus the free Key Value (Redis-compatible) and MongoDB Atlas free tier. Free hosting is enough for the pilot's few buses, with these conditions:
+- [x] **D5. Hosting: free for now.** Decided: stay on free hosting while building and piloting, and move to a paid plan when the system is ready to deploy for real. Render free web service plus the free Key Value (Redis-compatible) and MongoDB Atlas free tier. Free hosting is enough for the pilot's few buses, with these conditions:
   - [ ] Free Render services sleep after about 15 minutes with no traffic. Keep the API awake before and during every run (a free uptime pinger such as UptimeRobot hitting `/api/health` every 5 minutes), and open the app a minute before each shift so nobody meets a cold start.
   - [ ] Render's free instance is small (512 MB), so the 500-driver and 2,000-passenger stress test must not run against it. Run that test against a temporary instance (a paid instance for a few hours costs very little) or locally, and say in the report where it ran.
   - [ ] Free tiers have no backups: export the database collections before and after every pilot day.
