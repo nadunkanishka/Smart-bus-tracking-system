@@ -9,9 +9,6 @@ const MAX_DRIVER_ROWS = 1;
 
 export default function DashboardPage({ api, user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
   const [driverFilter, setDriverFilter] = useState('Active'); // 'Active' | 'On Leave'
-  const fleet = { active: 0, idle: 0, maintenance: 0, ...summary.fleetDistribution };
-  const fleetTotal = fleet.active + fleet.idle + fleet.maintenance;
-  const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
   // What is happening on the road right now, and how well the system is doing: refreshed from the backend.
@@ -47,16 +44,10 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
   const cmp = eta?.compared;
   const processing = metrics?.latencyMs?.serverProcessing;
 
-  // Fleet split: green = running, violet = idle, red = maintenance. The ring is a conic gradient built from the shares.
-  const split = [
-    { key: 'active', label: 'Running', color: 'var(--green)', n: fleet.active },
-    { key: 'idle', label: 'Idle', color: 'var(--violet)', n: fleet.idle },
-    { key: 'maintenance', label: 'Service', color: 'var(--danger)', n: fleet.maintenance },
-  ];
-  let at = 0;
-  const ring = fleetTotal
-    ? `conic-gradient(${split.map((s) => { const from = at; at += (s.n / fleetTotal) * 100; return `${s.color} ${from}% ${at}%`; }).join(', ')})`
-    : 'conic-gradient(var(--a-line) 0 100%)';
+  // ETA error by how far ahead the prediction was made: the engine against the plain straight-line estimate, as bars.
+  const HORIZON_LABEL = { 'under 2 min': '< 2 min', '2 to 5 min': '2-5 min', '5 to 10 min': '5-10 min', '10 to 20 min': '10-20 min', 'over 20 min': '20+ min' };
+  const groups = (eta?.byHorizon || []).map((h) => ({ key: h.horizon, label: HORIZON_LABEL[h.horizon] || h.horizon, n: h.samples, engine: h.engineMaeSec, plain: h.baselineMaeSec }));
+  const topError = Math.max(1, ...groups.flatMap((g) => [g.engine || 0, g.plain || 0]));
 
   const driverName = (id) => drivers.find((d) => d.id === id)?.name || 'No driver assigned';
   const statusClass = (s) => (s === 'Active' ? 'badge-green' : s === 'Maintenance' ? 'badge-red' : 'badge-amber');
@@ -184,25 +175,32 @@ export default function DashboardPage({ api, user, summary, drivers, buses, rout
           )}
         </div>
 
-        <div className="panel">
+        <div className="panel acc-panel">
           <div className="panel-head">
-            <h2>Fleet split</h2>
-            <span className="chip chip-plain">{fleetTotal} buses</span>
+            <h2>ETA error by horizon</h2>
+            <span className="chip chip-plain">seconds, lower is better</span>
           </div>
-          <div className="ring-wrap">
-            <div className="donut" style={{ background: ring }} role="img" aria-label={split.map((s) => `${s.label}: ${pct(s.n, fleetTotal)}%`).join(', ')}>
-              <div className="donut-hole">
-                <small>Running now</small>
-                <strong>{fleet.active}</strong>
-                <small>of {fleetTotal}</small>
+          {groups.length === 0 ? (
+            <div className="acc-empty">Fills in after buses complete stops. It compares the engine with a plain straight-line estimate.</div>
+          ) : (
+            <>
+              <div className="acc-chart" role="img" aria-label={groups.map((g) => `${g.label}: engine ${g.engine} s, plain estimate ${g.plain} s`).join('; ')}>
+                {groups.map((g) => (
+                  <div key={g.key} className="acc-group" title={`${g.n} arrivals`}>
+                    <div className="acc-bars">
+                      <span className="acc-col"><em>{g.engine}</em><i className="acc-bar engine" style={{ height: `${Math.max(4, ((g.engine || 0) / topError) * 100)}%` }} /></span>
+                      <span className="acc-col"><em>{g.plain}</em><i className="acc-bar plain" style={{ height: `${Math.max(4, ((g.plain || 0) / topError) * 100)}%` }} /></span>
+                    </div>
+                    <span className="acc-label">{g.label}</span>
+                  </div>
+                ))}
               </div>
-            </div>
-            <ul className="legend">
-              {split.map((s) => (
-                <li key={s.key}><span className="legend-dot" style={{ background: s.color }} />{s.label} <strong>{pct(s.n, fleetTotal)}%</strong></li>
-              ))}
-            </ul>
-          </div>
+              <ul className="legend acc-legend">
+                <li><span className="legend-dot" style={{ background: 'var(--orange)' }} />Engine</li>
+                <li><span className="legend-dot" style={{ background: 'var(--violet)' }} />Plain estimate</li>
+              </ul>
+            </>
+          )}
         </div>
 
         <div className="panel">

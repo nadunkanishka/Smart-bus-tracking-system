@@ -628,3 +628,18 @@ select.form-input { appearance: none; background-image: linear-gradient(45deg, t
 .live-reg { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-route, .live-speed, .live-seen { color: var(--a-muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-empty { padding: var(--space-4); color: var(--a-muted); font-size: 13px; border: 1px dashed var(--a-line); border-radius: var(--radius-md); }
+
+/* ══ ETA error by horizon: engine against the plain estimate, as grouped bars ══ */
+.acc-panel { display: flex; flex-direction: column; min-height: 0; }
+.acc-chart { flex: 1; min-height: 110px; margin-top: var(--space-3); display: flex; gap: var(--space-3); align-items: stretch; border-bottom: 1px dashed var(--a-line); }
+.acc-group { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; position: relative; }
+.acc-bars { flex: 1; width: 100%; display: flex; gap: 4px; align-items: flex-end; justify-content: center; padding-top: 18px; }
+.acc-col { flex: 1; max-width: 26px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+.acc-col em { font-style: normal; font-size: 11px; color: var(--a-muted); font-variant-numeric: tabular-nums; }
+.acc-bar { display: block; width: 100%; border-radius: 10px 10px 4px 4px; transition: height 500ms var(--ease-out); }
+.acc-bar.engine { background: linear-gradient(to top, color-mix(in srgb, var(--orange) 55%, transparent), var(--orange)); }
+.acc-bar.plain { background: linear-gradient(to top, color-mix(in srgb, var(--violet) 45%, transparent), var(--violet)); }
+.acc-label { font-size: 11px; color: var(--a-muted); white-space: nowrap; padding-bottom: 4px; }
+.acc-legend { display: flex; gap: var(--space-4); justify-content: center; margin-top: var(--space-2); }
+.acc-empty { flex: 1; display: grid; place-items: center; text-align: center; padding: var(--space-4); color: var(--a-muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .acc-bar { transition: none; } }
