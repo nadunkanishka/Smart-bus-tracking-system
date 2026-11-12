@@ -99,7 +99,7 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
                     ) : (
                       <View style={S.trackRoutePill}>
                         <Text style={S.trackRoutePillText}>Select</Text>
-                        <ArrowRightIcon color={COLORS.primaryStrong} size={12} />
+                        <ArrowRightIcon color={COLORS.primaryDeep} size={12} />
                       </View>
                     )}
                   </View>

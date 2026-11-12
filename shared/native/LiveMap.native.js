@@ -49,10 +49,10 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
       >
         {/* Dark mode: the same tiles at low opacity over the dark map background, so the map dims without a key-gated dark style. */}
         <UrlTile urlTemplate={TILE_URL} maximumZ={19} flipY={false} opacity={dark ? 0.42 : 1} />
-        {line.length > 1 ? <Polyline coordinates={line} strokeColor={dark ? COLORS.lime : COLORS.ink} strokeWidth={6} lineCap="round" lineJoin="round" /> : null}
+        {line.length > 1 ? <Polyline coordinates={line} strokeColor={COLORS.orange} strokeWidth={6} lineCap="round" lineJoin="round" /> : null}
         {(stops || []).map((s, i) => (
           <Marker key={`${s.name}-${i}`} coordinate={{ latitude: s.lat, longitude: s.lng }} title={s.name} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={[styles.stop, { backgroundColor: dark ? COLORS.lime : COLORS.ink, borderColor: dark ? '#0F0E0B' : '#FFFFFF' }, i === highlightStop && styles.stopOn]} />
+            <View style={[styles.stop, { backgroundColor: dark ? COLORS.orange : COLORS.ink, borderColor: dark ? '#110C0B' : '#FFFFFF' }, i === highlightStop && styles.stopOn]} />
           </Marker>
         ))}
         {(buses || []).map((bus) => <BusMarker key={bus.id} bus={bus} />)}
@@ -68,5 +68,5 @@ const styles = StyleSheet.create({
   },
   stale: { opacity: 0.55 },
   stop: { width: 12, height: 12, borderRadius: 6, borderWidth: 3 },
-  stopOn: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#FF8A3D' },
+  stopOn: { width: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.violet },
 });

@@ -20,13 +20,13 @@ const html = () => `<!DOCTYPE html>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  html, body, #map { width: 100%; height: 100%; margin: 0; background: var(--bg, #F1EFE6); }
+  html, body, #map { width: 100%; height: 100%; margin: 0; background: var(--bg, #F5E9E2); }
   .leaflet-tile-pane { filter: grayscale(1) brightness(1.08) contrast(0.8); transition: filter 200ms; }
   html[data-mode=dark] .leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(0.72) contrast(0.95); }
   .sb-bus { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
   .sb-bus.stale { opacity: .55; }
-  .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: var(--stop, #15140F); border: 3px solid var(--stop-ring, #fff); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
-  .sb-stop.on { width: 18px; height: 18px; background: var(--ember, #FF8A3D); }
+  .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: var(--stop, #FF6B35); border: 3px solid var(--stop-ring, #fff); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+  .sb-stop.on { width: 18px; height: 18px; background: var(--lav, #A25BE0); }
   .sb-route { stroke-dasharray: 6000; stroke-dashoffset: 6000; animation: draw 1.4s cubic-bezier(.23,1,.32,1) forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @media (prefers-reduced-motion: reduce) { .sb-route { animation: none; stroke-dashoffset: 0; } }
@@ -60,13 +60,13 @@ const html = () => `<!DOCTYPE html>
     pad = d.padding || pad;
     var th = d.theme || {}, root = document.documentElement.style;
     document.documentElement.setAttribute('data-mode', th.mode || 'light');
-    root.setProperty('--bg', th.bg || '#F1EFE6'); root.setProperty('--stop', th.stop || '#15140F'); root.setProperty('--stop-ring', th.stopRing || '#fff');
-    root.setProperty('--ember', th.ember || '#FF8A3D'); root.setProperty('--attr', th.attr || 'rgba(255,255,255,.7)'); root.setProperty('--attr-text', th.attrText || '#333');
+    root.setProperty('--bg', th.bg || '#F5E9E2'); root.setProperty('--stop', th.stop || '#130E0D'); root.setProperty('--stop-ring', th.stopRing || '#fff');
+    root.setProperty('--lav', th.violet || '#A25BE0'); root.setProperty('--attr', th.attr || 'rgba(255,255,255,.7)'); root.setProperty('--attr-text', th.attrText || '#333');
     var key = JSON.stringify([d.path, d.padding, th.route]);
     if (key !== routeKey) {
       routeKey = key;
       if (routeLine) map.removeLayer(routeLine);
-      routeLine = d.path && d.path.length > 1 ? L.polyline(d.path, { color: th.route || '#15140F', weight: 6, lineCap: 'round', lineJoin: 'round', className: 'sb-route' }).addTo(map) : null;
+      routeLine = d.path && d.path.length > 1 ? L.polyline(d.path, { color: th.route || '#FF6B35', weight: 6, lineCap: 'round', lineJoin: 'round', className: 'sb-route' }).addTo(map) : null;
       fit();
     }
     stopLayer.clearLayers();
@@ -103,7 +103,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
 
   useEffect(() => {
     const dark = mode === 'dark';
-    const theme = { mode, bg: COLORS.bg, route: dark ? COLORS.lime : COLORS.ink, stop: dark ? COLORS.lime : COLORS.ink, stopRing: dark ? '#0F0E0B' : '#FFFFFF', ember: COLORS.ember, attr: dark ? 'rgba(15,14,11,.75)' : 'rgba(255,255,255,.7)', attrText: dark ? '#A5A193' : '#333' };
+    const theme = { mode, bg: COLORS.bg, route: COLORS.orange, stop: dark ? COLORS.orange : COLORS.ink, stopRing: dark ? '#110C0B' : '#FFFFFF', violet: COLORS.violet, attr: dark ? 'rgba(17,12,11,.75)' : 'rgba(255,255,255,.7)', attrText: dark ? '#A89A93' : '#333' };
     if (ready) frame.current?.contentWindow?.postMessage({ type: 'sb-map', path, stops, buses, highlightStop, padding, theme }, '*');
   }, [ready, path, stops, buses, highlightStop, padding, mode]);
 

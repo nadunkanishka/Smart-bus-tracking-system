@@ -6,7 +6,7 @@ export const VEHICLES = ['bus', 'coach', 'minibus', 'school', 'decker', 'driver'
 const PROPS = ['driver', 'route', 'monitor', 'chart', 'pin']; // not buses: one image each, no states
 // The city bus is baked in every colour; the other types only in the colours listed (first = default).
 // Keep in step with TYPES[...].themes in shared/buses/clay.js; sync.js fails if an image is missing.
-export const LIVERIES = ['green', 'coral', 'cream', 'yellow', 'orange', 'mint']; // palette liveries that read on light and dark (ink, stone and burnt-ember stay baked but are not auto-assigned)
+export const LIVERIES = ['green', 'coral', 'cream', 'yellow', 'orange', 'purple']; // palette liveries that read on light and dark (night, deep night and red-orange stay baked but are not auto-assigned)
 const BAKED = { bus: ['cream', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['orange'], monitor: ['navy'], chart: ['purple'], pin: ['teal'] };
 const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus', driver: 'Bus driver', route: 'Route with stops', monitor: 'Dashboard screen', chart: 'Bar chart', pin: 'Live location pin' };
 export const SCENES = ['login', 'register', 'driver', 'admin'];
@@ -14,9 +14,9 @@ export const ASPECT = 400 / 480; // every bus image is 6:5, so states never resi
 
 // Status badges sit on the corner of the image. Always pair them with a text label in the UI.
 export const STATUS = {
-  idle: { label: 'off duty', glyph: 'z', bg: '#F3F1E8', fg: '#15140F' },
-  maint: { label: 'needs attention', glyph: '!', bg: '#FF8A3D', fg: '#15140F' },
-  off: { label: 'offline', glyph: '×', bg: '#5F5C4F', fg: '#F3F1E8' },
+  idle: { label: 'off duty', glyph: 'z', bg: '#FFF3EB', fg: '#130E0D' },
+  maint: { label: 'needs attention', glyph: '!', bg: '#A25BE0', fg: '#130E0D' },
+  off: { label: 'offline', glyph: '×', bg: '#6F625C', fg: '#FFF3EB' },
 };
 
 // Stable colour for any id (route, bus), so the same thing always gets the same livery.

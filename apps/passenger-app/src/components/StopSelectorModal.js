@@ -133,7 +133,7 @@ export function StopSelectorModal({
                         isDestination && S.dotDestination,
                         isActive && !isDestination && S.dotActive,
                       ]}>
-                        {isPassed ? <CheckIcon color={COLORS.white} size={7} /> : null}
+                        {isPassed ? <CheckIcon color={COLORS.onBright} size={7} /> : null}
                       </View>
                       {idx < selectedRoute.stops.length - 1 && (
                         <View style={[S.timelineLineV, isPassed && S.lineVPassed]} />

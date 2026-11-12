@@ -137,12 +137,12 @@ export function Banner({ tone = 'danger', children }) {
 }
 
 // ─── Buttons ────────────────────────────────────────────────────────────────
-// Read at render time so a mode switch is picked up. Text on lime or ember fills is always dark (onBright).
+// Read at render time so a mode switch is picked up. Text on lime or lavender fills is always dark (onBright).
 const tones = () => ({
   ink: { bg: COLORS.ink, fg: COLORS.white },
-  primary: { bg: COLORS.primaryStrong, fg: COLORS.white },
+  primary: { bg: COLORS.primaryStrong, fg: COLORS.onBright },
   accent: { bg: COLORS.accent, fg: COLORS.onBright },
-  lime: { bg: COLORS.lime, fg: COLORS.onBright },
+  orange: { bg: COLORS.orange, fg: COLORS.onBright },
   soft: { bg: COLORS.surfaceSoft, fg: COLORS.ink },
   dangerSoft: { bg: COLORS.dangerSoft, fg: COLORS.danger },
   glass: { bg: COLORS.surface, fg: COLORS.ink },
@@ -242,7 +242,7 @@ export function Chip({ label, selected, onPress, tone = 'primary', style }) {
         style,
       ]}
     >
-      <Text style={{ ...TYPE.smallBold, ...FONT, color: on ? COLORS.white : COLORS.ink }}>{label}</Text>
+      <Text style={{ ...TYPE.smallBold, ...FONT, color: on ? (tone === 'primary' ? COLORS.onBright : COLORS.white) : COLORS.ink }}>{label}</Text>
     </Pressable>
   );
 }
@@ -302,7 +302,7 @@ export function Checkbox({ checked, onChange, children }) {
   return (
     <Pressable onPress={() => onChange(!checked)} accessibilityRole="checkbox" accessibilityState={{ checked }} style={({ focused }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, flexShrink: 1 }, webRing(focused)]}>
       <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: checked ? COLORS.primaryStrong : COLORS.surfaceSoft, borderWidth: 2, borderColor: checked ? COLORS.primaryStrong : COLORS.mutedLight, alignItems: 'center', justifyContent: 'center' }}>
-        {checked ? <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={COLORS.white} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><Path d="M20 6L9 17l-5-5" /></Svg> : null}
+        {checked ? <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={COLORS.onBright} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><Path d="M20 6L9 17l-5-5" /></Svg> : null}
       </View>
       <Text style={{ ...TYPE.small, ...FONT, color: COLORS.ink, flexShrink: 1 }}>{children}</Text>
     </Pressable>
@@ -364,7 +364,7 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
         </View>
         {tagline ? (
           <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.primary, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Text style={{ ...TYPE.small, ...FONT, color: COLORS.white }}>{tagline}</Text>
+            <Text style={{ ...TYPE.small, ...FONT, color: COLORS.onBright }}>{tagline}</Text>
           </View>
         ) : null}
       </View>
@@ -454,7 +454,7 @@ export function FloatingDock({ items, active, onChange }) {
               accessibilityState={{ selected: on }}
               style={({ pressed, focused }) => [{ flex: 1, minHeight: 64, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center', gap: 2, transform: [{ scale: pressed ? 0.94 : 1 }] }, webRing(focused)]}
             >
-              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.lime : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: on ? COLORS.orange : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
                 {item.icon(on)}
               </View>
               <Text style={{ ...TYPE.caption, ...FONT, color: on ? COLORS.ink : COLORS.muted }} numberOfLines={1}>{item.label}</Text>

@@ -67,7 +67,7 @@ export function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeS
                     isPassed && D.dotPassed,
                     isCurrent && D.dotCurrent,
                   ]}>
-                    {isPassed ? <CheckIcon color={COLORS.white} size={7} /> : null}
+                    {isPassed ? <CheckIcon color={COLORS.onBright} size={7} /> : null}
                     {isCurrent ? <View style={D.dotCurrentInner} /> : null}
                   </View>
                   {idx < routeStops.length - 1 && (

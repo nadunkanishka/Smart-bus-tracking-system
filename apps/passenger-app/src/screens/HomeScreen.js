@@ -11,9 +11,9 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
   const S = useS();
   const bus = tracked?.bus;
   const services = [
-    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primary} size={22} /> },
-    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primary} size={22} /> },
-    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primary} size={22} /> },
+    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primaryDeep} size={22} /> },
+    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primaryDeep} size={22} /> },
+    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primaryDeep} size={22} /> },
   ];
   return (
     <ScrollView

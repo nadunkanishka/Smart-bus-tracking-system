@@ -37,7 +37,7 @@ function App() {
 
   // App UI State
   const [activePage, setActivePage] = useState('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // rail: icons only, the header button expands it
   const [clock, setClock] = useState('');
   const [notification, setNotification] = useState(null);
 

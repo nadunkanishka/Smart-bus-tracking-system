@@ -18,7 +18,7 @@ function apply(animate) {
   }
   root.setAttribute('data-theme', mode);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', mode === 'dark' ? '#0F0E0B' : '#D7F34B');
+  if (meta) meta.setAttribute('content', mode === 'dark' ? '#110C0B' : '#FF9A6E');
 }
 apply(false);
 
@@ -42,4 +42,4 @@ export const useThemeMode = () => useSyncExternalStore((cb) => { listeners.add(c
 const OSM = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const TILE_URL = { light: OSM, dark: OSM };
 export const TILE_ATTRIBUTION = '&copy; OpenStreetMap contributors';
-export const routeColor = (m) => (m === 'dark' ? '#D7F34B' : '#15140F');
+export const routeColor = (m) => (m === 'dark' ? '#FF6B35' : '#FF6B35');

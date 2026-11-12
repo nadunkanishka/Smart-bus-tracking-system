@@ -58,7 +58,7 @@ const lines = [
   ...colourVars(THEMES.light),
   ...Object.entries(RADII).map(([k, v]) => `  --radius-${k}: ${v}px;`),
   ...Object.entries(SPACE).map(([k, v]) => `  --space-${k}: ${v}px;`),
-  ...shadowVars('21, 20, 15', 1),
+  ...shadowVars('19, 14, 13', 1),
   ...Object.entries(TYPE).flatMap(([k, t]) => [
     `  --fs-${kebab(k)}: ${t.fontSize}px;`, `  --lh-${kebab(k)}: ${t.lineHeight}px;`, `  --fw-${kebab(k)}: ${t.fontWeight};`,
   ]),

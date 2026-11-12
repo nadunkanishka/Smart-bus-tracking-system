@@ -55,7 +55,7 @@ export function ProfileScreen({ busRegistration, driverName, routeNumber, routeL
           </View>
           <View style={D.dispatchBtns}>
             <IconButton label="Call dispatch" tone="primary" onPress={() => onOpenDispatch('call')}>
-              <PhoneCallIcon color={COLORS.white} size={16} />
+              <PhoneCallIcon color={COLORS.onBright} size={16} />
             </IconButton>
             <IconButton label="Message dispatch" tone="glass" onPress={() => onOpenDispatch('message')}>
               <MessageCircleIcon color={COLORS.ink} size={16} />

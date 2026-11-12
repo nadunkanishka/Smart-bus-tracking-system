@@ -40,6 +40,6 @@ export const NAV_ICONS = {
   ],
 };
 
-// Item colours [main, accent]. The current item sits on a lime circle, so it is drawn in ink with an olive accent.
-export const NAV_TONES = { idle: ['#A09C8D', '#6A675B'], active: ['#15140F', '#5E6D14'] };
-export const NAV_TONES_DARK = { idle: ['#6F6C60', '#A5A193'], active: ['#15140F', '#5E6D14'] };
+// Item colours [main, accent]. The current item sits on an orange circle, so it is drawn in night with a rust accent.
+export const NAV_TONES = { idle: ['#A8998F', '#76665F'], active: ['#130E0D', '#7A2F0F'] };
+export const NAV_TONES_DARK = { idle: ['#6F625C', '#A89A93'], active: ['#130E0D', '#7A2F0F'] };

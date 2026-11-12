@@ -1,117 +1,134 @@
 // SmartBus design tokens — single source of truth. `npm run sync` copies this into every app
 // (RN apps: src/shared/theme.js, admin: src/design/tokens.css generated from these values).
 
-// ── Palette: four colours, two modes ─────────────────────────────────────────
-// Ink (warm near-black), Paper (warm off-white), Lime (primary highlight) and Ember (secondary highlight, ETAs and
-// warnings). Everything else is a tint of one of these. The only extra hue is a muted red for destructive actions.
-export const PALETTE = { ink: '#15140F', paper: '#F3F1E8', lime: '#D7F34B', ember: '#FF8A3D' };
+// ── Palette: "Ember" ─────────────────────────────────────────────────────────
+// Night (warm brown-black), Cream (warm off-white), Orange (the one action colour) and Violet (the second voice:
+// negative bars, secondary chips). Peach is a tint of orange; red is only for destructive actions.
+// Cards are glass on a glowing dark page: a faint white fill with a hairline border. Light mode is the same set on cream.
+export const PALETTE = { night: '#130E0D', cream: '#FFF3EB', orange: '#FF6B35', violet: '#A25BE0', peach: '#FFB59A', red: '#FF5A6E' };
 
 // Semantic names stay the same in both modes. Two rules the apps rely on:
 //   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
-//   onBright is always dark ink: use it for text on lime or ember fills (accent, primaryLight on lime), never `ink`.
+//   onBright is always night: use it for text on orange, peach or violet fills, never `ink` or `white`.
 const LIGHT = {
-  bg: '#F1EFE6',
-  surface: '#FBFAF5',
-  surfaceSoft: '#E9E6DA',
-  surfaceTint: '#EEF3C9',
-  line: '#DEDACB',
-  outline: '#CBC7B6', // input borders
-  ring: 'rgba(21, 20, 15, 0.45)', // keyboard focus ring
-  lime: PALETTE.lime,
-  ember: PALETTE.ember,
-  backdrop: '#DDF45B', // hero and header blocks: lime in light mode (ink text)
+  bg: '#F5E9E2',
+  surface: '#FFFAF6',
+  surfaceSoft: '#EBDCD3',
+  surfaceTint: '#FDE6DA',
+  line: '#E2D2C8',
+  outline: '#CDB9AC', // input borders
+  ring: 'rgba(19, 14, 13, 0.5)', // keyboard focus ring
+  glass: 'rgba(255, 255, 255, 0.7)',
+  glassLine: 'rgba(19, 14, 13, 0.08)',
+  glowA: 'rgba(255, 107, 53, 0.26)', // page backdrop glows (orange top-left, violet bottom-right)
+  glowB: 'rgba(162, 91, 224, 0.14)',
+  orange: PALETTE.orange,
+  violet: PALETTE.violet,
+  peach: PALETTE.peach,
+  heroFrom: '#FF7B4A', // the orange hero card
+  heroTo: '#FF5D2A',
+  heroShape: '#FFB59A', // its light shapes
+  backdrop: '#FF9A6E', // hero and header blocks on mobile (night text)
 
-  primary: '#15140F', // ink carries the main action in light mode
-  primaryLight: '#E1F59A', // pale lime: ink text only
-  primaryDeep: '#3B4A00',
-  primaryStrong: '#15140F',
-  primarySoft: '#EDF7C0',
-  accent: PALETTE.ember, // fills and highlights. Text on it must be onBright.
-  accentText: '#A8470B', // ember darkened for text on paper (5.6:1)
-  accentSoft: '#FFE2CC',
+  primary: PALETTE.orange, // orange carries the main action in both modes; text on it is onBright
+  primaryLight: '#FFD9C9', // pale orange: night text only
+  primaryDeep: '#8A2F0A',
+  primaryStrong: PALETTE.orange,
+  primarySoft: '#FFE6DA',
+  accent: PALETTE.violet, // fills and highlights. Text on it must be onBright.
+  accentText: '#7B32B8', // violet darkened for text on cream (6:1)
+  accentSoft: '#EBD9F8',
 
-  ink: PALETTE.ink,
-  inkSoft: '#26241C',
-  muted: '#6A675B', // 4.8:1 on bg
-  mutedLight: '#A09C8D', // decorative only
+  ink: PALETTE.night,
+  inkSoft: '#2E2321',
+  muted: '#76665F', // 4.9:1 on bg
+  mutedLight: '#A8998F', // decorative only
 
-  success: '#4C6600',
-  successSoft: '#E6F4B0',
-  warning: '#A8470B',
-  warningSoft: '#FFE2CC',
-  danger: '#BF2F26',
-  dangerSoft: '#FBDAD5',
+  success: '#B23A0E', // good numbers read as orange in this palette
+  successSoft: '#FFE0D1',
+  warning: '#7B32B8',
+  warningSoft: '#EBD9F8',
+  danger: '#C8283F',
+  dangerSoft: '#FDDDE1',
 
-  onBright: PALETTE.ink,
-  glow: 'rgba(215, 243, 75, 0.55)',
-  taxi: PALETTE.ember,
-  headlight: '#EFFF8A',
-  window: '#26241C',
-  tire: PALETTE.ink,
+  onBright: PALETTE.night,
+  glow: 'rgba(255, 107, 53, 0.45)',
+  taxi: PALETTE.violet,
+  headlight: '#FFE2B8',
+  window: '#2E2321',
+  tire: PALETTE.night,
 
   tints: {
-    bus: ['#E3F6A0', '#EFF9C8'],
-    train: ['#FFD9BF', '#FFE8D6'],
-    delivery: ['#FFD9BF', '#FFE8D6'],
-    taxi: ['#EAE6D8', '#F3F0E5'],
-    green: ['#E8F0C2', '#F2F6DA'],
+    bus: ['#FFD9C9', '#FFE8DD'],
+    train: ['#E9D6F8', '#F2E6FB'],
+    delivery: ['#E9D6F8', '#F2E6FB'],
+    taxi: ['#EBDCD3', '#F5EBE4'],
+    green: ['#FFE3D4', '#FFF0E8'],
   },
-  tintLines: { bus: '#D2EB7A', train: '#FFC6A0', delivery: '#FFC6A0', taxi: '#DAD5C2', green: '#D9E5A5' },
+  tintLines: { bus: '#FFC4A8', train: '#D9BDF0', delivery: '#D9BDF0', taxi: '#DCCABF', green: '#FFD3BC' },
 
   white: '#FFFFFF',
   black: '#000000',
 };
 
 const DARK = {
-  bg: '#0F0E0B',
-  surface: '#1A1914',
-  surfaceSoft: '#25231C',
-  surfaceTint: '#1F2310',
-  line: '#322F26',
-  outline: '#4A463A',
-  ring: 'rgba(215, 243, 75, 0.6)',
-  lime: PALETTE.lime,
-  ember: PALETTE.ember,
-  backdrop: '#1A1914',
+  bg: '#110C0B',
+  surface: '#1E1614',
+  surfaceSoft: '#2B201D',
+  surfaceTint: '#2A1B16',
+  line: '#35292A',
+  outline: '#4A3A36',
+  ring: 'rgba(255, 107, 53, 0.65)',
+  glass: 'rgba(255, 255, 255, 0.045)',
+  glassLine: 'rgba(255, 255, 255, 0.08)',
+  glowA: 'rgba(255, 107, 53, 0.2)',
+  glowB: 'rgba(70, 90, 160, 0.22)', // the page fades to a cool blue-black at the bottom
+  orange: PALETTE.orange,
+  violet: PALETTE.violet,
+  peach: PALETTE.peach,
+  heroFrom: '#FF7B4A',
+  heroTo: '#FF5D2A',
+  heroShape: '#FFB59A',
+  backdrop: '#1E1614',
 
-  primary: PALETTE.lime, // lime carries the main action in dark mode
-  primaryLight: '#2B3010',
-  primaryDeep: PALETTE.lime,
-  primaryStrong: PALETTE.lime,
-  primarySoft: '#22260E',
-  accent: PALETTE.ember,
-  accentText: '#FF9A57',
-  accentSoft: '#3B2314',
+  primary: PALETTE.orange,
+  primaryLight: '#3A2016',
+  primaryDeep: '#FF8A5C',
+  primaryStrong: PALETTE.orange,
+  primarySoft: '#2D1A13',
+  accent: PALETTE.violet,
+  accentText: '#C58BF0',
+  accentSoft: '#2E1B40',
 
-  ink: PALETTE.paper,
-  inkSoft: '#D9D6C9',
-  muted: '#A5A193', // 6.3:1 on surface
-  mutedLight: '#6F6C60',
+  ink: '#F7EEE8',
+  inkSoft: '#E0D2CA',
+  muted: '#A89A93', // 6.6:1 on surface
+  mutedLight: '#6F625C',
 
-  success: PALETTE.lime,
-  successSoft: '#2B3310',
-  warning: '#FF9A57',
-  warningSoft: '#3B2314',
-  danger: '#FF7A6E',
-  dangerSoft: '#3F1C19',
+  success: '#FF9A70',
+  successSoft: '#3A2016',
+  warning: '#C58BF0',
+  warningSoft: '#2E1B40',
+  danger: '#FF7A8A',
+  dangerSoft: '#3F1C26',
 
-  onBright: PALETTE.ink,
-  glow: 'rgba(215, 243, 75, 0.35)',
-  taxi: PALETTE.ember,
-  headlight: '#EFFF8A',
-  window: '#0F0E0B',
-  tire: PALETTE.ink,
+  onBright: PALETTE.night,
+  glow: 'rgba(255, 107, 53, 0.35)',
+  taxi: PALETTE.violet,
+  headlight: '#FFE2B8',
+  window: '#110C0B',
+  tire: PALETTE.night,
 
   tints: {
-    bus: ['#2A3012', '#20240F'],
-    train: ['#3A2314', '#2B1B10'],
-    delivery: ['#3A2314', '#2B1B10'],
-    taxi: ['#2B2920', '#22211A'],
-    green: ['#262B14', '#1E2210'],
+    bus: ['#3A2014', '#2A180F'],
+    train: ['#2E1B40', '#231532'],
+    delivery: ['#2E1B40', '#231532'],
+    taxi: ['#2B201D', '#201815'],
+    green: ['#3A2A22', '#2B201A'],
   },
-  tintLines: { bus: '#3C4519', train: '#5A3920', delivery: '#5A3920', taxi: '#3A372B', green: '#363D1B' },
+  tintLines: { bus: '#5A3321', train: '#4A2D66', delivery: '#4A2D66', taxi: '#3F312D', green: '#55392B' },
 
-  white: PALETTE.ink, // "text on ink": dark ink on the paper-coloured fills
+  white: PALETTE.night, // "text on ink": night on the near-white fills
   black: '#000000',
 };
 
@@ -140,7 +157,7 @@ export function applyTheme(mode) {
   return mode in THEMES ? mode : 'light';
 }
 
-export const RADII = { xs: 8, sm: 14, md: 20, lg: 28, xl: 36, pill: 999 };
+export const RADII = { xs: 10, sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
 
@@ -160,9 +177,9 @@ export const TYPE = {
 
 // Soft, diffuse shadows only.
 export const SHADOWS = {
-  sm: { shadowColor: '#15140F', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
-  md: { shadowColor: '#15140F', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
-  lg: { shadowColor: '#15140F', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
+  sm: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2 },
+  md: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 5 },
+  lg: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 10 },
 };
 
 export const MOTION = {
