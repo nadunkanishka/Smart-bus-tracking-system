@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
-import { COLORS, RADII, SHADOWS, TYPE } from './theme';
+import { COLORS, RADII, SHADOWS, SPACE, TYPE } from './theme';
 import { useTheme } from './themeRuntime';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
 import { Activity, ChartColumn, ChevronRight, Gauge, House, Navigation, Route as RouteGlyph, User, Users, Bus as BusGlyph } from 'lucide-react-native';
@@ -212,17 +212,19 @@ export function Button({ title, onPress, tone = 'primary', size = 'lg', loading,
 }
 
 // Round icon button (≥44px target) — bell, close, call, message.
-export function IconButton({ children, onPress, label, tone = 'glass', size = 44, style }) {
+export function IconButton({ children, onPress, label, tone = 'glass', size = 44, style, disabled }) {
   useTheme();
   const t = tones()[tone];
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
       hitSlop={size < 44 ? (44 - size) / 2 : 0}
       style={({ pressed, focused }) => [
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }], ...SHADOWS.sm },
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.5 : 1, transform: [{ scale: pressed && !disabled ? 0.94 : 1 }], ...SHADOWS.sm },
         PRESS_WEB,
         webRing(focused),
         style,
@@ -302,7 +304,7 @@ export function TextField({ label, icon, error, hint, secure, style, inputStyle,
       {label ? <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.ink, marginBottom: 8, marginLeft: 8 }}>{label}</Text> : null}
       <View
         style={{
-          minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: RADII.sm,
+          minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[4], borderRadius: RADII.sm,
           backgroundColor: COLORS.surface, borderWidth: 1.5,
           borderColor: error ? COLORS.danger : focused ? COLORS.primary : COLORS.outline,
           ...(Platform.OS === 'web' && focused ? { boxShadow: error ? `0 0 0 4px ${COLORS.dangerSoft}` : `0 0 0 4px ${COLORS.primaryLight}` } : null),
@@ -700,7 +702,7 @@ export function SheetModal({ visible, onClose, children }) {
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Animated.View style={[StyleSheet.absoluteFill, { opacity: v, backgroundColor: 'rgba(0,0,0,0.55)' }]}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: v, backgroundColor: COLORS.scrim }]}>
           <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
         </Animated.View>
         <Animated.View style={{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [64, 0] }) }] }}>{children}</Animated.View>

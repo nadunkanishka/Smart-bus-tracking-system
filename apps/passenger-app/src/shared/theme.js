@@ -20,6 +20,8 @@ const LIGHT = {
   outline: '#CDB9AC', // input borders
   ring: 'rgba(19, 14, 13, 0.5)', // keyboard focus ring
   glass: 'rgba(255, 255, 255, 0.7)',
+  scrim: 'rgba(19, 14, 13, 0.45)', // behind sheets and dialogs
+  mapChrome: 'rgba(255, 255, 255, 0.7)', // the map's attribution strip
   glassLine: 'rgba(19, 14, 13, 0.08)',
   glowA: 'rgba(255, 107, 53, 0.26)', // page backdrop glows (orange top-left, violet bottom-right)
   glowB: 'rgba(162, 91, 224, 0.14)',
@@ -84,6 +86,8 @@ const DARK = {
   outline: '#4A3A36',
   ring: 'rgba(255, 107, 53, 0.65)',
   glass: 'rgba(255, 255, 255, 0.045)',
+  scrim: 'rgba(0, 0, 0, 0.6)',
+  mapChrome: 'rgba(17, 12, 11, 0.75)',
   glassLine: 'rgba(255, 255, 255, 0.08)',
   glowA: 'rgba(255, 107, 53, 0.2)',
   glowB: 'rgba(70, 90, 160, 0.22)', // the page fades to a cool blue-black at the bottom

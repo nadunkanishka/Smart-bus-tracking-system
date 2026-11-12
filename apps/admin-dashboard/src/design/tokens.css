@@ -8,6 +8,8 @@
   --outline: #CDB9AC;
   --ring: rgba(19, 14, 13, 0.5);
   --glass: rgba(255, 255, 255, 0.7);
+  --scrim: rgba(19, 14, 13, 0.45);
+  --map-chrome: rgba(255, 255, 255, 0.7);
   --glass-line: rgba(19, 14, 13, 0.08);
   --glow-a: rgba(255, 107, 53, 0.26);
   --glow-b: rgba(162, 91, 224, 0.14);
@@ -123,6 +125,8 @@
     --outline: #4A3A36;
     --ring: rgba(255, 107, 53, 0.65);
     --glass: rgba(255, 255, 255, 0.045);
+    --scrim: rgba(0, 0, 0, 0.6);
+    --map-chrome: rgba(17, 12, 11, 0.75);
     --glass-line: rgba(255, 255, 255, 0.08);
     --glow-a: rgba(255, 107, 53, 0.2);
     --glow-b: rgba(70, 90, 160, 0.22);
@@ -191,6 +195,8 @@
   --outline: #4A3A36;
   --ring: rgba(255, 107, 53, 0.65);
   --glass: rgba(255, 255, 255, 0.045);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --map-chrome: rgba(17, 12, 11, 0.75);
   --glass-line: rgba(255, 255, 255, 0.08);
   --glow-a: rgba(255, 107, 53, 0.2);
   --glow-b: rgba(70, 90, 160, 0.22);

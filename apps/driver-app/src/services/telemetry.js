@@ -6,6 +6,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { io } from 'socket.io-client';
 import { API_URL } from '../shared/api';
+import { COLORS } from '../shared/theme';
 
 const TASK = 'smartbus-gps';
 const QUEUE_KEY = 'smartbus:gps-queue';
@@ -145,7 +146,7 @@ export async function startDuty() {
           foregroundService: {
             notificationTitle: 'SmartBus Driver is on duty',
             notificationBody: 'Sharing the live bus location with passengers.',
-            notificationColor: '#FF6B35',
+            notificationColor: COLORS.orange,
           },
         });
         background = true;
