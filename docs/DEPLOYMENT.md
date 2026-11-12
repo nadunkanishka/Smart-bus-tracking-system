@@ -113,6 +113,19 @@ Both are static sites, free on Netlify. Each has a `netlify.toml` in its folder,
 
 A variable is baked into the build, so changing it later needs **Deploys, Trigger deploy, Clear cache and deploy**. The first build can take a few minutes. Netlify serves over https, so the backend must also be https (Render is).
 
+## 4a. The Google Maps key (both apps)
+
+Both apps draw their map with Google's Maps SDK on Android, so both need a key or the map is blank. Create one key (Google Cloud console: enable **Maps SDK for Android**, then Credentials, Create credentials, API key; restrict it to that API), and store it once **in each app's folder**:
+
+```bash
+cd apps/driver-app
+eas env:create --name GOOGLE_MAPS_API_KEY --value <key> --environment preview --visibility secret
+cd ../passenger-app
+eas env:create --name GOOGLE_MAPS_API_KEY --value <key> --environment preview --visibility secret
+```
+
+A build without it now stops with a message instead of producing an APK with an empty map. After the first build, add the package names and the build's SHA-1 (`eas credentials`) under the key's application restrictions.
+
 ## 4b. Passenger APK
 
 The passenger app builds the same way (it has its own `eas.json`, package `lk.smartbus.passenger`):
