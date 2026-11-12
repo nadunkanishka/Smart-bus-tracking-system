@@ -169,6 +169,26 @@ The Android emulator needs nothing extra. It reaches your computer at `10.0.2.2`
 
 ---
 
+## Put it online (so phones work away from your Wi-Fi)
+
+Everything above runs on your computer. To use the system from anywhere, host it on free services. Do these in order, each has its own guide:
+
+| Step | Guide | What it gives you |
+|---|---|---|
+| 1. Database | [docs/SETUP-MONGODB.md](docs/SETUP-MONGODB.md) | A free MongoDB Atlas database holding the routes, buses and logs |
+| 2. Backend | [docs/SETUP-RAILWAY.md](docs/SETUP-RAILWAY.md) | The server on Railway, with a public address; then the admin and passenger websites on Netlify |
+| 3. Phone apps | [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Installable driver and passenger APKs built with Expo EAS, which need the backend address and a Google Maps key |
+
+The apps talk to the backend, and only the backend talks to the database:
+
+```
+phone apps and websites  ->  backend (Railway)  ->  MongoDB Atlas
+```
+
+Free hosting is for building and the pilot: the Railway trial covers about a month, and the free database has no backups, so export your data before and after each pilot day. [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) has the longer reference (Docker, Redis, Netlify sites, stress test hosting).
+
+---
+
 ## Stopping and starting again
 
 - Stop any part with `Ctrl+C` in its terminal.
@@ -240,5 +260,8 @@ Open `shared/buses/export.html` in a browser to preview every bus image.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture diagram, data flow, ETA engine, offline buffer |
 | [docs/API.md](docs/API.md) | REST endpoints and Socket.IO events |
 | [docs/DATABASE.md](docs/DATABASE.md) | MongoDB collections, indexes and Redis keys |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Docker, Redis, Render hosting, driver APK build |
+| [docs/SETUP-MONGODB.md](docs/SETUP-MONGODB.md) | Step by step: the free Atlas database, loading the routes, backups |
+| [docs/SETUP-RAILWAY.md](docs/SETUP-RAILWAY.md) | Step by step: the backend on Railway, variables, CORS, testing with a simulated bus |
+| [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Step by step: building and installing the driver and passenger APKs, the Maps key |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Reference: Docker, Redis, Netlify sites, Render and Railway options, stress test hosting |
 | [docs/EVALUATION.md](docs/EVALUATION.md) | Measuring latency, ETA accuracy and load; user study |
