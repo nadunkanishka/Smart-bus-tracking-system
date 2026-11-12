@@ -14,7 +14,7 @@ export const useS = createStyles(() => StyleSheet.create({
   stopSelectorValue: { ...type('smallBold'), color: COLORS.ink, flex: 1, marginRight: 4 },
   stopInlineList: {
     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, marginTop: 8,
-    backgroundColor: COLORS.surface, borderRadius: RADII.md, overflow: 'hidden', minWidth: 190,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.md, overflow: 'hidden', minWidth: 190,
     ...SHADOWS.lg,
   },
   stopInlineListRight: { left: 'auto', right: 0 },

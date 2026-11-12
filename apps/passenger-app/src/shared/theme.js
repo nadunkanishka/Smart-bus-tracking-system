@@ -4,8 +4,9 @@
 // ── Palette: "Ember" ─────────────────────────────────────────────────────────
 // Night (warm brown-black), Cream (warm off-white), Orange (the one action colour) and Violet (the second voice:
 // negative bars, secondary chips). Peach is a tint of orange; red is only for destructive actions.
+// Green marks anything active or live (a running bus, a connected server, a driver on duty): it is a status colour, not a brand colour.
 // Cards are glass on a glowing dark page: a faint white fill with a hairline border. Light mode is the same set on cream.
-export const PALETTE = { night: '#130E0D', cream: '#FFF3EB', orange: '#FF6B35', violet: '#A25BE0', peach: '#FFB59A', red: '#FF5A6E' };
+export const PALETTE = { night: '#130E0D', cream: '#FFF3EB', orange: '#FF6B35', violet: '#A25BE0', peach: '#FFB59A', red: '#FF5A6E', green: '#34D17A' };
 
 // Semantic names stay the same in both modes. Two rules the apps rely on:
 //   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
@@ -44,8 +45,11 @@ const LIGHT = {
   muted: '#76665F', // 4.9:1 on bg
   mutedLight: '#A8998F', // decorative only
 
-  success: '#B23A0E', // good numbers read as orange in this palette
-  successSoft: '#FFE0D1',
+  green: '#2FBF71', // fills and dots (night text on it)
+  greenText: '#0E7A3F', // text on cream (5.3:1)
+  greenSoft: '#D6F3E1',
+  success: '#0E7A3F',
+  successSoft: '#D6F3E1',
   warning: '#7B32B8',
   warningSoft: '#EBD9F8',
   danger: '#C8283F',
@@ -63,9 +67,9 @@ const LIGHT = {
     train: ['#E9D6F8', '#F2E6FB'],
     delivery: ['#E9D6F8', '#F2E6FB'],
     taxi: ['#EBDCD3', '#F5EBE4'],
-    green: ['#FFE3D4', '#FFF0E8'],
+    green: ['#D3F2DF', '#E6F8EE'],
   },
-  tintLines: { bus: '#FFC4A8', train: '#D9BDF0', delivery: '#D9BDF0', taxi: '#DCCABF', green: '#FFD3BC' },
+  tintLines: { bus: '#FFC4A8', train: '#D9BDF0', delivery: '#D9BDF0', taxi: '#DCCABF', green: '#B5E6C8' },
 
   white: '#FFFFFF',
   black: '#000000',
@@ -105,8 +109,11 @@ const DARK = {
   muted: '#A89A93', // 6.6:1 on surface
   mutedLight: '#6F625C',
 
-  success: '#FF9A70',
-  successSoft: '#3A2016',
+  green: '#3DDC84',
+  greenText: '#5BE39A',
+  greenSoft: '#12301F',
+  success: '#5BE39A',
+  successSoft: '#12301F',
   warning: '#C58BF0',
   warningSoft: '#2E1B40',
   danger: '#FF7A8A',
@@ -124,9 +131,9 @@ const DARK = {
     train: ['#2E1B40', '#231532'],
     delivery: ['#2E1B40', '#231532'],
     taxi: ['#2B201D', '#201815'],
-    green: ['#3A2A22', '#2B201A'],
+    green: ['#12331F', '#0E281A'],
   },
-  tintLines: { bus: '#5A3321', train: '#4A2D66', delivery: '#4A2D66', taxi: '#3F312D', green: '#55392B' },
+  tintLines: { bus: '#5A3321', train: '#4A2D66', delivery: '#4A2D66', taxi: '#3F312D', green: '#1F5A36' },
 
   white: PALETTE.night, // "text on ink": night on the near-white fills
   black: '#000000',

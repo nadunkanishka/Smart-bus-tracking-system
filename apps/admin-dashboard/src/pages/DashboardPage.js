@@ -19,9 +19,9 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
   const topIndex = bars.findIndex((b) => b.stops === topStops);
   const totalStops = routes.reduce((n, r) => n + r.stopPoints.length, 0);
 
-  // Fleet split: orange = running, violet = idle, red = maintenance. The ring is a conic gradient built from the shares.
+  // Fleet split: green = running, violet = idle, red = maintenance. The ring is a conic gradient built from the shares.
   const split = [
-    { key: 'active', label: 'Running', color: 'var(--orange)', n: fleet.active },
+    { key: 'active', label: 'Running', color: 'var(--green)', n: fleet.active },
     { key: 'idle', label: 'Idle', color: 'var(--violet)', n: fleet.idle },
     { key: 'maintenance', label: 'Service', color: 'var(--danger)', n: fleet.maintenance },
   ];

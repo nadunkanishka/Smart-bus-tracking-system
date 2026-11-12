@@ -23,7 +23,6 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('native/busImages.js', join(dest, 'busImages.js'));
   put('busMarkers.js', join(dest, 'busMarkers.js'));
   put('tokens.js', join(dest, 'theme.js'));
-  put('navIcons.js', join(dest, 'navIcons.js'));
   put('vehicleShapes.js', join(dest, 'vehicleShapes.js'));
   put('native/themeRuntime.js', join(dest, 'themeRuntime.js'));
   put('native/ui.js', join(dest, 'ui.js'));
@@ -37,7 +36,6 @@ const admin = join(apps, 'admin-dashboard/src/design');
 put('vehicleShapes.js', join(admin, 'vehicleShapes.js'));
 put('web/Vehicle.js', join(admin, 'Vehicle.js'));
 put('web/busImages.js', join(admin, 'busImages.js'));
-put('navIcons.js', join(admin, 'navIcons.js'));
 put('busMarkers.js', join(admin, 'busMarkers.js'));
 copyImages(join(admin, 'buses'));
 

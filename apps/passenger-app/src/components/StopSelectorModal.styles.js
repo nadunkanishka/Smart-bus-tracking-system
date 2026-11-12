@@ -20,7 +20,7 @@ export const useS = createStyles(() => StyleSheet.create({
   },
   dropdownTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dropdownTriggerText: { ...type('bodyBold'), color: COLORS.ink },
-  dropdownList: { backgroundColor: COLORS.surface, borderRadius: RADII.md, marginTop: 8, overflow: 'hidden', ...SHADOWS.md },
+  dropdownList: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.md, marginTop: 8, overflow: 'hidden', ...SHADOWS.md },
   dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 16 },
   dropdownItemActive: { backgroundColor: COLORS.accentSoft },
   dropdownItemText: { ...type('body'), color: COLORS.ink },
@@ -31,7 +31,7 @@ export const useS = createStyles(() => StyleSheet.create({
   timelineLeft: { alignItems: 'center', width: 24, marginRight: 12 },
   timelineDot: {
     width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.mutedLight,
-    backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, alignItems: 'center', justifyContent: 'center',
   },
   dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
   dotBoarding: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },

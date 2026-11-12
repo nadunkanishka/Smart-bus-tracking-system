@@ -10,20 +10,20 @@ import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { COLORS, RADII, SHADOWS, TYPE } from './theme';
 import { useTheme } from './themeRuntime';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
-import { NAV_ICONS, NAV_TONES, NAV_TONES_DARK } from './navIcons';
+import { Activity, ChartColumn, Gauge, House, Navigation, Route as RouteGlyph, User, Users, Bus as BusGlyph } from 'lucide-react-native';
 import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
-// Plus Jakarta Sans on web (same as the admin); native keeps the system font (no font-loading dependency).
+// Urbanist on web (same as the admin); native keeps the system font (no font-loading dependency).
 // Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
 const SAFE_TOP = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0) : 0;
 const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
-export const FONT = Platform.OS === 'web' ? { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" } : null;
+export const FONT = Platform.OS === 'web' ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
   l.id = 'sb-font'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap';
+  l.href = 'https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700;800&display=swap';
   document.head.appendChild(l);
 }
 
@@ -97,18 +97,25 @@ export function VehicleLoader({ name = 'bus', label = 'Loading', width = 240 }) 
 // ─── Surfaces ───────────────────────────────────────────────────────────────
 export function GradientCard({ tint = 'bus', style, children, id }) {
   const { mode } = useTheme();
-  const [a, b] = COLORS.tints[tint];
+  const hero = tint === 'hero'; // the orange card: night text, two light shapes on the right
+  const [a, b] = hero ? [COLORS.heroFrom, COLORS.heroTo] : COLORS.tints[tint];
   const gid = `${id || `g-${tint}`}-${mode}`;
   return (
-    <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', borderWidth: 1.5, borderColor: COLORS.tintLines[tint], ...SHADOWS.sm }, style]}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+    <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', borderWidth: hero ? 0 : 1.5, borderColor: hero ? 'transparent' : COLORS.tintLines[tint], ...SHADOWS.sm }, style]}>
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
         <Defs>
           <LinearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={a} />
             <Stop offset="1" stopColor={b} />
           </LinearGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill={`url(#${gid})`} />
+        <Rect width="100" height="100" fill={`url(#${gid})`} />
+        {hero ? (
+          <>
+            <Polygon points="66,-5 108,-5 108,105 50,105" fill={COLORS.heroShape} fillOpacity="0.5" />
+            <Polygon points="84,38 108,38 108,105 70,105" fill={COLORS.heroShape} fillOpacity="0.35" />
+          </>
+        ) : null}
       </Svg>
       {children}
     </View>
@@ -417,20 +424,12 @@ export function OverlapSheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.bg, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 20, paddingTop: 24 }, style]}>{children}</View>;
 }
 
-// Navigation icon: filled two-tone glyph from shared/navIcons.js (same data the admin sidebar draws).
+// Navigation icon: Lucide outline. The current item sits on an orange circle, so it is drawn in night; idle items are muted.
+const NAV_GLYPHS = { home: House, arrow: Navigation, route: RouteGlyph, user: User, gauge: Gauge, people: Users, bus: BusGlyph, pulse: Activity, chart: ChartColumn };
 export function NavIcon({ name, active, size = 24 }) {
-  const { isDark } = useTheme();
-  const [main, accent] = (isDark ? NAV_TONES_DARK : NAV_TONES)[active ? 'active' : 'idle'];
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      {(NAV_ICONS[name] || NAV_ICONS.home).map(([d, role, sw], i) => {
-        const color = role === 'main' ? main : accent;
-        return sw
-          ? <Path key={i} d={d} fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" />
-          : <Path key={i} d={d} fill={color} />;
-      })}
-    </Svg>
-  );
+  useTheme();
+  const Glyph = NAV_GLYPHS[name] || House;
+  return <Glyph size={size} color={active ? COLORS.onBright : COLORS.muted} strokeWidth={active ? 2 : 1.75} />;
 }
 
 // Bottom navigation: a white pill docked in the screen's own footer (content never slides behind it). Every item

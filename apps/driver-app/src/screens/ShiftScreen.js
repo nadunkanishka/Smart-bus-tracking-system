@@ -42,8 +42,8 @@ export function ShiftScreen({
         >
           <View style={[D.dutyIcon, isOnShift && D.dutyIconOn]}>
             {busy
-              ? <ActivityIndicator color={isOnShift ? COLORS.orange : COLORS.ink} />
-              : isOnShift ? <StopIcon color={COLORS.orange} size={24} /> : <PlayIcon color={COLORS.ink} size={24} />}
+              ? <ActivityIndicator color={isOnShift ? COLORS.green : COLORS.onBright} />
+              : isOnShift ? <StopIcon color={COLORS.green} size={24} /> : <PlayIcon color={COLORS.onBright} size={24} />}
           </View>
           <Text style={[D.dutyState, isOnShift && D.dutyTextOn]}>{isOnShift ? 'ON DUTY' : 'OFF DUTY'}</Text>
           <Text style={[D.dutyHint, isOnShift && D.dutyTextOn]}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>

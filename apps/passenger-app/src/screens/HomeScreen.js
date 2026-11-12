@@ -74,7 +74,7 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
         {/* Active Journey: the live bus for the chosen stops */}
         <Text style={S.sectionTitle}>Active Journey</Text>
         {bus ? (
-          <GradientCard tint="bus" style={S.journeyCard}>
+          <GradientCard tint="hero" style={S.journeyCard}>
             <Pressable
               onPress={onGoTracking}
               accessibilityRole="button"
