@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { TILE_ATTRIBUTION, TILE_URL, useThemeMode } from '../theme';
 import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { Vehicle } from '../design/Vehicle';
@@ -15,6 +16,7 @@ const ago = (ts, now) => {
 const ms = (v) => (v == null ? '—' : `${v} ms`);
 
 export default function LiveMonitor({ api, routes }) {
+  const mode = useThemeMode();
   const [live, setLive] = useState({ buses: [], serverTs: Date.now() });
   const [metrics, setMetrics] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -69,7 +71,7 @@ export default function LiveMonitor({ api, routes }) {
 
       <div className="panel live-map">
         <MapContainer center={[6.9, 79.87]} zoom={12} style={{ width: '100%', height: '100%' }}>
-          <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer key={mode} attribution={TILE_ATTRIBUTION} url={TILE_URL[mode]} />
           {located.map((b) => (
             <Marker key={b.busId} position={[b.lat, b.lng]} icon={busIcon(b.connected && b.onDuty)}>
               <Tooltip direction="top" offset={[0, -8]}>{b.registration} · {ago(b.lastSeen, live.serverTs)}</Tooltip>

@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import ThemeToggle from './ThemeToggle';
 
 export default function Header({ currentPageTitle, clock, backendConnected, user, setSidebarCollapsed }) {
   const name = user.name || user.username;
@@ -24,6 +25,7 @@ export default function Header({ currentPageTitle, clock, backendConnected, user
           <span className={`system-status-dot ${backendConnected ? 'on' : 'off'}`} />
           {backendConnected ? 'MongoDB Connected' : 'Local State Mode'}
         </span>
+        <ThemeToggle />
         <div className="user-chip">
           <span className="user-avatar">{initials}</span>
           <span className="user-chip-copy">
