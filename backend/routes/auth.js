@@ -5,6 +5,7 @@ const Admin = require('../models/Admin');
 const Bus = require('../models/Bus');
 const Driver = require('../models/Driver');
 const Route = require('../models/Route');
+const { escapeRegex } = require('../lib/crud');
 
 const router = express.Router();
 
@@ -69,9 +70,9 @@ router.post('/api/auth/driver-login', authLimiter, async (req, res) => {
     // Find assigned route in MongoDB for this bus
     // Matches if route.assignedBus includes registration or busId
     const assignedRoute = await Route.findOne({
-      assignedBus: { $regex: bus.registration, $options: 'i' },
+      assignedBus: { $regex: escapeRegex(bus.registration), $options: 'i' },
     }) || await Route.findOne({
-      assignedBus: { $regex: bus.busId || 'BUS-', $options: 'i' },
+      assignedBus: { $regex: escapeRegex(bus.busId || 'BUS-'), $options: 'i' },
     });
 
     res.json({

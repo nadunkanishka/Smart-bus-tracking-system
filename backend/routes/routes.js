@@ -1,7 +1,8 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const { getNextSequence } = require('../lib/sequence');
+const { pick, idQuery, fail } = require('../lib/crud');
 const Route = require('../models/Route');
+const Bus = require('../models/Bus');
 
 // ROUTE ROUTES
 // Clients send geometry as plain arrays: path [[lat, lng], ...] and stopPoints [{ name, lat, lng }, ...].
@@ -30,6 +31,18 @@ function readGeometry(body) {
   return out;
 }
 
+const EDITABLE = ['name', 'start', 'end', 'distance', 'routeNumber', 'assignedBus', 'status'];
+const byId = (id) => idQuery(id, ['routeId']);
+
+// The assigned bus is stored as "NB-4712 (BUS-002)" (or just a registration / bus id). It must be a bus that exists.
+async function checkBus(assigned) {
+  if (!assigned) return;
+  const text = String(assigned).trim();
+  const m = text.match(/^(.*?)\s*\((BUS-\d+)\)$/);
+  const ok = m ? await Bus.exists({ busId: m[2] }) : await Bus.exists({ $or: [{ busId: text }, { registration: text }] });
+  if (!ok) throw new Error(`Bus "${text}" does not exist`);
+}
+
 // state: { store, realtime } filled in by index.js once the latest-fix store is ready.
 module.exports = (state) => {
   const router = express.Router();
@@ -48,7 +61,17 @@ module.exports = (state) => {
       const routes = await Route.find().sort({ createdAt: -1 });
       res.json(routes);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      fail(res, error, 500);
+    }
+  });
+
+  router.get('/api/routes/:id', async (req, res) => {
+    try {
+      const route = await Route.findOne(byId(req.params.id));
+      if (!route) return res.status(404).json({ error: 'Route not found' });
+      return res.json(route);
+    } catch (error) {
+      return fail(res, error);
     }
   });
 
@@ -56,6 +79,7 @@ module.exports = (state) => {
     try {
       const { name, start, end, distance, stops, assignedBus, status, routeNumber } = req.body;
       const geometry = readGeometry(req.body);
+      await checkBus(assignedBus);
       const seq = await getNextSequence('route');
       const routeId = `RT-${String(seq).padStart(3, '0')}`;
 
@@ -74,48 +98,37 @@ module.exports = (state) => {
       const saved = await route.save();
       res.status(201).json(saved);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      fail(res, error);
     }
   });
 
   router.put('/api/routes/:id', async (req, res) => {
     try {
-      const data = { ...req.body };
-      if (data.distance) data.distance = Number(data.distance);
-      if (data.stops && !Array.isArray(data.stops)) {
-        data.stops = [];
-      }
+      // Only the listed fields can change: the body cannot rewrite routeId or _id.
+      const data = pick(req.body, EDITABLE);
+      if (data.distance !== undefined) data.distance = Number(data.distance);
+      if (req.body.stops !== undefined) data.stops = Array.isArray(req.body.stops) ? req.body.stops : [];
       Object.assign(data, readGeometry(req.body));
       if (data.path === undefined && req.body.path !== undefined) { delete data.path; data.$unset = { path: 1 }; }
+      await checkBus(data.assignedBus);
 
-      const query = mongoose.Types.ObjectId.isValid(req.params.id)
-        ? { $or: [{ _id: req.params.id }, { routeId: req.params.id }] }
-        : { routeId: req.params.id };
-
-      const updated = await Route.findOneAndUpdate(query, data, {
-        new: true,
-        runValidators: true,
-      });
+      const updated = await Route.findOneAndUpdate(byId(req.params.id), data, { new: true, runValidators: true });
       if (!updated) return res.status(404).json({ error: 'Route not found' });
       state.realtime?.invalidateRoute(updated.routeId); // new geometry takes effect on the next GPS fix
-      res.json(updated);
+      return res.json(updated);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      return fail(res, error);
     }
   });
 
   router.delete('/api/routes/:id', async (req, res) => {
     try {
-      const query = mongoose.Types.ObjectId.isValid(req.params.id)
-        ? { $or: [{ _id: req.params.id }, { routeId: req.params.id }] }
-        : { routeId: req.params.id };
-
-      const deleted = await Route.findOneAndDelete(query);
+      const deleted = await Route.findOneAndDelete(byId(req.params.id));
       if (!deleted) return res.status(404).json({ error: 'Route not found' });
       state.realtime?.invalidateRoute(deleted.routeId);
-      res.json({ message: 'Route deleted successfully', id: req.params.id });
+      return res.json({ message: 'Route deleted successfully', id: req.params.id });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      return fail(res, error, 500);
     }
   });
 
