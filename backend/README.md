@@ -7,7 +7,7 @@ Node.js API for the Smart Bus system: REST (Express), live updates (Socket.IO) a
 ```bash
 npm install
 cp .env.example .env     # Windows: copy .env.example .env   then set JWT_SECRET and ADMIN_PASSWORD
-npm run seed             # once: adds the demo Route 138
+npm run seed             # once: adds the 25 Colombo routes (npm run seed -- 138 for one)
 npm start                # http://localhost:5000  (npm run dev restarts on changes)
 ```
 
@@ -19,7 +19,7 @@ Check it at <http://localhost:5000/api/health>.
 |---|---|
 | `npm start` / `npm run dev` | Start the server (plain / with auto-restart) |
 | `npm test` | Unit tests for the ETA engine, GPS validation, trip tracker, store and auth |
-| `npm run seed` | Add the demo route (safe to repeat) |
+| `npm run seed` | Add the Colombo routes from `scripts/data/` (safe to repeat; list route numbers to add only those) |
 | `npm run replay -- --route RT-001 --buses 3 --duration 120` | Simulated buses driving a route |
 | `npm run clear-sim` | Remove simulated data |
 | `npm run smoke` | Call every endpoint and print the responses. **Only against an empty throwaway database**; see the header of `scripts/smoke.js` |

@@ -12,7 +12,7 @@ docker compose up -d mongo redis
 cd backend
 cp .env.example .env          # set JWT_SECRET and ADMIN_PASSWORD
 npm install
-npm run seed                  # demo Route 138 with road path and stops
+npm run seed                  # the 25 Colombo routes with road paths and stops
 npm run dev                   # http://localhost:5000
 ```
 
@@ -77,7 +77,7 @@ The replay signs driver tokens with `JWT_SECRET`, so run it with the same `.env`
 2. In Render choose **New → Blueprint** and select this repository.
 3. Fill in `MONGODB_URI`, `ADMIN_PASSWORD` and `CORS_ORIGIN` (the admin dashboard's URL). `JWT_SECRET` is generated and `REDIS_URL` is wired to the Key Value instance.
 4. After the first deploy, open `/api/health`. It should report `"mongo": "connected"` and `"cache": "redis"`.
-5. Seed the demo route once from your machine: `MONGODB_URI=<atlas uri> npm run seed`.
+5. Seed the routes once from your machine: `MONGODB_URI=<atlas uri> npm run seed`.
 
 Admin dashboard: deploy `apps/admin-dashboard` as a Render Static Site (build `npm ci && npm run build`, publish `build`) with `REACT_APP_API_URL` set to the API's URL.
 
