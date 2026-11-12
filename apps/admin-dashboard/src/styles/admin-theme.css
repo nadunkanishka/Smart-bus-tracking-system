@@ -641,3 +641,8 @@ select.form-input { appearance: none; background-image: linear-gradient(45deg, t
 .route-card-big.idle { background: linear-gradient(135deg, color-mix(in srgb, var(--violet) 55%, var(--a-surface)), color-mix(in srgb, var(--orange) 35%, var(--a-surface))); box-shadow: none; }
 .dash .kv li { padding: 8px 0; font-size: 13px; }
 .bar-tip { max-width: 220px; }
+
+/* Cards are not blurred: the page behind them is a smooth glow, so the blur added nothing visible, but Chromium drew a faint
+   vertical seam across large blurred cards (and clipped a hovered card's shadow). The card colour is translucent enough to
+   keep the glow showing through. */
+.panel { -webkit-backdrop-filter: none; backdrop-filter: none; }
