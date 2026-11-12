@@ -7,6 +7,9 @@ const modalDefaults = {
   route: { name: '', routeNumber: '', start: '', end: '', distance: '', stopPoints: [], path: [], assignedBus: '', status: 'Active' },
 };
 
+// API collection for each entity ("bus" + "s" would be /buss, which does not exist).
+const COLLECTION = { driver: 'drivers', bus: 'buses', route: 'routes' };
+
 // State and actions for the add/edit dialog and the delete confirmation, shared by drivers, buses and routes.
 export function useEntityModal({ showNotification, fetchBackendData }) {
   // Modal & Confirm dialogs
@@ -166,8 +169,8 @@ export function useEntityModal({ showNotification, fetchBackendData }) {
     }
 
     const ok = mode === 'edit'
-      ? await send('PUT', `/${entity}s/${editId}`, payload, `${label} updated.`)
-      : await send('POST', `/${entity}s`, payload, `${label} added.`);
+      ? await send('PUT', `/${COLLECTION[entity]}/${editId}`, payload, `${label} updated.`)
+      : await send('POST', `/${COLLECTION[entity]}`, payload, `${label} added.`);
     if (!ok) return;
 
     closeModal();
@@ -177,7 +180,7 @@ export function useEntityModal({ showNotification, fetchBackendData }) {
   const handleDelete = async () => {
     const { entity, id, rawId } = confirmState;
     closeConfirm();
-    await send('DELETE', `/${entity}s/${encodeURIComponent(rawId || id)}`, null, `${entity.charAt(0).toUpperCase()}${entity.slice(1)} deleted.`);
+    await send('DELETE', `/${COLLECTION[entity]}/${encodeURIComponent(rawId || id)}`, null, `${entity.charAt(0).toUpperCase()}${entity.slice(1)} deleted.`);
     await fetchBackendData();
   };
 
