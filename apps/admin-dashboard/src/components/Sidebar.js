@@ -11,6 +11,7 @@ const NAV = [
   { section: 'Network', key: 'analytics', label: 'Analytics', icon: 'chart' },
   { section: 'Accounts', key: 'passengers', label: 'Passengers', icon: 'drivers' },
   { section: 'Accounts', key: 'admins', label: 'Administrators', icon: 'lock' },
+  { section: 'System', key: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
 export default function Sidebar({ activePage, setActivePage, sidebarCollapsed, handleLogout }) {
@@ -24,7 +25,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarCollapsed, h
       </div>
 
       <nav className="sidebar-nav">
-        {['Administrator', 'Fleet', 'Network', 'Accounts'].map((section) => (
+        {['Administrator', 'Fleet', 'Network', 'Accounts', 'System'].map((section) => (
           <div key={section}>
             <div className="nav-section-label">{section}</div>
             {NAV.filter((item) => item.section === section).map((item) => (

@@ -18,6 +18,7 @@ import LiveMonitor from './pages/LiveMonitor';
 import Analytics from './pages/Analytics';
 import PassengersPage from './pages/PassengersPage';
 import AdminsPage from './pages/AdminsPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Root component: sign-in state, the page shell and the switch between pages.
 function App() {
@@ -139,6 +140,8 @@ function App() {
         ? 'Live Monitor'
         : activePage === 'analytics'
           ? 'Trip Analytics'
+      : activePage === 'settings'
+        ? 'Settings'
       : activePage === 'passengers'
         ? 'Passenger Accounts'
         : activePage === 'admins'
@@ -173,9 +176,10 @@ function App() {
           </div>
         )}
 
-        <main className="page-scroll">
+        <main className={`page-scroll ${activePage === 'dashboard' ? 'fit' : ''}`}>
           {activePage === 'dashboard' && <DashboardPage user={user} summary={summary} drivers={drivers} buses={buses} routes={routes} fetchBackendData={fetchBackendData} showNotification={showNotification} openModal={openModal} setActivePage={setActivePage} />}
 
+          {activePage === 'settings' && <SettingsPage user={user} backendConnected={backendConnected} fetchBackendData={fetchBackendData} showNotification={showNotification} setActivePage={setActivePage} handleLogout={handleLogout} />}
           {activePage === 'live' && <LiveMonitor api={api} routes={routes} />}
           {activePage === 'analytics' && <Analytics api={api} routes={routes} />}
 

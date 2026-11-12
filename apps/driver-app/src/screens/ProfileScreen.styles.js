@@ -26,6 +26,7 @@ export const useD = createStyles(() => ({
       width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine,
       alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
     },
+    profileGear: { position: 'absolute', right: 0, top: TOP_INSET + 4, zIndex: 2 },
     profileAvatarText: { ...type('h1'), color: COLORS.primaryDeep },
     profileName: { ...type('h1'), color: COLORS.ink },
     profileSub: { ...type('small'), color: COLORS.ink, marginTop: 4 },

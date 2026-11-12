@@ -1,7 +1,7 @@
 import React from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Button, GradientCard, OverlapHeader, OverlapSheet, Vehicle, VehicleLoader } from '../shared/ui';
+import { Button, GradientCard, OverlapHeader, OverlapSheet, Vehicle, VehicleLoader, Tap, Reveal } from '../shared/ui';
 import { ArrowRightIcon, NavigationArrowIcon, SearchIcon } from '../shared/icons';
 import { useS } from './RoutesScreen.styles';
 
@@ -29,9 +29,9 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
             accessibilityLabel="Search routes"
           />
           {routeSearchQuery ? (
-            <TouchableOpacity onPress={() => setRouteSearchQuery('')} activeOpacity={0.7} style={S.searchClearTap} accessibilityLabel="Clear search" accessibilityRole="button">
+            <Tap onPress={() => setRouteSearchQuery('')} style={S.searchClearTap} accessibilityLabel="Clear search" accessibilityRole="button">
               <Text style={S.searchClear}>✕</Text>
-            </TouchableOpacity>
+            </Tap>
           ) : null}
         </View>
       </OverlapHeader>
@@ -67,16 +67,16 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
             <Text style={S.emptyStateSub}>{routeSearchQuery ? 'Try a different search term' : 'Routes appear here once they are published.'}</Text>
           </View>
         ) : (
-          filteredRoutes.map(route => {
+          filteredRoutes.map((route, index) => {
             const isSel = selectedRoute.id === route.id;
             const Wrap = isSel ? GradientCard : View;
             const wrapProps = isSel ? { tint: 'bus', id: `route-${route.id}`, style: S.routeCardWrap } : { style: [S.routeCardWrap, S.routeCardPlain] };
             return (
-              <Wrap key={route.id} {...wrapProps}>
-                <TouchableOpacity
+            <Reveal key={route.id} index={index}>
+              <Wrap {...wrapProps}>
+                <Tap
                   style={S.routeCard}
                   onPress={() => onSelectRoute(route)}
-                  activeOpacity={0.85}
                   accessibilityRole="button"
                   accessibilityLabel={`${route.name}, ${isSel ? 'currently tracking' : 'select'}`}
                 >
@@ -124,8 +124,9 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
                       </View>
                     ))}
                   </ScrollView>
-                </TouchableOpacity>
+                </Tap>
               </Wrap>
+            </Reveal>
             );
           })
         )}

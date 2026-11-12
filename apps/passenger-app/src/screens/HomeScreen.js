@@ -1,13 +1,13 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Avatar, Button, GradientCard, IconButton, OverlapHeader, OverlapSheet, ThemeToggle, Vehicle } from '../shared/ui';
+import { Avatar, Button, GradientCard, IconButton, OverlapHeader, OverlapSheet, Vehicle, Tap } from '../shared/ui';
 import { liveryFor } from '../shared/vehicleShapes';
-import { ArrowRightIcon, BellIcon, MapPinIcon, NavigationArrowIcon, RouteIcon } from '../shared/icons';
+import { ArrowRightIcon, BellIcon, MapPinIcon, NavigationArrowIcon, RouteIcon, SettingsIcon } from '../shared/icons';
 import { trackedSummary } from '../utils';
 import { useS } from './HomeScreen.styles';
 
-export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, showToast }) {
+export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, onOpenSettings, showToast }) {
   const S = useS();
   const bus = tracked?.bus;
   const services = [
@@ -28,7 +28,9 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
             <Text style={S.homeGreeting}>Hello,</Text>
             <Text style={S.homeUserName} numberOfLines={1}>{userProfile?.name || 'Passenger'}</Text>
           </View>
-          <ThemeToggle />
+          <IconButton label="Settings" onPress={onOpenSettings}>
+            <SettingsIcon color={COLORS.ink} size={20} />
+          </IconButton>
           <IconButton
             label="Notifications"
             onPress={() => showToast(bus ? trackedSummary(tracked, boardingStop, destinationStop) : `No live bus on ${selectedRoute.shortName} right now.`)}
@@ -122,9 +124,9 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
         {/* Route Summary */}
         <View style={S.sectionRow}>
           <Text style={S.sectionTitleFlat}>My Route</Text>
-          <TouchableOpacity onPress={onGoRoutes} activeOpacity={0.7} style={S.linkTap} accessibilityRole="link">
+          <Tap onPress={onGoRoutes} style={S.linkTap} accessibilityRole="link">
             <Text style={S.link}>See all</Text>
-          </TouchableOpacity>
+          </Tap>
         </View>
 
         <View style={S.routeSummaryCard}>

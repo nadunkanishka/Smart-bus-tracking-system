@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Banner, Button, TextField } from '../shared/ui';
+import { Trash2 } from 'lucide-react-native';
+import { Banner, Button, SettingsRow, SettingsSection, TextField } from '../shared/ui';
+import { LockIcon, UserIcon } from '../shared/icons';
 import { COLORS, TYPE } from '../shared/theme';
 import { useS } from '../screens/ProfileScreen.styles';
 
@@ -52,9 +54,16 @@ export function AccountActions({ user, onSaveProfile, onChangePassword, onDelete
   if (!mode) {
     return (
       <View>
-        <Button title="Edit Account Details" tone="soft" onPress={() => open('edit')} style={S.profileBtn} />
-        <Button title="Change Password" tone="soft" onPress={() => open('password')} style={S.profileBtn} />
-        <Button title="Delete Account" tone="dangerSoft" onPress={() => open('delete')} style={S.profileBtn} />
+        <SettingsSection title="Account">
+          <SettingsRow label="Full name" value={user?.name || '—'} />
+          <SettingsRow label="Username" value={user?.username || '—'} />
+          <SettingsRow label="Phone" value={user?.phone || 'Not provided'} />
+          <SettingsRow icon={<UserIcon color={COLORS.ink} size={18} />} label="Edit details" onPress={() => open('edit')} />
+          <SettingsRow icon={<LockIcon color={COLORS.ink} size={18} />} label="Change password" onPress={() => open('password')} />
+        </SettingsSection>
+        <SettingsSection title="Danger zone" note="Deleting your account removes it for good and asks for your password.">
+          <SettingsRow tone="danger" icon={<Trash2 color={COLORS.danger} size={18} strokeWidth={1.75} />} label="Delete account" onPress={() => open('delete')} />
+        </SettingsSection>
       </View>
     );
   }

@@ -36,3 +36,10 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 - Icons are Lucide everywhere: `lucide-react` in the admin (`src/components/Icon.js` maps the page icon names to Lucide components) and `lucide-react-native` on mobile (`native/icons.js`, and the dock's `NavIcon` in `native/ui.js`).
 - Font: Urbanist on the web builds (admin and the Expo web export). Native keeps the system font, so no font file has to ship.
 - Green (`green`, `greenText`, `greenSoft`) is the status colour for anything active or live. It is not a brand colour: use it for running buses, connected servers and drivers on duty, nothing else.
+
+## Motion and settings parts in `native/ui.js`
+
+- `Tap` replaces `TouchableOpacity`: scale(0.97) on press and the keyboard focus ring (on the web the release eases back in 160ms). Use it for anything pressable that is not a `Button`.
+- `ScreenFade` (key it by tab), `Reveal` (list entrance, 40ms stagger, first six only), `Toast` (slides and fades) and `SheetModal` (backdrop fades while the sheet rises; use it instead of React Native's `Modal` with `animationType="slide"`). All respect reduced motion.
+- `Segmented`, `SettingsSection` and `SettingsRow` build the Settings screens. The admin has its own `SettingsPage` and a CSS `.segmented` control.
+- The admin dashboard (`pages/DashboardPage.js`) fits the window with no scrolling (`.page-scroll.fit`); on windows shorter than 760px or narrower than 1100px it falls back to scrolling.

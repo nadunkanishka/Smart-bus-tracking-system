@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import Icon from '../components/Icon';
 
 const MAX_BARS = 7;
-const MAX_FLEET_ROWS = 4;
-const MAX_DRIVER_ROWS = 2;
+const MAX_FLEET_ROWS = 3;
+const MAX_DRIVER_ROWS = 1;
 
 export default function DashboardPage({ user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
   const [driverFilter, setDriverFilter] = useState('Active'); // 'Active' | 'On Leave'

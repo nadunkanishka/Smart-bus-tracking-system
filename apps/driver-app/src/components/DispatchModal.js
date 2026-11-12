@@ -1,7 +1,7 @@
 import React from 'react';
-import { Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Button, Sheet } from '../shared/ui';
+import { Button, Sheet, Tap, SheetModal } from '../shared/ui';
 import { ArrowRightIcon, MessageCircleIcon, PhoneCallIcon } from '../shared/icons';
 import { DISPATCH_PHONE } from '../constants';
 import { useD } from './DispatchModal.styles';
@@ -9,19 +9,7 @@ import { useD } from './DispatchModal.styles';
 export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dispatchMode, setDispatchMode, showToast }) {
   const D = useD();
   return (
-    <Modal
-      visible={isDispatchModalOpen}
-      animationType="slide"
-      transparent
-      onRequestClose={() => setIsDispatchModalOpen(false)}
-    >
-      <View style={D.modalBackdrop}>
-        <TouchableOpacity
-          style={D.modalDismiss}
-          onPress={() => setIsDispatchModalOpen(false)}
-          activeOpacity={1}
-          accessibilityLabel="Close dispatch contact"
-        />
+    <SheetModal visible={isDispatchModalOpen} onClose={() => setIsDispatchModalOpen(false)}>
         <Sheet>
           <View style={D.handleRow}><View style={D.handle} /></View>
 
@@ -43,10 +31,9 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
 
           {/* Mode Tabs */}
           <View style={D.modeTabs} accessibilityRole="tablist">
-            <TouchableOpacity
+            <Tap
               style={[D.modeTab, dispatchMode === 'call' && D.modeTabActive]}
               onPress={() => setDispatchMode('call')}
-              activeOpacity={0.8}
               accessibilityRole="tab"
               accessibilityState={{ selected: dispatchMode === 'call' }}
             >
@@ -54,11 +41,10 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
               <Text style={[D.modeTabText, dispatchMode === 'call' && D.modeTabTextActive]}>
                 Call Dispatch
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Tap>
+            <Tap
               style={[D.modeTab, dispatchMode === 'message' && D.modeTabActive]}
               onPress={() => setDispatchMode('message')}
-              activeOpacity={0.8}
               accessibilityRole="tab"
               accessibilityState={{ selected: dispatchMode === 'message' }}
             >
@@ -66,7 +52,7 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
               <Text style={[D.modeTabText, dispatchMode === 'message' && D.modeTabTextActive]}>
                 Send Message
               </Text>
-            </TouchableOpacity>
+            </Tap>
           </View>
 
           {dispatchMode === 'call' ? (
@@ -95,10 +81,9 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
                 'Route obstruction. Seeking alternative.',
                 'Arrived at terminus. Shift complete.',
               ].map((msg, idx) => (
-                <TouchableOpacity
+                <Tap
                   key={idx}
                   style={D.quickMsgBtn}
-                  activeOpacity={0.8}
                   onPress={() => {
                     setIsDispatchModalOpen(false);
                     showToast(`Message sent: "${msg}"`);
@@ -106,12 +91,11 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
                 >
                   <Text style={D.quickMsgText}>{msg}</Text>
                   <ArrowRightIcon color={COLORS.accentText} size={14} />
-                </TouchableOpacity>
+                </Tap>
               ))}
             </View>
           )}
         </Sheet>
-      </View>
-    </Modal>
+    </SheetModal>
   );
 }
