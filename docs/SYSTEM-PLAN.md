@@ -49,10 +49,10 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 
 ## 2. Make it run end to end (locally, first)
 
-- [ ] `npm run install:all`, then `npm test` passes (backend 23 tests, admin test).
-- [ ] Start MongoDB, copy `backend/.env.example` to `backend/.env`, set a real `JWT_SECRET` and `ADMIN_PASSWORD`.
-- [ ] `npm run seed`, start backend, admin, passenger and driver apps (`docs/DEPLOYMENT.md`, section 1).
-- [ ] `npm run replay -- --route RT-001 --buses 3 --duration 120`: buses move on the passenger map, ETAs update, Live Monitor shows drivers, Trip Analytics fills after trips.
+- [x] `npm run install:all`, then `npm test` passes (backend 27 tests, admin test). Checked 12 Nov 2026.
+- [x] MongoDB running, `backend/.env` exists with `JWT_SECRET` and `ADMIN_PASSWORD` set.
+- [x] `npm run seed` (25 routes, run on the main database 12 Nov 2026), start backend, admin, passenger and driver apps (`docs/DEPLOYMENT.md`, section 1).
+- [x] Replay on Route 138 (3 buses, 90 s, isolated test database): 135 fixes sent, 135 received by the passenger socket, ETAs update per stop, `/api/metrics` counts them, and the ETA and segment analytics fill. Latency device to passenger: avg 2 ms. Not yet looked at in the browser, and Trip Analytics needs full trips (longer runs). Note the route id is not RT-001 any more: use the id of Route 138 in your database.
 - [ ] **(you) Redis.** Without Docker, use a free cloud Redis (Redis Cloud or Upstash) or install Memurai; set `REDIS_URL`; confirm `/api/health` shows `"cache": "redis"` and Live Monitor says Redis. Until then the Redis claim in the report is untested.
 - [ ] Read `docs/CRUD-REPORT.md` known limits and decide which matter for the pilot (no passenger password reset, deleted admin tokens valid until expiry).
 
