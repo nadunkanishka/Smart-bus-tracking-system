@@ -6,6 +6,7 @@ const { haversine } = require('./lib/geo');
 const { validateFix, MAX_SPEED_MPS } = require('./lib/validate');
 const { startTrip, advance } = require('./lib/tripTracker');
 const { smoothFix, SMOOTHING } = require('./lib/smooth');
+const { createRate } = require('./lib/rate');
 const { readToken } = require('./lib/auth');
 
 const Route = require('./models/Route');
@@ -27,6 +28,7 @@ function createRealtime(io, store) {
   const routes = new Map(); // routeId -> { prepared, at }
   let gpsBuffer = [];
 
+  const fixRate = createRate(); // accepted positions per minute, for the dashboard chart
   const metrics = {
     startedAt: Date.now(), received: 0, accepted: 0, rejected: 0, duplicates: 0, batches: 0, bufferedFixes: 0, broadcasts: 0,
     ingestMs: [], // device timestamp -> server receive (includes device clock skew)
@@ -74,6 +76,7 @@ function createRealtime(io, store) {
       }
     }
     metrics.accepted += 1;
+    fixRate.hit(recvTs);
     if (buffered) metrics.bufferedFixes += 1;
     bus.lastFix = fix;
     bus.lastSeen = recvTs;
@@ -291,6 +294,7 @@ function createRealtime(io, store) {
       uptimeSec: Math.round((Date.now() - metrics.startedAt) / 1000),
       store: store.kind,
       sockets: io.engine.clientsCount,
+      fixesPerMinute: fixRate.series(Date.now(), 12), // [{ t, n }], the last 12 minutes, oldest first
       fixes: { received: metrics.received, accepted: metrics.accepted, rejected: metrics.rejected, duplicates: metrics.duplicates, buffered: metrics.bufferedFixes, batches: metrics.batches, broadcasts: metrics.broadcasts },
       latencyMs: { deviceToServer: stats(metrics.ingestMs), serverProcessing: stats(metrics.processMs) },
     }),
