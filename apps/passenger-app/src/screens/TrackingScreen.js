@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import LiveMap from '../shared/LiveMap';
 import { COLORS } from '../shared/theme';
-import { Button, IconButton, Vehicle, VehicleLoader } from '../shared/ui';
+import { Button, IconButton, Vehicle, VehicleLoader, ProgressTrack } from '../shared/ui';
 import { ArrowRightIcon, MoreVerticalIcon } from '../shared/icons';
 import { MAP_PADDING } from '../constants';
 import { StopPicker } from '../components/StopPicker';
@@ -134,11 +134,7 @@ export function TrackingScreen({
 
             {/* Progress along the route */}
             <View style={S.progressBlock}>
-              <View style={S.progressTrack}>
-                <View style={[S.progressDone, { flex: progress }]} />
-                <ArrowRightIcon color={COLORS.accent} size={20} />
-                <View style={[S.progressLeft, { flex: 1 - progress }]} />
-              </View>
+              <ProgressTrack value={progress} height={6} color={COLORS.orange} track={COLORS.line} />
               <Text style={S.progressSummary}>{trackedSummary(tracked, boardingStop, destinationStop)}</Text>
             </View>
 

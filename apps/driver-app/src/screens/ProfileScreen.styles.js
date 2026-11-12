@@ -11,7 +11,7 @@ export const useD = createStyles(() => ({
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
       backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, padding: 12,
     },
-    dispatchCardSpaced: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, marginBottom: 16, padding: 16, borderRadius: RADII.lg, ...SHADOWS.sm },
+    dispatchCardSpaced: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, marginBottom: 16, padding: 16, borderRadius: RADII.lg, ...SHADOWS.sm },
     dispatchLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
     dispatchCardAvatar: {
       width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primarySoft,
@@ -23,7 +23,7 @@ export const useD = createStyles(() => ({
     dispatchBtns: { flexDirection: 'row', gap: 8 },
     profileHero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
     profileAvatar: {
-      width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine,
+      width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine,
       alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...SHADOWS.md,
     },
     profileGear: { position: 'absolute', right: 0, top: TOP_INSET + 4, zIndex: 2 },

@@ -3,7 +3,7 @@ import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { request, toRoute } from './src/shared/api';
 import * as telemetry from './src/services/telemetry';
 import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
-import { ScreenFade, Toast } from './src/shared/ui';
+import { AppBackdrop, ScreenFade, Toast } from './src/shared/ui';
 import { MAX_LOG_ITEMS } from './src/constants';
 import { formatCoord } from './src/utils';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -149,6 +149,7 @@ function AppShell() {
 
   return (
     <SafeAreaView style={D.root}>
+      <AppBackdrop />
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"

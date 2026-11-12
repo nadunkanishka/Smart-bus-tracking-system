@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
 import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
-import { ScreenFade, Toast, VehicleLoader } from './src/shared/ui';
+import { AppBackdrop, ScreenFade, Toast, VehicleLoader } from './src/shared/ui';
 import { useToast } from './src/hooks/useToast';
 import { useAuth } from './src/hooks/useAuth';
 import { useRoutes } from './src/hooks/useRoutes';
@@ -72,6 +72,7 @@ function AppShell() {
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={S.root}>
+      <AppBackdrop />
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"

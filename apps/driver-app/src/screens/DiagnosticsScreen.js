@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { OverlapHeader, OverlapSheet, Vehicle } from '../shared/ui';
+import { CountUp, LiveDot, OverlapHeader, OverlapSheet, RingGauge, Vehicle } from '../shared/ui';
 import { SpeedometerIcon } from '../shared/icons';
 import { formatCoord } from '../utils';
 import { useD } from './DiagnosticsScreen.styles';
@@ -18,24 +18,23 @@ export function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs,
       <OverlapHeader minHeight={150}>
         <Text style={D.screenTitle}>Telemetry</Text>
         <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
-        <Vehicle name="minibus" width={116} style={D.headerBus} label="Illustrated minibus" />
       </OverlapHeader>
 
       <OverlapSheet>
         {/* Metrics Grid */}
         <View style={D.metricsRow}>
-          <View style={D.metricCard}>
-            <View style={D.metricIcon}><SpeedometerIcon color={COLORS.accentText} size={22} /></View>
-            <Text style={D.metricVal}>{isOnShift ? busSpeed : 0}<Text style={D.metricUnit}> km/h</Text></Text>
+          <View style={[D.metricCard, D.ringCard]}>
+            <RingGauge value={isOnShift ? busSpeed : 0} max={80} size={116} stroke={10} color={COLORS.orange}>
+              <CountUp value={isOnShift ? busSpeed : 0} style={D.ringValue} />
+              <Text style={D.metricUnit}>km/h</Text>
+            </RingGauge>
             <Text style={D.metricLabel}>Speed</Text>
           </View>
-          <View style={D.metricCard}>
-            <View style={[D.metricIcon, { backgroundColor: gpsOk ? COLORS.successSoft : COLORS.dangerSoft }]}>
-              <View style={[D.gpsStatusDot, { backgroundColor: gpsOk ? COLORS.success : COLORS.danger }]} />
+          <View style={[D.metricCard, D.ringCard]}>
+            <View style={D.gpsBox}>
+              {gpsOk ? <LiveDot color={COLORS.green} size={14} /> : <View style={[D.gpsStatusDot, { backgroundColor: COLORS.danger }]} />}
             </View>
-            <Text style={[D.metricValSm, { color: gpsOk ? COLORS.success : COLORS.danger }]}>
-              {gpsStatus}
-            </Text>
+            <Text style={[D.metricValSm, { color: gpsOk ? COLORS.success : COLORS.danger }]}>{gpsStatus}</Text>
             <Text style={D.metricLabel}>GPS</Text>
           </View>
         </View>

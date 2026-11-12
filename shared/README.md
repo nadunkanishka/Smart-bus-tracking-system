@@ -43,3 +43,9 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 - `ScreenFade` (key it by tab), `Reveal` (list entrance, 40ms stagger, first six only), `Toast` (slides and fades) and `SheetModal` (backdrop fades while the sheet rises; use it instead of React Native's `Modal` with `animationType="slide"`). All respect reduced motion.
 - `Segmented`, `SettingsSection` and `SettingsRow` build the Settings screens. The admin has its own `SettingsPage` and a CSS `.segmented` control.
 - The admin dashboard (`pages/DashboardPage.js`) fits the window with no scrolling (`.page-scroll.fit`); on windows shorter than 760px or narrower than 1100px it falls back to scrolling.
+
+## Mobile screens follow the dashboard
+
+- `AppBackdrop` (first child of each app) draws the dashboard's page: base colour with an orange glow top-left and a cool glow bottom-right. `OverlapHeader` and `OverlapSheet` are plain containers now (no coloured block, no curved sheet), so titles sit on the glowing page. Cards use `COLORS.glass` with a hairline border; cards that sit over a map stay opaque (`COLORS.surface`).
+- `NotchStat` is the dashboard's small stat card (label, big number, coloured pill). `GradientCard tint="hero"` is the orange card.
+- Animated pieces (all react-native `Animated`, no extra dependency, all still with reduced motion): `FloatingDock` (the orange circle slides between tabs), `CountUp`, `RingGauge`, `LiveDot`, `ProgressTrack`, plus `Reveal` for staggered entrances.
