@@ -17,7 +17,7 @@ The software is built. What is left is mostly **evidence**: deploy it, run the p
 | 6 | ETA engine | **Built, not tuned** (about 70%) | `lib/eta.js` follows steps (a) to (d); `tripTracker` logs segment times, dwell and predicted-vs-actual into `SegmentLog` and `EtaLog`. Kalman GPS smoothing (`lib/smooth.js`) is built, tested, measured on simulated tracks and merged, and a straight-line baseline is logged beside every prediction. Tuning the ETA needs real trip data, which does not exist yet. |
 | 7 | Admin dashboard | **Done** (about 95%) | Routes with a map editor, stops, buses, drivers, passengers, admins, live monitor, trip analytics, settings, dark mode |
 | 8 | Integration and system testing | **Partly done** (about 50%) | 36 backend tests pass (ETA, GPS pipeline, CRUD, route data, smoothing, baseline). A simulator (`npm run replay`) and a smoke script exist. A two-phone run in Expo Go worked (reported), but no installed-build run on a road; the driver and passenger apps have no tests. |
-| 9 | Live pilot deployment | **Not started** | No deployed URL anywhere. `render.yaml` and `docs/DEPLOYMENT.md` are ready. Route 138 (Pettah to Homagama) is chosen and seeded. |
+| 9 | Live pilot deployment | **Deployed, pilot not started** | Backend on Railway, database on Atlas, admin and passenger web on Netlify (13 Nov 2026, free tiers); Expo Go on two phones worked against it. No installed APK yet, no real trips. `render.yaml` and `docs/DEPLOYMENT.md` are ready. Route 138 (Pettah to Homagama) is chosen and seeded. |
 | 10 | Performance evaluation | **Tooling ready, no results** | `/api/metrics`, replay latency summary, `loadtest/artillery.yml`, `docs/EVALUATION.md`. No run recorded. |
 | 11 | User study | **Not started** | `EVALUATION.md` plans Google Forms with SUS. No questionnaire, no ethics or consent text yet. |
 | 12 | Documentation and report | **Technical docs done, report not started** | Docs cover architecture, API, schema, deployment. The ESOFT / London Met final report is not in the repo. |
@@ -27,9 +27,9 @@ The software is built. What is left is mostly **evidence**: deploy it, run the p
 | Deliverable | State |
 |---|---|
 | Driver app, Android APK | Code done. **APK not built.** |
-| Passenger web and mobile app | Code done. Web build not deployed. |
-| Admin dashboard | Done. Not deployed. |
-| Deployed backend with Redis and MongoDB, load tested | Code and config done. **Not deployed, not load tested.** |
+| Passenger web and mobile app | Code done. Web deployed (Netlify). Phone app: rebuild the APK with the Maps key. |
+| Admin dashboard | Done and deployed (Netlify). |
+| Deployed backend with Redis and MongoDB, load tested | Backend on Railway and MongoDB on Atlas, deployed. **No Redis yet, not load tested.** |
 | Performance evaluation report | **Not started** (tooling only) |
 | User study report | **Not started** |
 | Technical documentation | Done. Needs a final accuracy pass and diagrams for the report. |
@@ -70,9 +70,9 @@ Do these in order. Each group ends in something you can show.
 - [x] Merge the open branches (`pilot-prep`, `pilot-routes` is merged; check `database`, `ui`, `docs`) into `dev`, then `dev` into `main` once CI is green. Done: `database`, `ui`, `docs`, `pilot-routes`, `pilot-prep`, `docs-system-plan` are all in `dev`. Only `dev` into `main` remains (your call), and the old local `fix/ci-admin-install` was left unmerged on purpose.
 
 ### B. Deploy (about 2 days)
-- [ ] Create MongoDB Atlas free cluster; put the URI in Render.
-- [ ] Deploy the backend with `render.yaml`, including the Render Key Value (Redis). Check `/api/health` shows mongo connected and `kind: redis`.
-- [ ] Deploy the admin dashboard (static site) and the passenger web build; set CORS.
+- [x] Create MongoDB Atlas free cluster; put the URI in Render. Done (`docs/SETUP-MONGODB.md`).
+- [x] Deploy the backend with `render.yaml`, including the Render Key Value (Redis). Check `/api/health` shows mongo connected and `kind: redis`. Done on Railway instead (Render asked for a card): `docs/SETUP-RAILWAY.md`. Mongo connected; Redis not added, so the cache is memory.
+- [x] Deploy the admin dashboard (static site) and the passenger web build; set CORS. Done on Netlify, CORS limited to the two sites.
 - [ ] Build the driver APK with EAS (`preview` profile) and install it on a real Android 10+ phone.
 - [ ] Point both mobile apps at the deployed API and test sign-in, GPS stream, and ETA display on real phones.
 
