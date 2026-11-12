@@ -54,7 +54,7 @@ export default function Analytics({ api, routes }) {
       </div>
 
       <div className="panel table-shell">
-        <div className="panel-head" style={{ padding: '16px 20px 4px' }}>
+        <div className="panel-head">
           <div>
             <h2>ETA engine vs a plain estimate</h2>
             <p>The plain estimate is the straight-line distance to the stop at a fixed 20 km/h. Both are scored on the same arrivals.</p>

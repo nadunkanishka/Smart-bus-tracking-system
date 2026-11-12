@@ -4,7 +4,7 @@ import Icon from '../components/Icon';
 import StatusBadge from '../components/StatusBadge';
 import TableShell from '../components/TableShell';
 
-export default function RoutesPage({ currentPageTitle, routes, openModal, openConfirm }) {
+export default function RoutesPage({ currentPageTitle, loading, routes, openModal, openConfirm }) {
   return (
     <section className="page-section" data-page="routes">
       <div className="section-header">
@@ -37,7 +37,7 @@ export default function RoutesPage({ currentPageTitle, routes, openModal, openCo
             {routes.length === 0 ? (
               <tr>
                 <td colSpan="10" className="cell-empty">
-                  <div className="empty-state"><Vehicle name="coach" width={128} label="Nothing here yet" />No network routes created yet. Click "Create Route" to create one!</div>
+                  <div className="empty-state"><Vehicle name="coach" width={128} label="Nothing here yet" />{loading ? 'Loading routes…' : 'No network routes created yet. Click "Create Route" to create one!'}</div>
                 </td>
               </tr>
             ) : (

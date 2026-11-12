@@ -45,7 +45,7 @@ function App() {
   const showNotification = (message) => setNotification(message);
 
   // Data Collections (real data from MongoDB)
-  const { drivers, buses, routes, summary, backendConnected, fetchBackendData } = useAdminData({
+  const { drivers, buses, routes, summary, backendConnected, loading, fetchBackendData } = useAdminData({
     user,
     // Session expired or signed in before tokens existed: ask the admin to sign in again.
     onSessionExpired: () => {
@@ -186,11 +186,11 @@ function App() {
           {activePage === 'passengers' && <PassengersPage currentPageTitle={currentPageTitle} showNotification={showNotification} />}
           {activePage === 'admins' && <AdminsPage currentPageTitle={currentPageTitle} user={user} showNotification={showNotification} />}
 
-          {activePage === 'drivers' && <DriversPage currentPageTitle={currentPageTitle} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
+          {activePage === 'drivers' && <DriversPage currentPageTitle={currentPageTitle} loading={loading} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
 
-          {activePage === 'buses' && <BusesPage currentPageTitle={currentPageTitle} buses={buses} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
+          {activePage === 'buses' && <BusesPage currentPageTitle={currentPageTitle} loading={loading} buses={buses} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
 
-          {activePage === 'routes' && <RoutesPage currentPageTitle={currentPageTitle} routes={routes} openModal={openModal} openConfirm={openConfirm} />}
+          {activePage === 'routes' && <RoutesPage currentPageTitle={currentPageTitle} loading={loading} routes={routes} openModal={openModal} openConfirm={openConfirm} />}
         </main>
       </div>
 
