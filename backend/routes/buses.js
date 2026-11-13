@@ -8,7 +8,6 @@ const Route = require('../models/Route');
 
 const router = express.Router();
 
-// BUS ROUTES
 // The bus password is write-only: responses carry hasPassword instead of the value.
 const busView = (bus) => {
   const { password, ...rest } = bus.toObject ? bus.toObject() : bus;

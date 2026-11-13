@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 module.exports = (state, io) => {
   const router = express.Router();
 
-  // Health Check
   router.get('/api/health', (req, res) => {
     const mongo = mongoose.connection.readyState === 1;
     res.status(mongo ? 200 : 503).json({

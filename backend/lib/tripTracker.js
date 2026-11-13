@@ -72,4 +72,4 @@ function advance(state, route, eta, fix) {
   return out;
 }
 
-module.exports = { startTrip, advance, STOP_RADIUS_M };
+module.exports = { startTrip, advance };

@@ -27,7 +27,6 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: corsOrigin }, pingInterval: 8000, pingTimeout: 7000 });
 const state = { store: null, realtime: null }; // set once the latest-fix store is ready
 
-// Connect to MongoDB and seed default admin
 connectDB().then(async (connected) => {
   if (connected) {
     try {

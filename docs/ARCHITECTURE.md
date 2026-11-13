@@ -22,7 +22,7 @@ flowchart LR
   end
 
   subgraph Tier2[Tier 2: Passenger app, web + mobile]
-    PS[Socket.IO client] --> MAP[Leaflet / OSM map<br/>markers glide between fixes]
+    PS[Socket.IO client] --> MAP[Map: Leaflet / OSM on web,<br/>react-native-maps on phones<br/>markers glide between fixes]
     PS --> LIST[ETA per stop]
   end
 
@@ -46,9 +46,10 @@ flowchart LR
 
 1. The driver app captures a position every 3 seconds while on duty and emits `gps:fix` (`lat`, `lng`, `speed` in m/s, `heading`, `accuracy`, `ts` device time in ms, `seq`).
 2. The server validates it (`backend/lib/validate.js`): coordinate ranges, a required timestamp that is not in the future or older than a day, a plausible speed. A fix whose timestamp is not newer than the bus's last accepted fix is dropped as a duplicate or out-of-order fix. A fix implying an impossible jump is rejected.
-3. The ETA engine (`backend/lib/eta.js`) computes the arrival time at every stop (see below).
-4. The result is written to the latest-fix cache (`bus:<busId>:last`, 60 s TTL) and emitted as `bus:update` to the Socket.IO room `route:<routeId>`.
-5. The raw fix is appended to an in-memory buffer that is written to MongoDB (`GpsLog`) every 5 seconds, so the live path never waits on a database write.
+3. Unless `GPS_SMOOTHING=off`, a smoothing filter (`backend/lib/smooth.js`) steadies the raw position. The ETA, the map marker and `GpsLog.smoothed` use the smoothed point. `GpsLog.location` keeps the raw fix.
+4. The ETA engine (`backend/lib/eta.js`) computes the arrival time at every stop (see below).
+5. The result is written to the latest-fix cache (`bus:<busId>:last`, 60 s TTL) and emitted as `bus:update` to the Socket.IO room `route:<routeId>`.
+6. The raw fix is appended to an in-memory buffer that is written to MongoDB (`GpsLog`) every 5 seconds, so the live path never waits on a database write.
 
 A passenger who selects a route emits `route:subscribe`. The server moves the socket into that route's room and replies with `route:snapshot`, read from the cache, so the map shows buses immediately.
 
@@ -87,3 +88,10 @@ Passwords are stored as scrypt hashes. Login returns a JWT with a `role` claim (
 - Background GPS needs an installed build (APK). Expo Go only tracks while the app is open.
 - A route is one direction of travel. A bus driving back along the same road is projected onto the outbound path, so its stop ETAs are wrong until it is near the first stop again. Model the return leg as its own route and assign the bus to it for the return trip.
 - Going off duty closes the open trip and resets the bus's position state. The next duty period starts a new trip.
+- Passengers have no password reset: there is no email or SMS channel to send one to, so an admin would have to reset it.
+- A deleted admin's token stays valid until it expires (12 h). A deleted passenger's token (30 days) is refused by `/me` but passes other checks. The admin guard checks the token only, not the database.
+- Deleting a route or bus keeps its trip, GPS, segment and ETA logs, so logs can refer to ids that no longer exist.
+- A route stores its bus as text (`NB-4712 (BUS-002)`), not an id, and one bus can be assigned to several routes.
+- A bus on duty keeps streaming after it is deleted or its route changes, until the driver signs out.
+- Lists are not paginated or searchable.
+- The admin role is free text. Every admin can do everything.

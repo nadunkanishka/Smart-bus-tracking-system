@@ -29,4 +29,4 @@ const fail = (res, err, fallbackStatus = 400) => {
   return res.status(status).json({ error });
 };
 
-module.exports = { pick, idQuery, escapeRegex, describeError, fail };
+module.exports = { pick, idQuery, escapeRegex, fail };

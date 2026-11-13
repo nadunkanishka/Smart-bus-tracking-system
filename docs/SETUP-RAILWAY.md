@@ -73,7 +73,7 @@ Wait until **Deployments** shows the latest deployment as Active, then open `<ad
 
 ## 6. Connect the websites (Netlify) and lock down CORS
 
-The admin dashboard and the passenger web app are static sites on Netlify (steps in [DEPLOYMENT.md](DEPLOYMENT.md), section 3b). Each is built with the backend address:
+The admin dashboard and the passenger web app are static sites on Netlify (steps in [DEPLOYMENT.md](DEPLOYMENT.md), section 4). Each is built with the backend address:
 
 - admin site: environment variable `REACT_APP_API_URL`
 - passenger site: environment variable `EXPO_PUBLIC_API_URL`

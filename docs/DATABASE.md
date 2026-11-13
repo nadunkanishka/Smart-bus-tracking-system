@@ -1,6 +1,6 @@
 # Database schema
 
-MongoDB database `smart_bus_tracking`. Models are in `backend/models/`. All main collections have `createdAt` and `updatedAt`.
+MongoDB database `smart_bus_tracking` on a local install (the default `MONGODB_URI`). On Atlas the database is named in the connection string, `smartbus` in `docs/SETUP-MONGODB.md`. Models are in `backend/models/`. All main collections have `createdAt` and `updatedAt`.
 
 ## Collections
 
@@ -42,7 +42,7 @@ MongoDB database `smart_bus_tracking`. Models are in `backend/models/`. All main
 
 ### trips
 
-One run of a bus along its route: `tripId` (unique), `busId`, `registration`, `routeId`, `startedAt`, `endedAt`, `completed`.
+One run of a bus along its route: `tripId` (unique), `busId`, `routeId`, `startedAt`, `endedAt`, `completed`.
 
 ### segmentlogs
 

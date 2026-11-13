@@ -6,7 +6,6 @@ const Bus = require('../models/Bus');
 
 const router = express.Router();
 
-// DRIVER ROUTES
 const EDITABLE = ['name', 'license', 'expiry', 'phone', 'status'];
 const byId = (id) => idQuery(id, ['driverId']);
 

@@ -10,7 +10,7 @@ const key = (busId) => `bus:${busId}:last`;
 const routeKey = (routeId) => `route:${routeId}:buses`;
 
 function memoryStore() {
-  const last = new Map(); // busId -> { value, expires }
+  const last = new Map();
   const live = (busId) => {
     const e = last.get(busId);
     if (e && e.expires > Date.now()) return e.value;
@@ -76,4 +76,4 @@ async function createStore(url = process.env.REDIS_URL) {
   }
 }
 
-module.exports = { createStore, memoryStore, TTL_SEC };
+module.exports = { createStore, memoryStore };

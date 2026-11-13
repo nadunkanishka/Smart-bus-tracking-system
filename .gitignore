@@ -13,7 +13,6 @@ dist-ssr
 build
 coverage
 .expo
-.uploads
 *.local
 
 # Editor directories and files (the shared VS Code setup is committed)

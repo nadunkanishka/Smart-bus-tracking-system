@@ -62,7 +62,6 @@ function smoothFix(state, fix, cfg = SMOOTHING) {
     // The first fix knows nothing about velocity (phone headings are not trusted: they can be stale or wrong at low speed).
     st.x = axis(0, 0, r);
     st.y = axis(0, 0, r);
-    st.out = [fix.lat, fix.lng];
     return { state: st, lat: fix.lat, lng: fix.lng, skipped: false, held: false };
   }
 
@@ -100,7 +99,6 @@ function smoothFix(state, fix, cfg = SMOOTHING) {
   }
 
   const [lat, lng] = toLatLng(st, st.x.pos, st.y.pos);
-  st.out = [lat, lng];
   return { state: st, lat, lng, skipped, held };
 }
 

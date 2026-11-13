@@ -4,7 +4,6 @@ const { pick, idQuery, fail } = require('../lib/crud');
 const Route = require('../models/Route');
 const Bus = require('../models/Bus');
 
-// ROUTE ROUTES
 // Clients send geometry as plain arrays: path [[lat, lng], ...] and stopPoints [{ name, lat, lng }, ...].
 // It is stored as GeoJSON (LineString / Point, [lng, lat]) so MongoDB can index it with 2dsphere.
 const validLatLng = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;

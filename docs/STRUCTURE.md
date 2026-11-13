@@ -30,7 +30,7 @@ A map of the repository and the rules for adding to it. If you are looking for a
 ```
 backend/                 API server
   index.js               Starts the server and mounts the route files (order matters: public first, then admin guards)
-  routes/                One file per resource: auth, passengers, drivers, buses, routes, monitoring, health
+  routes/                One file per resource: auth, admins, passengers, drivers, buses, routes, monitoring, health
   middleware/            Rate limiter for sign-in, admin-only guards
   realtime.js            Socket.IO: driver fixes in, bus updates out
   lib/                   ETA engine, GPS validation, trip tracker, geometry, auth helpers, latest-fix store
@@ -113,18 +113,21 @@ Each part reads its own file. Copy the `.env.example` beside it.
 | Part | File | Variable | Needed? | Purpose |
 |---|---|---|---|---|
 | Backend | `backend/.env` | `JWT_SECRET` | Yes | Signs login tokens |
-| | | `ADMIN_PASSWORD` | Yes | Password of the first admin account |
+| | | `ADMIN_PASSWORD` | Yes for any shared deployment | Password of the first admin account. Falls back to `admin123` for local development only, so set it everywhere else |
 | | | `ADMIN_USERNAME` | No (default `admin`) | Name of the first admin account |
 | | | `MONGODB_URI` | No (local default) | MongoDB connection |
 | | | `PORT` | No (default 5000) | API port |
 | | | `REDIS_URL` | No | Latest-fix cache; empty uses memory |
 | | | `CORS_ORIGIN` | Production only | Allowed web origins, comma-separated |
-| | | `OSRM_URL` | No | Routing server used by `npm run seed` |
+| | | `GPS_SMOOTHING` | No (default `on`) | Set to `off` to disable the GPS smoothing filter |
+| | | `OSRM_URL` | No (default the public OSRM server) | Routing server used by `npm run seed` |
+| | | `API_URL` | No (default `http://localhost:5000`) | Backend address used by `npm run replay` |
 | Admin | `apps/admin-dashboard/.env.local` | `REACT_APP_API_URL` | No (default `http://localhost:5000`) | Backend address |
-| | | `REACT_APP_OSRM_URL` | No | Routing server for the route editor |
+| | | `REACT_APP_OSRM_URL` | No (default the public OSRM server) | Routing server for the route editor |
 | Driver, passenger | `apps/*/.env` | `EXPO_PUBLIC_API_URL` | Real phones only | Backend address on your network |
 | | | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Native builds only | Google Maps key |
-| Driver | `apps/driver-app/.env` | `EXPO_PUBLIC_DISPATCH_PHONE` | No | Number shown for dispatch |
+| | | `GOOGLE_MAPS_API_KEY` | EAS builds | The same key, stored as an EAS environment variable (`eas env:create`) because a terminal variable never reaches EAS. See `SETUP-APKS.md` |
+| Driver | `apps/driver-app/.env` | `EXPO_PUBLIC_DISPATCH_PHONE` | No (default `+94 11 248 7700`) | Number shown for dispatch |
 
 After changing an `EXPO_PUBLIC_` value, restart Expo with `-c` so the cache is cleared.
 

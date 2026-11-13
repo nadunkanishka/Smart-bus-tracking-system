@@ -30,7 +30,6 @@ function readToken(token) {
   try { return jwt.verify(token, SECRET); } catch { return null; }
 }
 
-// Express middleware: requireRole('admin') etc.
 const requireRole = (...roles) => (req, res, next) => {
   const header = req.headers.authorization || '';
   const claims = header.startsWith('Bearer ') ? readToken(header.slice(7)) : null;

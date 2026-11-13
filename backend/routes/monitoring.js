@@ -10,7 +10,6 @@ const SegmentLog = require('../models/SegmentLog');
 module.exports = (state) => {
   const router = express.Router();
 
-  // LIVE MONITORING: active driver connections and telemetry status
   router.get('/api/live', (req, res) => res.json({ buses: state.realtime ? state.realtime.liveStatus() : [], serverTs: Date.now() }));
   router.get('/api/metrics', (req, res) => res.json(state.realtime ? state.realtime.metrics() : {}));
 
@@ -77,7 +76,6 @@ module.exports = (state) => {
     }
   });
 
-  // DASHBOARD SUMMARY ROUTE (Calculated live from real MongoDB data)
   router.get('/api/dashboard/summary', async (req, res) => {
     try {
       const [driverCount, busCount, routeCount, activeBuses, idleBuses, maintenanceBuses] = await Promise.all([

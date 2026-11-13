@@ -58,7 +58,7 @@ function createRealtime(io, store) {
   const invalidateRoute = (routeId) => (routeId ? routes.delete(routeId) : routes.clear());
 
   // ── One GPS fix through the pipeline ────────────────────────────────────
-  // Returns 'accepted' | 'duplicate' | an error string. `buffered` marks fixes replayed from the offline queue.
+  // `buffered` marks fixes replayed from the offline queue.
   async function handleFix(bus, raw, { buffered = false, broadcast = true, recvTs = Date.now() } = {}) {
     metrics.received += 1;
     const v = validateFix(raw, recvTs);
@@ -121,7 +121,7 @@ function createRealtime(io, store) {
       segIndex: eta ? eta.segIndex : null,
       offRouteM: eta ? Math.round(eta.offRoute) : null,
       finished: eta ? eta.finished : false,
-      stops: eta ? eta.stops : [], // ETA for every stop: passed, or minutes away
+      stops: eta ? eta.stops : [],
     };
     io.to(room(bus.routeId)).emit('bus:update', payload);
     // A cache failure must not stop live updates: passengers already subscribed still get the push above.
@@ -139,10 +139,9 @@ function createRealtime(io, store) {
     // A bus waiting at the final stop after finishing is not on a trip until it is back near the start.
     if (!bus.trip && eta.finished) return;
     if (!bus.trip || (eta.segIndex < bus.trip.segIndex && eta.distAlong < 200)) {
-      // first fix, or the bus is back at the start of the route: a new trip begins
       if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date(fix.ts) });
       bus.trip = startTrip(route, eta, fix, `TRIP-${crypto.randomUUID().slice(0, 8)}`);
-      await Trip.create({ tripId: bus.trip.tripId, busId: bus.busId, registration: bus.registration, routeId: bus.routeId, startedAt: new Date(fix.ts) });
+      await Trip.create({ tripId: bus.trip.tripId, busId: bus.busId, routeId: bus.routeId, startedAt: new Date(fix.ts) });
       return;
     }
     const res = advance(bus.trip, route, eta, fix);
@@ -202,7 +201,7 @@ function createRealtime(io, store) {
   io.on('connection', (socket) => {
     const user = socket.data.user;
 
-    // Passengers (and the admin map): one route room at a time, snapshot served from the cache.
+    // Passengers: one route room at a time, snapshot served from the cache.
     socket.on('route:subscribe', safe(async ({ routeId } = {}, ack) => {
       if (typeof routeId !== 'string' || !routeId) return ack?.({ ok: false, error: 'routeId is required' });
       [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
@@ -279,9 +278,7 @@ function createRealtime(io, store) {
 
   return {
     invalidateRoute,
-    handleFix, // exported for tests and the replay tools
     liveStatus: () => {
-      // forget buses that disconnected more than 15 minutes ago
       buses.forEach((b, id) => { if (!b.connected && Date.now() - (b.lastSeen || b.connectedAt || 0) > 15 * 60 * 1000) buses.delete(id); });
       return [...buses.values()].map((b) => ({
       busId: b.busId, registration: b.registration, routeId: b.routeId, driverName: b.driverName || null,
@@ -294,11 +291,10 @@ function createRealtime(io, store) {
       uptimeSec: Math.round((Date.now() - metrics.startedAt) / 1000),
       store: store.kind,
       sockets: io.engine.clientsCount,
-      fixesPerMinute: fixRate.series(Date.now(), 12), // [{ t, n }], the last 12 minutes, oldest first
+      fixesPerMinute: fixRate.series(Date.now(), 12),
       fixes: { received: metrics.received, accepted: metrics.accepted, rejected: metrics.rejected, duplicates: metrics.duplicates, buffered: metrics.bufferedFixes, batches: metrics.batches, broadcasts: metrics.broadcasts },
       latencyMs: { deviceToServer: stats(metrics.ingestMs), serverProcessing: stats(metrics.processMs) },
     }),
-    stop: () => clearInterval(flushTimer),
   };
 }
 

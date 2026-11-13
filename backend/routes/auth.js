@@ -9,7 +9,6 @@ const { escapeRegex } = require('../lib/crud');
 
 const router = express.Router();
 
-// AUTH ROUTES
 router.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -41,7 +40,6 @@ router.post('/api/auth/login', authLimiter, async (req, res) => {
   }
 });
 
-// DRIVER / BUS AUTH ROUTE (For Driver App Authentication)
 router.post('/api/auth/driver-login', authLimiter, async (req, res) => {
   try {
     const { registration, busId, password } = req.body;

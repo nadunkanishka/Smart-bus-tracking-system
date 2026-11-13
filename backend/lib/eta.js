@@ -45,7 +45,6 @@ function prepareRoute(line, stops, history = {}) {
   return { line, cum, stops, stopDist, segments, length: cum[cum.length - 1] };
 }
 
-// fix: { lat, lng, speed (m/s) }, near: last known distAlong for this bus (optional)
 function computeEta(route, fix, near) {
   const proj = projectOntoLine(route.line, route.cum, [fix.lat, fix.lng], near); // (a)
   const d = proj.distAlong;
@@ -74,7 +73,6 @@ function computeEta(route, fix, near) {
   return {
     distAlong: d,
     offRoute: proj.offRoute,
-    snapped: proj.point,
     segIndex: seg,
     remainingInSegment: remaining,
     finished: atEnd,

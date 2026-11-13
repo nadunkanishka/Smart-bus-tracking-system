@@ -6,7 +6,6 @@ const Passenger = require('../models/Passenger');
 
 const router = express.Router();
 
-// PASSENGER ACCOUNTS
 const passengerView = (p) => ({ id: p._id, username: p.username, name: p.name, phone: p.phone });
 
 router.post('/api/passengers/register', authLimiter, async (req, res) => {

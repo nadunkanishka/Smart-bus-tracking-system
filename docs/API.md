@@ -87,7 +87,7 @@ Connect to the base URL. Drivers pass their token in the handshake: `io(url, { a
 
 | Direction | Event | Payload |
 |---|---|---|
-| client → server | `route:subscribe` | `{ routeId }`. Leaves any previous route room. Ack: `{ ok, buses }` |
+| client → server | `route:subscribe` | `{ routeId }`. Leaves any previous route room. Ack: `{ ok, buses }`, where `buses` is the number of buses (the array arrives in `route:snapshot`) |
 | client → server | `route:unsubscribe` | – |
 | server → client | `route:snapshot` | `{ routeId, buses: [busUpdate], serverTs }`, sent once after subscribing |
 | server → client | `bus:update` | `busUpdate` (below), on every accepted live fix |
@@ -113,6 +113,6 @@ Connect to the base URL. Drivers pass their token in the handshake: `io(url, { a
 | Direction | Event | Payload |
 |---|---|---|
 | client → server | `driver:duty` | `{ onDuty: true/false }`. Off duty removes the bus from the map |
-| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts, seq }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, nextStopIndex }` where `result` is `accepted`, `duplicate` or a rejection reason |
+| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts, seq }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, ts, nextStopIndex }` (`ts` echoes the fix's `ts`) where `result` is `accepted`, `duplicate` or a rejection reason |
 | client → server | `gps:batch` | Array of up to 1000 fixes from the offline queue. Ack: `{ ok, accepted, duplicate, rejected, lastTs }` |
 | client → server | `driver:auth` | `{ token }`. Alternative to the handshake token, used by the load tests |

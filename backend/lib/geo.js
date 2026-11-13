@@ -19,7 +19,7 @@ function cumulativeDistances(line) {
 
 // Project a point onto the nearest point of the polyline (step (a) of the ETA engine).
 // Uses a local flat-earth frame per polyline edge, which is accurate to centimetres at city scale.
-// Returns { distAlong (m from route start), offRoute (m from the line), point [lat,lng], edge }.
+// Returns { distAlong (m from route start), offRoute (m from the line), point [lat,lng] }.
 // `near` (optional metres along the route) limits the search to a window around the last known position, so
 // a route that doubles back on itself does not make the bus jump between the two legs.
 function projectOntoLine(line, cum, p, near, windowM = 1500) {
@@ -42,7 +42,6 @@ function projectOntoLine(line, cum, p, near, windowM = 1500) {
         offRoute: off,
         distAlong: cum[i] + t * Math.sqrt(len2),
         point: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
-        edge: i,
       };
     }
   }
