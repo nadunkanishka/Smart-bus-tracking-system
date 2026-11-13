@@ -19,7 +19,6 @@ import { useD } from './src/styles/app';
 function AppShell() {
   const D = useD();
   const { isDark } = useTheme();
-  // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [busRegistration, setBusRegistration] = useState('');
   const [busPassword, setBusPassword] = useState('');
@@ -29,7 +28,6 @@ function AppShell() {
   const [assignedRoute, setAssignedRoute] = useState(null);
   const [driverName, setDriverName] = useState(null);
 
-  // Navigation
   const [activeTab, setActiveTab] = useState('shift'); // 'shift' | 'route' | 'diagnostics' | 'profile'
 
   // Live telemetry state (connection, duty, offline queue, last GPS fix) comes from src/services/telemetry.js
@@ -37,12 +35,10 @@ function AppShell() {
   const [dutyBusy, setDutyBusy] = useState(false);
   const [logs, setLogs] = useState([]);
 
-  // UI
   const [toastMsg, setToastMsg] = useState('');
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [dispatchMode, setDispatchMode] = useState('call'); // 'call' | 'message'
 
-  // ─── Derived ──────────────────────────────────────────────────────────────
   const route = useMemo(() => toRoute(assignedRoute), [assignedRoute]);
   const isOnShift = tele.onDuty;
   const routeStops = route?.stops || [];
@@ -56,8 +52,6 @@ function AppShell() {
     () => (tele.lastFix ? [{ id: 'me', lat: tele.lastFix.lat, lng: tele.lastFix.lng, label: 'This bus' }] : []),
     [lastTs], // eslint-disable-line react-hooks/exhaustive-deps
   );
-
-  // ─── Effects ──────────────────────────────────────────────────────────────
 
   useEffect(() => telemetry.subscribe(setTele), []);
 
@@ -75,16 +69,11 @@ function AppShell() {
     return () => clearTimeout(t);
   }, [toastMsg]);
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-
   function appendLog(msg) {
     const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLogs(prev => [`[${ts}] ${msg}`, ...prev].slice(0, MAX_LOG_ITEMS));
   }
 
-  function showToast(msg) { setToastMsg(msg); }
-
-  // ─── Handlers ─────────────────────────────────────────────────────────────
 
   async function handleLogin() {
     setLoginError('');
@@ -127,14 +116,14 @@ function AppShell() {
       if (tele.onDuty) {
         await telemetry.stopDuty();
         appendLog('Off duty. Location sharing stopped.');
-        showToast('Off duty. Location sharing stopped.');
+        setToastMsg('Off duty. Location sharing stopped.');
       } else {
         await telemetry.startDuty();
         appendLog('On duty. Broadcasting live location.');
-        showToast('On duty. Broadcasting live location.');
+        setToastMsg('On duty. Broadcasting live location.');
       }
     } catch (err) {
-      showToast(err.message);
+      setToastMsg(err.message);
     } finally {
       setDutyBusy(false);
     }
@@ -145,8 +134,6 @@ function AppShell() {
     setIsDispatchModalOpen(true);
   }
 
-  // ─── Render ───────────────────────────────────────────────────────────────
-
   return (
     <SafeAreaView style={D.root}>
       <AppBackdrop />
@@ -156,13 +143,9 @@ function AppShell() {
         translucent={Platform.OS === 'android'}
       />
 
-      {/* Toast */}
       <Toast message={toastMsg} />
 
-      {/* ═══════════════════════════════════════════════════
-          AUTH SCREEN  (CHANGED: hero + curved panel; split layout on desktop)
-          No Register screen: bus accounts are created by the admin dashboard.
-      ═══════════════════════════════════════════════════ */}
+      {/* No Register screen: bus accounts are created by the admin dashboard. */}
       {!isAuthenticated ? (
         <LoginScreen
           loginError={loginError}
@@ -174,11 +157,7 @@ function AppShell() {
           loginLoading={loginLoading}
         />
       ) : (
-        /* ═══════════════════════════════════════════════════
-            AUTHENTICATED APP  (CHANGED: centred, width-constrained on desktop)
-        ═══════════════════════════════════════════════════ */
         <View style={D.appShell}>
-          {/* ─── SCREENS ───────────────────────────────── */}
           <ScreenFade key={activeTab}>
           {activeTab === 'shift' ? (
             <ShiftScreen
@@ -242,20 +221,18 @@ function AppShell() {
 
           </ScreenFade>
 
-          {/* ─── BOTTOM DOCK ─────────────────────────── */}
           <DriverDock
             activeTab={activeTab === 'settings' ? 'profile' : activeTab}
             setActiveTab={setActiveTab}
             isOnShift={isOnShift}
           />
 
-          {/* ─── DISPATCH CONTACT MODAL ───────────────── */}
           <DispatchModal
             isDispatchModalOpen={isDispatchModalOpen}
             setIsDispatchModalOpen={setIsDispatchModalOpen}
             dispatchMode={dispatchMode}
             setDispatchMode={setDispatchMode}
-            showToast={showToast}
+            showToast={setToastMsg}
           />
         </View>
       )}

@@ -12,7 +12,7 @@ const TASK = 'smartbus-gps';
 const QUEUE_KEY = 'smartbus:gps-queue';
 const INTERVAL_MS = 3000;
 const BATCH_SIZE = 500;
-// ponytail: the queue is capped at 2000 fixes (~100 minutes offline); older fixes are dropped first.
+// The queue is capped at 2000 fixes (~100 minutes offline); older fixes are dropped first.
 // Raise the cap or move to SQLite if pilots show longer dead zones.
 const MAX_QUEUE = 2000;
 

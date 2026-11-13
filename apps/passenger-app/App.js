@@ -25,7 +25,6 @@ function AppShell() {
   const [isBoardingExpanded, setIsBoardingExpanded] = useState(false);
   const [isDestExpanded, setIsDestExpanded] = useState(false);
 
-  // UI overlays
   const [isStopModalOpen, setIsStopModalOpen] = useState(false);
   const [isBoardingOpen, setIsBoardingOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
@@ -49,8 +48,6 @@ function AppShell() {
 
   const { conn, liveBuses, tracked, mapBuses, clearBuses } = useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex, boardingStop, destinationStop });
 
-  // ─── Handlers ───────────────────────────────────────────────────────────────
-
   function handleLogout() {
     auth.signOut();
     clearBuses();
@@ -69,7 +66,6 @@ function AppShell() {
     showToast('Reset stops to route terminals.');
   }
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={S.root}>
       <AppBackdrop />
@@ -79,22 +75,14 @@ function AppShell() {
         translucent={Platform.OS === 'android'}
       />
 
-      {/* ─── Toast ─────────────────────────────────────── */}
       <Toast message={toastMsg} />
 
       {booting ? (
         <View style={S.centerFill}><VehicleLoader label="Loading SmartBus" /></View>
       ) : !isAuthenticated ? (
-        /* ═══════════════════════════════════════════════════
-            PASSENGER LOGIN / REGISTER (real accounts stored in MongoDB)
-        ═══════════════════════════════════════════════════ */
         <AuthScreen {...auth.form} showToast={showToast} />
       ) : (
-        /* ═══════════════════════════════════════════════════
-            APPLICATION SHELL
-        ═══════════════════════════════════════════════════ */
         <View style={S.appShell}>
-          {/* ─── SCREEN AREA ──────────────────────────── */}
           <ScreenFade key={activeTab}>
             {activeTab === 'tracking' ? (
               <TrackingScreen
@@ -168,10 +156,8 @@ function AppShell() {
             )}
           </ScreenFade>
 
-          {/* ─── BOTTOM DOCK ──────────────────────────── */}
           <BottomDock activeTab={activeTab === 'settings' ? 'profile' : activeTab} setActiveTab={setActiveTab} />
 
-          {/* ─── STOP SELECTOR MODAL ──────────────────── */}
           <StopSelectorModal
             isStopModalOpen={isStopModalOpen}
             setIsStopModalOpen={setIsStopModalOpen}

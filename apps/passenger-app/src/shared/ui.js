@@ -27,7 +27,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
   document.head.appendChild(l);
 }
 
-export function useReducedMotion() {
+function useReducedMotion() {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
     let on = true;
@@ -43,7 +43,7 @@ const webRing = (focused, color = COLORS.ring) =>
 
 // Press feel shared by every tappable thing: instant scale(0.97) on press; on the web the release eases back
 // over 160ms (strong ease-out). Native releases instantly.
-export const PRESS_WEB = Platform.OS === 'web'
+const PRESS_WEB = Platform.OS === 'web'
   ? { transitionProperty: 'transform, background-color, opacity', transitionDuration: '160ms', transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }
   : null;
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -145,17 +145,6 @@ export function GradientCard({ tint = 'bus', style, children, id }) {
   );
 }
 
-export function Avatar({ label = 'P', size = 44, tone = 'soft' }) {
-  useTheme();
-  return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: tone === 'ink' ? COLORS.ink : COLORS.primarySoft, borderWidth: tone === 'ink' ? 0 : 3, borderColor: COLORS.white, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ ...TYPE.bodyBold, ...FONT, color: tone === 'ink' ? COLORS.white : COLORS.primaryDeep, fontSize: size * 0.4, lineHeight: size * 0.5 }}>
-        {String(label || 'P').charAt(0).toUpperCase()}
-      </Text>
-    </View>
-  );
-}
-
 export function Banner({ tone = 'danger', children }) {
   useTheme();
   const c = tone === 'success' ? [COLORS.successSoft, COLORS.success] : [COLORS.dangerSoft, COLORS.danger];
@@ -236,7 +225,7 @@ export function IconButton({ children, onPress, label, tone = 'glass', size = 44
 }
 
 // Light / dark switch. The icon turns a quarter as it swaps (220ms, strong ease-out); still when reduced motion is on.
-export function ThemeToggle({ size = 44, style }) {
+function ThemeToggle({ size = 44, style }) {
   const { isDark, toggle } = useTheme();
   const reduced = useReducedMotion();
   const turn = useRef(new Animated.Value(isDark ? 1 : 0)).current;
@@ -283,7 +272,7 @@ export function Chip({ label, selected, onPress, tone = 'primary', style }) {
 }
 
 // ─── Form controls ──────────────────────────────────────────────────────────
-export function EyeIcon({ off, color, size = 20 }) {
+function EyeIcon({ off, color, size = 20 }) {
   useTheme();
   color = color || COLORS.muted;
   return (
@@ -344,7 +333,7 @@ export function Checkbox({ checked, onChange, children }) {
   );
 }
 
-export function passwordStrength(pw = '') {
+function passwordStrength(pw = '') {
   let s = 0;
   if (pw.length >= 8) s += 1;
   if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s += 1;
@@ -531,7 +520,7 @@ export function FloatingDock({ items, active, onChange }) {
 }
 
 // Stat card: white card with a round tinted icon, a muted label and a bold value (the admin's KPI card in small).
-// icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue); the names are kept for existing callers.
+// icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue).
 export function NotchStat({ label, value, tone = 'orange', icon, valueColor, style, pill, pillTone = 'green' }) {
   useTheme();
   const [wash, ink] = tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];

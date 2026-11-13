@@ -2,7 +2,6 @@ import { StyleSheet } from 'react-native';
 import { COLORS, TYPE, SPACE } from '../shared/theme';
 import { FONT } from '../shared/ui';
 
-// CHANGED: every value comes from shared tokens (COLORS / RADII / SHADOWS / TYPE); spacing is on the 4px scale.
 export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 
 // Styles used by more than one screen.

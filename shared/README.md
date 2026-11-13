@@ -46,6 +46,6 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 
 ## Mobile screens follow the dashboard
 
-- `AppBackdrop` (first child of each app) draws the dashboard's page: base colour with an orange glow top-left and a cool glow bottom-right. `OverlapHeader` and `OverlapSheet` are plain containers now (no coloured block, no curved sheet), so titles sit on the glowing page. Cards use `COLORS.glass` with a hairline border; cards that sit over a map stay opaque (`COLORS.surface`).
+- `AppBackdrop` (first child of each app) draws the dashboard's page: base colour with an orange glow top-left and a cool glow bottom-right. `OverlapHeader` and `OverlapSheet` are plain containers (no coloured block, no curved sheet), so titles sit on the glowing page. Cards use `COLORS.glass` with a hairline border; cards that sit over a map stay opaque (`COLORS.surface`).
 - `NotchStat` is the dashboard's small stat card (label, big number, coloured pill). `GradientCard tint="hero"` is the orange card.
 - Animated pieces (all react-native `Animated`, no extra dependency, all still with reduced motion): `FloatingDock` (the orange circle slides between tabs), `CountUp`, `RingGauge`, `LiveDot`, `ProgressTrack`, plus `Reveal` for staggered entrances.

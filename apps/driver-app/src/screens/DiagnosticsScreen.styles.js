@@ -9,8 +9,6 @@ export const useD = createStyles(() => ({
     sectionLabelFlat: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginBottom: SPACE[2] },
     metricsRow: { flexDirection: 'row', gap: SPACE[3], marginBottom: SPACE[3] },
     metricCard: { flex: 1, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[5], gap: SPACE[1], ...SHADOWS.sm },
-    metricIcon: { width: 44, height: 44, borderRadius: RADII.sm, backgroundColor: COLORS.accentSoft, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE[2] },
-    metricVal: { ...type('h1'), color: COLORS.ink },
     metricValSm: { ...type('h2') },
     ringCard: { alignItems: 'center', justifyContent: 'center', gap: SPACE[3], paddingVertical: SPACE[5] },
     ringValue: { ...type('display'), color: COLORS.ink, letterSpacing: -0.5 },

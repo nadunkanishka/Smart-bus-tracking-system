@@ -7,7 +7,7 @@ const PROPS = ['driver', 'route', 'monitor', 'chart', 'pin']; // not buses: one 
 // The city bus is baked in every colour; the other types only in the colours listed (first = default).
 // Keep in step with TYPES[...].themes in shared/buses/clay.js; sync.js fails if an image is missing.
 export const LIVERIES = ['green', 'coral', 'cream', 'yellow', 'orange', 'purple']; // palette liveries that read on light and dark (night, deep night and red-orange stay baked but are not auto-assigned)
-const BAKED = { bus: ['cream', ...LIVERIES], coach: ['coral', 'mint'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['orange'], monitor: ['navy'], chart: ['purple'], pin: ['teal'] };
+const BAKED = { bus: ['cream', ...LIVERIES], coach: ['coral'], minibus: ['mint', 'coral'], school: ['yellow'], decker: ['red'], driver: ['coral'], route: ['orange'], monitor: ['navy'], chart: ['purple'], pin: ['teal'] };
 const LABEL = { bus: 'City bus', coach: 'Intercity coach', minibus: 'Minibus', school: 'School bus', decker: 'Double-decker bus', driver: 'Bus driver', route: 'Route with stops', monitor: 'Dashboard screen', chart: 'Bar chart', pin: 'Live location pin' };
 export const SCENES = ['login', 'register', 'driver', 'admin'];
 export const ASPECT = 400 / 480; // every bus image is 6:5, so states never resize the art

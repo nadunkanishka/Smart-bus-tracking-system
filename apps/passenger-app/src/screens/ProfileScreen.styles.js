@@ -18,9 +18,6 @@ export const useS = createStyles(() => ({
     profileName: { ...type('h1'), color: COLORS.ink },
     profileUsername: { ...type('small'), color: COLORS.ink, marginTop: SPACE[1] },
     profileCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[5], marginBottom: SPACE[4], ...SHADOWS.sm },
-    profileCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[1] },
-    profileCardTitle: { ...type('h3'), color: COLORS.ink, marginBottom: SPACE[1] },
-    profileCardTitleFlat: { ...type('h3'), color: COLORS.ink },
     profileBtn: { marginBottom: SPACE[3] },
   }),
 }));

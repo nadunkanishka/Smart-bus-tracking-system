@@ -23,4 +23,4 @@ The backend must be running, and a bus must exist and be assigned to a route (cr
 | `src/styles/` | Root styles and styles shared between screens |
 | `src/shared/` | Generated from `/shared`. Do not edit; see its README |
 
-APK builds are described in [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md). The folder layout and naming rules are in [docs/STRUCTURE.md](../../docs/STRUCTURE.md).
+APK builds are described in [docs/SETUP-APKS.md](../../docs/SETUP-APKS.md). The folder layout and naming rules are in [docs/STRUCTURE.md](../../docs/STRUCTURE.md).

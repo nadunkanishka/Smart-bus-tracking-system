@@ -41,9 +41,6 @@ export const useS = createStyles(() => ({
     transitBadge: { paddingHorizontal: SPACE[3], paddingVertical: SPACE[2], borderRadius: RADII.pill, backgroundColor: COLORS.successSoft },
     transitBadgeText: { ...type('caption'), color: COLORS.success },
     progressBlock: { marginBottom: SPACE[4] },
-    progressTrack: { flexDirection: 'row', alignItems: 'center', height: 20 },
-    progressDone: { height: 4, borderRadius: 2, backgroundColor: COLORS.accent },
-    progressLeft: { height: 4, borderRadius: 2, backgroundColor: COLORS.ink },
     // Driver Card
     driverCard: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

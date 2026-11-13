@@ -4,8 +4,6 @@ import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
 import { type } from '../styles/common';
 
 export const useS = createStyles(() => StyleSheet.create({
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
-  modalDismissArea: { flex: 1 },
   modalHandleRow: { alignItems: 'center', paddingBottom: SPACE[4] },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.line },
   modalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[6] },

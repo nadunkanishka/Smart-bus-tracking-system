@@ -48,7 +48,6 @@ export function ShiftScreen({
         </Pressable>
 
         {/* Three-column status panel */}
-        {/* CHANGED (visual only): same three values, shown as notch stat cards */}
         <View style={D.specsRow}>
           <NotchStat label="Server" tone="orange" value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
           <NotchStat label="GPS" tone="purple" value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
