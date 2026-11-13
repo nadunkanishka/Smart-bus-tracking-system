@@ -12,7 +12,6 @@ const COLLECTION = { driver: 'drivers', bus: 'buses', route: 'routes' };
 
 // State and actions for the add/edit dialog and the delete confirmation, shared by drivers, buses and routes.
 export function useEntityModal({ showNotification, fetchBackendData }) {
-  // Modal & Confirm dialogs
   const [modalState, setModalState] = useState({
     open: false,
     entity: 'driver',

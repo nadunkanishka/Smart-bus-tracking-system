@@ -4,7 +4,6 @@ import { api } from '../api';
 // Drivers, buses, routes and the dashboard summary, loaded from the backend once an admin is signed in.
 // onSessionExpired() runs when the backend rejects the token.
 export function useAdminData({ user, onSessionExpired }) {
-  // Data Collections (real data from MongoDB)
   const [drivers, setDrivers] = useState([]);
   const [buses, setBuses] = useState([]);
   const [routes, setRoutes] = useState([]);
@@ -21,7 +20,6 @@ export function useAdminData({ user, onSessionExpired }) {
   const [backendConnected, setBackendConnected] = useState(false);
   const [loading, setLoading] = useState(true); // true until the first answer (or failure) arrives
 
-  // Fetch live MongoDB backend data & summary metrics
   const fetchBackendData = async () => {
     try {
       const [resD, resB, resR, resS] = await Promise.all([

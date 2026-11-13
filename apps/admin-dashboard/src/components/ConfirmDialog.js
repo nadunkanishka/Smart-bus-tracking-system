@@ -1,7 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
 
-// Modern Clean Delete Modal
 export default function ConfirmDialog({ confirmState, closeConfirm, handleDelete }) {
   return (
     <div className="overlay confirm-overlay" onClick={(event) => event.target === event.currentTarget && closeConfirm()}>

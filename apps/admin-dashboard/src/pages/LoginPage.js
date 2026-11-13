@@ -6,7 +6,6 @@ import ThemeToggle from '../components/ThemeToggle';
 export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, setLoginCreds, showPw, setShowPw, loginLoading }) {
   return (
     <div className="login-shell">
-      {/* CHANGED: teal hero with vehicles on a road; the white form panel curves up over it on mobile */}
       <section className="login-hero">
         <ThemeToggle className="login-theme" />
         <div>

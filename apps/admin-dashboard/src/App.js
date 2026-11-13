@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './design/tokens.css'; // CHANGED: shared design tokens
+import './design/tokens.css';
 import './styles/admin-theme.css';
 import { API_BASE, api, setAuthToken } from './api';
 import { useAdminData } from './hooks/useAdminData';
@@ -22,7 +22,6 @@ import SettingsPage from './pages/SettingsPage';
 
 // Root component: sign-in state, the page shell and the switch between pages.
 function App() {
-  // Auth State
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem('adminUser') || 'null');
@@ -34,9 +33,8 @@ function App() {
   const [loginCreds, setLoginCreds] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [showPw, setShowPw] = useState(false); // CHANGED (UI-only): show/hide password toggle
+  const [showPw, setShowPw] = useState(false);
 
-  // App UI State
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // rail: icons only, the header button expands it
   const [clock, setClock] = useState('');
@@ -44,7 +42,6 @@ function App() {
 
   const showNotification = (message) => setNotification(message);
 
-  // Data Collections (real data from MongoDB)
   const { drivers, buses, routes, summary, backendConnected, loading, fetchBackendData } = useAdminData({
     user,
     // Session expired or signed in before tokens existed: ask the admin to sign in again.
@@ -54,7 +51,6 @@ function App() {
     },
   });
 
-  // Modal & Confirm dialogs
   const {
     modalState, formData, setFormData, confirmState, openModal, closeModal, openConfirm, closeConfirm, updateField, handleSave, handleDelete,
   } = useEntityModal({ showNotification, fetchBackendData });
@@ -83,7 +79,6 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [notification]);
 
-  // Auth Functions
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
@@ -118,7 +113,6 @@ function App() {
     sessionStorage.removeItem('adminUser');
   };
 
-  // If not logged in, render Login View
   if (!user) {
     return (
       <LoginPage

@@ -9,7 +9,6 @@ export default function EntityModal({ modalState, formData, updateField, setForm
   return (
     <div className="overlay" onClick={(event) => event.target === event.currentTarget && closeModal()}>
       <div className={`modal-box ${modalState.entity === 'route' ? 'modal-wide' : ''}`} role="dialog" aria-modal="true">
-        {/* CHANGED (visual only): notch header + close button */}
         <header className="modal-head">
           <span className="notch"><i><Icon type={modalState.entity === 'driver' ? 'user' : modalState.entity === 'bus' ? 'bus' : 'route'} /></i></span>
           <div className="modal-head-copy">
