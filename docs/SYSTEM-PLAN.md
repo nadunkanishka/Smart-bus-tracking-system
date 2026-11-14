@@ -14,7 +14,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 - GPS smoothing (Kalman filter with spike gate and stop hold) and a straight-line baseline logged beside every ETA prediction, compared on Trip Analytics.
 - The Colombo routes are seeded with road lines; Route 138 is Pettah to Homagama.
 - Tooling: GPS replay simulator (with GPS noise), Artillery load test, EAS profiles for both apps, CI on every push.
-- **Deployed (13 Nov 2026, free tiers):** MongoDB Atlas, the backend on Railway (`/api/health` says mongo connected, cache memory), the admin dashboard and the passenger web app on Netlify, CORS locked to those two sites. The seeded routes are loaded; bus NA-9001 with its driver is on Route 138.
+- **Deployed (13 Nov 2026, free tiers):** MongoDB Atlas, the backend on Railway (`/api/health` says mongo connected, cache memory), the admin dashboard and the passenger web app on Vercel, CORS locked to those two sites. The seeded routes are loaded; bus NA-9001 with its driver is on Route 138.
 - Step-by-step guides for the database, the backend and the APK builds: `docs/SETUP-MONGODB.md`, `SETUP-RAILWAY.md`, `SETUP-APKS.md`.
 
 **Not done or never verified**
@@ -36,7 +36,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 | 6 | ETA engine | **Built, not tuned** (about 70%) | `lib/eta.js` follows steps (a) to (d); `tripTracker` logs segment times, dwell and predicted-vs-actual into `SegmentLog` and `EtaLog`. Smoothing and the straight-line baseline are built and measured on simulated tracks. Tuning needs real trip data, which does not exist yet. |
 | 7 | Admin dashboard | **Done** (about 95%) | Routes with a map editor, stops, buses, drivers, passengers, admins, live monitor, trip analytics, settings, dark mode |
 | 8 | Integration and system testing | **Partly done** (about 50%) | Backend tests cover the ETA engine, GPS pipeline, CRUD, route data, smoothing and baseline. A simulator (`npm run replay`) and a smoke script exist. A two-phone Expo Go run worked (reported); no installed-build run on a road; the driver and passenger apps have no tests. |
-| 9 | Live pilot deployment | **Deployed, pilot not started** | Backend on Railway, database on Atlas, admin and passenger web on Netlify (13 Nov 2026, free tiers). No installed APK yet, no real trips. Route 138 is chosen and seeded. |
+| 9 | Live pilot deployment | **Deployed, pilot not started** | Backend on Railway, database on Atlas, admin and passenger web on Vercel (moved from Netlify 14 Nov 2026; free tiers). No installed APK yet, no real trips. Route 138 is chosen and seeded. |
 | 10 | Performance evaluation | **Tooling ready, no results** | `/api/metrics`, replay latency summary, `loadtest/artillery.yml`, `docs/EVALUATION.md`. No run recorded. |
 | 11 | User study | **Not started** | `EVALUATION.md` plans Google Forms with SUS. No questionnaire, no ethics or consent text yet. |
 | 12 | Documentation and report | **Technical docs done, report not started** | Docs cover architecture, API, schema, deployment. The ESOFT / London Met final report is not in the repo. |
@@ -46,8 +46,8 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 | Deliverable | State |
 |---|---|
 | Driver app, Android APK | Code done. **APK not built** (rebuild with the Maps key). |
-| Passenger web and mobile app | Code done. Web deployed (Netlify). Phone app: build the APK with the Maps key. |
-| Admin dashboard | Done and deployed (Netlify). |
+| Passenger web and mobile app | Code done. Web deployed (Vercel). Phone app: build the APK with the Maps key. |
+| Admin dashboard | Done and deployed (Vercel). |
 | Deployed backend with Redis and MongoDB, load tested | Backend on Railway, MongoDB on Atlas. **No Redis yet, not load tested.** |
 | Performance evaluation report | **Not started** (tooling only) |
 | User study report | **Not started** |
@@ -71,7 +71,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
   - [ ] Add a paragraph to the report describing the web app and the React Native companion (one Expo codebase), as the proposal promises.
 - [x] **D4. Keep passenger and administrator accounts.**
   - [ ] Add one line to the report: these go beyond the approved proposal (self-service passenger accounts, administrator accounts), included for security and usability.
-- [x] **D5. Hosting: free for now.** The backend runs on a Railway trial (about 30 days of credit, no sleeping; Render asked for a card even for its free plan). Netlify serves the two websites, Atlas the database. Decided: stay on free hosting while building and piloting, and move to a paid plan when the system is ready to deploy for real. Free hosting is enough for the pilot's few buses, with these conditions:
+- [x] **D5. Hosting: free for now.** The backend runs on a Railway trial (about 30 days of credit, no sleeping; Render asked for a card even for its free plan). Vercel serves the two websites, Atlas the database. Decided: stay on free hosting while building and piloting, and move to a paid plan when the system is ready to deploy for real. Free hosting is enough for the pilot's few buses, with these conditions:
   - [ ] If the host ever sleeps when idle (Render's free plan does), keep the API awake before and during every run (a free uptime pinger such as UptimeRobot hitting `/api/health` every 5 minutes), and open the app a minute before each shift so nobody meets a cold start.
   - [ ] Free instances are small, so the 500-driver and 2,000-passenger stress test must not run against it. Run that test against a temporary instance (a paid instance for a few hours costs very little) or locally, and say in the report where it ran.
   - [ ] Free tiers have no backups: export the database collections before and after every pilot day.
@@ -105,7 +105,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 - [x] **(you)** Deploy the backend on Railway (`docs/SETUP-RAILWAY.md`). Done: `MONGODB_URI`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, root `/backend`, branch `dev`.
 - [ ] `/api/health` reports `mongo: connected` and `cache: redis`. Mongo is connected; the cache is memory until a Redis is added (`REDIS_URL`).
 - [x] Seed or recreate the route on the cloud database (`MONGODB_URI=<atlas> npm run seed`, then edit in the admin). Done: every route seeded.
-- [x] Deploy the admin as a static site with `REACT_APP_API_URL`; deploy the passenger web export with `EXPO_PUBLIC_API_URL`. Done on Netlify (`smartbusadmin`, `smartbuspassenger`), both built from `dev`.
+- [x] Deploy the admin as a static site with `REACT_APP_API_URL`; deploy the passenger web export with `EXPO_PUBLIC_API_URL`. Done on Vercel (`smartbusadmin`, `smartbuspassenger`), both built from `dev` (moved from Netlify).
 - [x] Set `CORS_ORIGIN` to the admin and passenger web addresses only. Done and checked from outside: the two sites are allowed, an unknown origin is blocked.
 - [ ] Change the default admin password, remove any test accounts and test buses from the cloud database. The admin was recreated from the real `ADMIN_PASSWORD` and the login page no longer prints the default; still to do: remove any test accounts and test buses.
 - [ ] Hold the database backup in mind: Atlas free tier has none; export the collections before and after the pilot.
