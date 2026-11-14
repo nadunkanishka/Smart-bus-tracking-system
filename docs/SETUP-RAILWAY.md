@@ -59,7 +59,7 @@ Service -> **Settings** -> **Networking** -> **Generate Domain** (port `5000` if
 https://smart-bus-tracking-system-production.up.railway.app
 ```
 
-Write it down: it goes into the apps (SETUP-APKS.md) and the Netlify sites.
+Write it down: it goes into the apps (SETUP-APKS.md) and the Vercel sites.
 
 ## 5. Check it works
 
@@ -71,25 +71,25 @@ Wait until **Deployments** shows the latest deployment as Active, then open `<ad
 
 `mongo` must say `connected`. If it does not, open the deployment's logs and see the table at the end of SETUP-MONGODB.md. Then load the routes (SETUP-MONGODB.md, step 5) and check `<address>/api/routes`.
 
-## 6. Connect the websites (Netlify) and lock down CORS
+## 6. Connect the websites (Vercel) and lock down CORS
 
-The admin dashboard and the passenger web app are static sites on Netlify (steps in [DEPLOYMENT.md](DEPLOYMENT.md), section 4). Each is built with the backend address:
+The admin dashboard and the passenger web app are static sites on Vercel (steps in [DEPLOYMENT.md](DEPLOYMENT.md), section 4). Each is built with the backend address:
 
 - admin site: environment variable `REACT_APP_API_URL`
 - passenger site: environment variable `EXPO_PUBLIC_API_URL`
 
-A variable is baked into the build, so after changing it use **Deploys -> Trigger deploy -> Clear cache and deploy site**. Netlify must build the `dev` branch (Site configuration -> Build & deploy -> Branches).
+A variable is baked into the build, so after changing it open **Deployments**, the latest one, **Redeploy**, and untick "Use existing Build Cache". Vercel must build the `dev` branch (Settings -> Git -> Production Branch).
 
 Then in Railway add `CORS_ORIGIN` with both site addresses, comma separated, no spaces and no trailing slashes:
 
 ```
-https://smartbusadmin.netlify.app,https://smartbuspassenger.netlify.app
+https://smartbusadmin.vercel.app,https://smartbuspassenger.vercel.app
 ```
 
 Only those two websites may call the backend from a browser. The phone apps are not affected by CORS. A quick check from a terminal (replace the origin with an unknown one and the line should be missing):
 
 ```bash
-curl -s -D - -o /dev/null -H "Origin: https://smartbusadmin.netlify.app" <address>/api/routes | grep -i access-control-allow-origin
+curl -s -D - -o /dev/null -H "Origin: https://smartbusadmin.vercel.app" <address>/api/routes | grep -i access-control-allow-origin
 ```
 
 ## 7. Redis (optional)
