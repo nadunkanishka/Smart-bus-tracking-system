@@ -11,7 +11,8 @@
     "dev:passenger": "cd apps/passenger-app && npx expo start --port 8082",
     "seed": "npm --prefix backend run seed",
     "sync": "node shared/sync.js",
-    "test": "npm --prefix backend test && npm --prefix apps/admin-dashboard test -- --watchAll=false",
+    "test": "npm --prefix backend test && npm --prefix apps/admin-dashboard test -- --watchAll=false && npm run test:apps",
+    "test:apps": "node --import ./shared/test/register.mjs --test shared/test/*.test.mjs",
     "build": "npm --prefix apps/admin-dashboard run build"
   }
 }

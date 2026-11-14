@@ -2,7 +2,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { THEMES, RADII, SPACE, TYPE, SHADOWS } from './tokens.js';
+import { THEMES, RADII, SPACE, TYPE, SHADOWS, EASE_OUT } from './tokens.js';
 import { LIVERIES, SCENES, VEHICLES, pick } from './vehicleShapes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +26,7 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('vehicleShapes.js', join(dest, 'vehicleShapes.js'));
   put('native/themeRuntime.js', join(dest, 'themeRuntime.js'));
   put('native/ui.js', join(dest, 'ui.js'));
+  put('native/shell.js', join(dest, 'shell.js'));
   put('native/icons.js', join(dest, 'icons.js'));
   put('native/LiveMap.js', join(dest, 'LiveMap.js'));
   put('native/LiveMap.native.js', join(dest, 'LiveMap.native.js'));
@@ -70,7 +71,7 @@ const lines = [
   ...Object.entries(TYPE).flatMap(([k, t]) => [
     `  --fs-${kebab(k)}: ${t.fontSize}px;`, `  --lh-${kebab(k)}: ${t.lineHeight}px;`, `  --fw-${kebab(k)}: ${t.fontWeight};`,
   ]),
-  '  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);',
+  `  --ease-out: cubic-bezier(${EASE_OUT.join(', ')});`,
   '  --touch: 44px;',
   '  color-scheme: light;',
   '}',

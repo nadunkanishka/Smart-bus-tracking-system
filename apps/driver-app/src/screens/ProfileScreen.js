@@ -6,8 +6,10 @@ import { MessageCircleIcon, PhoneCallIcon, SettingsIcon } from '../shared/icons'
 import { useD } from './ProfileScreen.styles';
 
 // The bus and its duty at a glance. Appearance, tracking and dispatch contact live in Settings.
-export function ProfileScreen({ busRegistration, driverName, routeNumber, routeLabel, isOnShift, onLogout, onOpenDispatch, onOpenSettings }) {
+export function ProfileScreen({ session, duty, onOpenDispatch, onOpenSettings }) {
   const D = useD();
+  const { registration: busRegistration, driverName, routeNumber, routeLabel, onLogout } = session;
+  const { isOnShift } = duty;
   return (
     <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
       <OverlapHeader minHeight={200}>

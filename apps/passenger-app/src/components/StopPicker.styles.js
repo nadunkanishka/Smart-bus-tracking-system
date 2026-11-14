@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
-import { type } from '../styles/common';
+import { type } from '../shared/ui';
 
 export const useS = createStyles(() => StyleSheet.create({
   stopSelectorCol: { flex: 1, position: 'relative' },

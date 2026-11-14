@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MARKERS } from './busMarkers';
-import { COLORS } from './theme';
+import { COLORS, EASE_OUT } from './theme';
 import { useTheme } from './themeRuntime';
 
 // One baked marker per compass heading (index = heading / 45). Index 3 is the three-quarter view used when a fix has no heading.
@@ -27,7 +27,7 @@ const html = () => `<!DOCTYPE html>
   .sb-bus.stale { opacity: .55; }
   .sb-stop { width: 12px; height: 12px; border-radius: 50%; background: var(--stop, #FF6B35); border: 3px solid var(--stop-ring, #fff); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
   .sb-stop.on { width: 18px; height: 18px; background: var(--lav, #A25BE0); }
-  .sb-route { stroke-dasharray: 6000; stroke-dashoffset: 6000; animation: draw 1.4s cubic-bezier(.23,1,.32,1) forwards; }
+  .sb-route { stroke-dasharray: 6000; stroke-dashoffset: 6000; animation: draw 1.4s cubic-bezier(${EASE_OUT.join(',')}) forwards; }
   @keyframes draw { to { stroke-dashoffset: 0; } }
   @media (prefers-reduced-motion: reduce) { .sb-route { animation: none; stroke-dashoffset: 0; } }
   .leaflet-control-attribution { font: 10px system-ui; background: var(--attr, rgba(255,255,255,.7)); color: var(--attr-text, #333); }

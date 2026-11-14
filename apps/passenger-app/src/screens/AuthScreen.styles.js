@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
 import { COLORS, SPACE } from '../shared/theme';
-import { buildCommon, type } from '../styles/common';
+import { buildCommon } from '../styles/common';
+import { type } from '../shared/ui';
 
 export const useS = createStyles(() => ({
   ...buildCommon(),

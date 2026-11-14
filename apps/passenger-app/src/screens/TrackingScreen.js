@@ -20,7 +20,6 @@ export function TrackingScreen({
   boardingStop,
   destinationStop,
   boardingIndex,
-  destinationIndex,
   routeStops,
   isBoardingExpanded,
   isDestExpanded,

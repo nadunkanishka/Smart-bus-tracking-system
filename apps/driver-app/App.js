@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
-import { request, toRoute } from './src/shared/api';
-import * as telemetry from './src/services/telemetry';
-import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
-import { AppBackdrop, ScreenFade, Toast } from './src/shared/ui';
-import { MAX_LOG_ITEMS } from './src/constants';
-import { formatCoord } from './src/utils';
+import React, { useState } from 'react';
+import { ThemeProvider } from './src/shared/themeRuntime';
+import { ScreenFade } from './src/shared/ui';
+import { AppColumn, AppFrame, useToast } from './src/shared/shell';
+import { TABS } from './src/constants';
+import { useDriverSession } from './src/hooks/useDriverSession';
+import { useDuty } from './src/hooks/useDuty';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { DispatchModal } from './src/components/DispatchModal';
 import { ShiftScreen } from './src/screens/ShiftScreen';
@@ -14,119 +13,28 @@ import { DiagnosticsScreen } from './src/screens/DiagnosticsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { DriverDock } from './src/components/DriverDock';
-import { useD } from './src/styles/app';
 
+// Wires the session and duty hooks to the tab screens. Every screen gets the same two objects:
+// `session` (the bus, its route and driver, sign-out) and `duty` (live telemetry and the duty switch).
 function AppShell() {
-  const D = useD();
-  const { isDark } = useTheme();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [busRegistration, setBusRegistration] = useState('');
-  const [busPassword, setBusPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [authenticatedBus, setAuthenticatedBus] = useState(null);
-  const [assignedRoute, setAssignedRoute] = useState(null);
-  const [driverName, setDriverName] = useState(null);
-
-  const [activeTab, setActiveTab] = useState('shift'); // 'shift' | 'route' | 'diagnostics' | 'profile'
-
-  // Live telemetry state (connection, duty, offline queue, last GPS fix) comes from src/services/telemetry.js
-  const [tele, setTele] = useState({ connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, mode: null, error: null });
-  const [dutyBusy, setDutyBusy] = useState(false);
-  const [logs, setLogs] = useState([]);
-
-  const [toastMsg, setToastMsg] = useState('');
+  const { toastMsg, showToast } = useToast();
+  const session = useDriverSession();
+  const duty = useDuty({ showToast });
+  const [activeTab, setActiveTab] = useState(TABS.shift);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [dispatchMode, setDispatchMode] = useState('call'); // 'call' | 'message'
 
-  const route = useMemo(() => toRoute(assignedRoute), [assignedRoute]);
-  const isOnShift = tele.onDuty;
-  const routeStops = route?.stops || [];
-  const routeNumber = route ? route.shortName : 'No route assigned';
-  const routeLabel = route ? `${route.startTerminal} ➔ ${route.endTerminal}` : 'Ask the admin to assign this bus to a route';
-  const currentStopIndex = tele.nextStopIndex ?? 0;
-  const busSpeed = tele.lastFix ? Math.round(tele.lastFix.speed * 3.6) : 0;
-  const gpsStatus = !tele.onDuty ? 'Disconnected' : tele.lastFix ? 'Connected' : 'Searching';
-  const lastTs = tele.lastFix?.ts;
-  const busMarkers = useMemo(
-    () => (tele.lastFix ? [{ id: 'me', lat: tele.lastFix.lat, lng: tele.lastFix.lng, label: 'This bus' }] : []),
-    [lastTs], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
-  useEffect(() => telemetry.subscribe(setTele), []);
-
-  // GPS transmission log: one line per captured fix
-  useEffect(() => {
-    if (!tele.lastFix) return;
-    const f = tele.lastFix;
-    appendLog(`${tele.connected ? 'Sent' : 'Buffered'}: ${formatCoord(f.lat)}, ${formatCoord(f.lng)} | ${Math.round(f.speed * 3.6)} km/h`);
-  }, [lastTs]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toastMsg) return undefined;
-    const t = setTimeout(() => setToastMsg(''), 3500);
-    return () => clearTimeout(t);
-  }, [toastMsg]);
-
-  function appendLog(msg) {
-    const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setLogs(prev => [`[${ts}] ${msg}`, ...prev].slice(0, MAX_LOG_ITEMS));
-  }
-
-
   async function handleLogin() {
-    setLoginError('');
-    if (!busRegistration.trim() || !busPassword.trim()) {
-      setLoginError('Bus registration number and password are required.');
-      return;
-    }
-    setLoginLoading(true);
-    try {
-      const data = await request('/auth/driver-login', {
-        method: 'POST',
-        body: { registration: busRegistration.trim(), password: busPassword.trim() },
-      });
-      setAuthenticatedBus(data.bus);
-      setAssignedRoute(data.assignedRoute);
-      setDriverName(data.driver?.name || null);
-      await telemetry.connect(data.token);
-      setIsAuthenticated(true);
-      setActiveTab('shift');
-      appendLog(`Signed in: ${data.bus?.registration || busRegistration}.`);
-    } catch (err) {
-      setLoginError(err.message);
-    } finally {
-      setLoginLoading(false);
-    }
+    const registration = await session.login();
+    if (!registration) return;
+    setActiveTab(TABS.shift);
+    duty.log(`Signed in: ${registration}.`);
   }
 
   async function handleLogout() {
-    await telemetry.disconnect();
-    setIsAuthenticated(false);
-    setActiveTab('shift');
-    setLogs([]);
-    setBusPassword('');
-  }
-
-  async function handleToggleShift() {
-    if (dutyBusy) return;
-    setDutyBusy(true);
-    try {
-      if (tele.onDuty) {
-        await telemetry.stopDuty();
-        appendLog('Off duty. Location sharing stopped.');
-        setToastMsg('Off duty. Location sharing stopped.');
-      } else {
-        await telemetry.startDuty();
-        appendLog('On duty. Broadcasting live location.');
-        setToastMsg('On duty. Broadcasting live location.');
-      }
-    } catch (err) {
-      setToastMsg(err.message);
-    } finally {
-      setDutyBusy(false);
-    }
+    await session.logout();
+    setActiveTab(TABS.shift);
+    duty.clearLog();
   }
 
   function openDispatch(mode) {
@@ -134,109 +42,41 @@ function AppShell() {
     setIsDispatchModalOpen(true);
   }
 
+  const screen = { session: { ...session, onLogout: handleLogout }, duty };
+
   return (
-    <SafeAreaView style={D.root}>
-      <AppBackdrop />
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent={Platform.OS === 'android'}
-      />
-
-      <Toast message={toastMsg} />
-
+    <AppFrame toastMsg={toastMsg}>
       {/* No Register screen: bus accounts are created by the admin dashboard. */}
-      {!isAuthenticated ? (
-        <LoginScreen
-          loginError={loginError}
-          busRegistration={busRegistration}
-          setBusRegistration={setBusRegistration}
-          busPassword={busPassword}
-          setBusPassword={setBusPassword}
-          handleLogin={handleLogin}
-          loginLoading={loginLoading}
-        />
+      {!session.isAuthenticated ? (
+        <LoginScreen {...session.form} handleLogin={handleLogin} />
       ) : (
-        <View style={D.appShell}>
+        <AppColumn>
           <ScreenFade key={activeTab}>
-          {activeTab === 'shift' ? (
-            <ShiftScreen
-              isOnShift={isOnShift}
-              busy={dutyBusy}
-              hasRoute={!!route?.trackable}
-              busRegistration={authenticatedBus?.registration || busRegistration}
-              driverName={driverName}
-              routeLabel={routeLabel}
-              routeNumber={routeNumber}
-              nextStop={routeStops[currentStopIndex]}
-              busSpeed={busSpeed}
-              gpsStatus={gpsStatus}
-              connected={tele.connected}
-              queued={tele.queued}
-              mode={tele.mode}
-              onToggleShift={handleToggleShift}
-            />
-          ) : activeTab === 'route' ? (
-            <RouteScreen
-              route={route}
-              busMarkers={busMarkers}
-              routeNumber={routeNumber}
-              routeLabel={routeLabel}
-              routeStops={routeStops}
-              currentStopIndex={currentStopIndex}
-              isOnShift={isOnShift}
-            />
-          ) : activeTab === 'diagnostics' ? (
-            <DiagnosticsScreen
-              busSpeed={busSpeed}
-              gpsStatus={gpsStatus}
-              driverCoordinate={tele.lastFix ? { latitude: tele.lastFix.lat, longitude: tele.lastFix.lng } : null}
-              logs={logs}
-              isOnShift={isOnShift}
-            />
-          ) : activeTab === 'settings' ? (
-            <SettingsScreen
-              busRegistration={authenticatedBus?.registration || busRegistration}
-              driverName={driverName}
-              routeNumber={routeNumber}
-              routeLabel={routeLabel}
-              connected={tele.connected}
-              trackingMode={tele.mode}
-              onOpenDispatch={openDispatch}
-              onBack={() => setActiveTab('profile')}
-              onLogout={handleLogout}
-            />
-          ) : (
-            <ProfileScreen
-              busRegistration={authenticatedBus?.registration || busRegistration}
-              driverName={driverName}
-              routeNumber={routeNumber}
-              routeLabel={routeLabel}
-              isOnShift={isOnShift}
-              onLogout={handleLogout}
-              onOpenDispatch={openDispatch}
-              onOpenSettings={() => setActiveTab('settings')}
-            />
-          )}
-
+            {activeTab === TABS.shift ? (
+              <ShiftScreen {...screen} />
+            ) : activeTab === TABS.route ? (
+              <RouteScreen {...screen} />
+            ) : activeTab === TABS.diagnostics ? (
+              <DiagnosticsScreen {...screen} />
+            ) : activeTab === TABS.settings ? (
+              <SettingsScreen {...screen} onOpenDispatch={openDispatch} onBack={() => setActiveTab(TABS.profile)} />
+            ) : (
+              <ProfileScreen {...screen} onOpenDispatch={openDispatch} onOpenSettings={() => setActiveTab(TABS.settings)} />
+            )}
           </ScreenFade>
 
-          <DriverDock
-            activeTab={activeTab === 'settings' ? 'profile' : activeTab}
-            setActiveTab={setActiveTab}
-            isOnShift={isOnShift}
-          />
+          <DriverDock activeTab={activeTab === TABS.settings ? TABS.profile : activeTab} setActiveTab={setActiveTab} />
 
           <DispatchModal
             isDispatchModalOpen={isDispatchModalOpen}
             setIsDispatchModalOpen={setIsDispatchModalOpen}
             dispatchMode={dispatchMode}
             setDispatchMode={setDispatchMode}
-            showToast={setToastMsg}
+            showToast={showToast}
           />
-        </View>
+        </AppColumn>
       )}
-    </SafeAreaView>
+    </AppFrame>
   );
 }
 

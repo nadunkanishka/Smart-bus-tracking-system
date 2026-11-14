@@ -2,12 +2,12 @@
 // copied to apps/*/src/shared/ui.js by `npm run sync` (so imports below are app-relative).
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Modal, Platform, Pressable, StyleSheet, Text, TextInput,
+  AccessibilityInfo, ActivityIndicator, Animated, Easing, Image, Modal, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput,
   View, useWindowDimensions, ScrollView, KeyboardAvoidingView, Keyboard,
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { initialWindowMetrics } from 'react-native-safe-area-context';
-import { COLORS, RADII, SHADOWS, SPACE, TYPE } from './theme';
+import { COLORS, EASE_OUT as EASE_CURVE, RADII, SHADOWS, SPACE, TYPE } from './theme';
 import { useTheme } from './themeRuntime';
 import { ASPECT, markerIndex, pick } from './vehicleShapes';
 import { Activity, ChartColumn, ChevronRight, Gauge, House, Navigation, Route as RouteGlyph, User, Users, Bus as BusGlyph } from 'lucide-react-native';
@@ -16,15 +16,31 @@ import { MARKERS } from './busMarkers';
 
 // Urbanist on web (same as the admin); native keeps the system font (no font-loading dependency).
 // Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
-const SAFE_TOP = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0) : 0;
+// TOP_INSET is the one top inset every screen header uses. StatusBar.currentHeight can read 0 on edge-to-edge Android and
+// both sources can read 0 at import time, so it never goes below 24dp (the smallest Android status bar).
+export const TOP_INSET = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0, StatusBar.currentHeight ?? 0) : 0;
 const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
 export const FONT = Platform.OS === 'web' ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
+// A text style for one role of the type scale, in the kit's font: { ...type('small'), color }.
+export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
   l.id = 'sb-font'; l.rel = 'stylesheet';
   l.href = 'https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700;800&display=swap';
   document.head.appendChild(l);
+}
+
+// Every component this kit exports is declared through themed(): it subscribes to the theme context, so the component
+// re-renders with the swapped COLORS on a light/dark switch. Declare new exported components the same way
+// (shared/test/kit.test.mjs fails on a plain `export function` here).
+function themed(render) {
+  function Themed(props) {
+    useTheme();
+    return render(props);
+  }
+  Themed.displayName = render.name;
+  return Themed;
 }
 
 function useReducedMotion() {
@@ -44,15 +60,14 @@ const webRing = (focused, color = COLORS.ring) =>
 // Press feel shared by every tappable thing: instant scale(0.97) on press; on the web the release eases back
 // over 160ms (strong ease-out). Native releases instantly.
 const PRESS_WEB = Platform.OS === 'web'
-  ? { transitionProperty: 'transform, background-color, opacity', transitionDuration: '160ms', transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' }
+  ? { transitionProperty: 'transform, background-color, opacity', transitionDuration: '160ms', transitionTimingFunction: `cubic-bezier(${EASE_CURVE.join(', ')})` }
   : null;
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const EASE_OUT = Easing.bezier(...EASE_CURVE);
 const EASE_DRAWER = Easing.bezier(0.32, 0.72, 0, 1);
 const native = Platform.OS !== 'web';
 
 // Drop-in for TouchableOpacity: scale feedback instead of an opacity flash, plus the keyboard focus ring.
-export function Tap({ onPress, style, children, scale = 0.97, ...rest }) {
-  useTheme();
+export const Tap = themed(function Tap({ onPress, style, children, scale = 0.97, ...rest }) {
   return (
     <Pressable
       onPress={onPress}
@@ -62,13 +77,12 @@ export function Tap({ onPress, style, children, scale = 0.97, ...rest }) {
       {children}
     </Pressable>
   );
-}
+});
 
 // ─── Vehicles ───────────────────────────────────────────────────────────────
 // Clay buses: pre-rendered images chosen by vehicleShapes.pick(). status ('idle' | 'maint' | 'off') adds a
 // badge on the corner; always pair it with a text label.
-export function Vehicle({ name = 'bus', width = 160, livery, status, heading, running, marker, label, style }) {
-  useTheme();
+export const Vehicle = themed(function Vehicle({ name = 'bus', width = 160, livery, status, heading, running, marker, label, style }) {
   if (marker) return <Image accessibilityLabel={label || 'Bus'} source={{ uri: MARKERS[markerIndex(heading)] }} style={[{ width, height: width }, style]} />;
   const { key, label: auto, badge } = pick(name, { livery, status, running });
   const size = Math.max(16, Math.round(width * 0.2));
@@ -82,21 +96,20 @@ export function Vehicle({ name = 'bus', width = 160, livery, status, heading, ru
       ) : null}
     </View>
   );
-}
+});
 
 // The scene image is 1280 x 600 and fills the width of its panel.
-export function RoadScene({ scene = 'login', label = 'A group of buses', width, style }) {
+export const RoadScene = themed(function RoadScene({ scene = 'login', label = 'A group of buses', width, style }) {
   // The box carries the shape; the image fills it (a lone image would take its pixel height instead).
   return (
     <View style={[width ? { width, height: Math.round((width * 600) / 1280) } : { width: '100%', aspectRatio: 1280 / 600 }, style]}>
       <Image accessibilityLabel={label} source={IMAGES[`scene-${scene}`] || IMAGES['scene-login']} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
     </View>
   );
-}
+});
 
 // A small bus driving across a road line (the bus faces left). Static when reduced motion is on.
-export function VehicleLoader({ name = 'bus', label = 'Loading', width = 240 }) {
-  useTheme();
+export const VehicleLoader = themed(function VehicleLoader({ name = 'bus', label = 'Loading', width = 240 }) {
   const reduced = useReducedMotion();
   const x = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -115,10 +128,10 @@ export function VehicleLoader({ name = 'bus', label = 'Loading', width = 240 }) 
       </Animated.View>
     </View>
   );
-}
+});
 
 // ─── Surfaces ───────────────────────────────────────────────────────────────
-export function GradientCard({ tint = 'bus', style, children, id }) {
+export const GradientCard = themed(function GradientCard({ tint = 'bus', style, children, id }) {
   const { mode } = useTheme();
   const hero = tint === 'hero'; // the orange card: night text, two light shapes on the right
   const [a, b] = hero ? [COLORS.heroFrom, COLORS.heroTo] : COLORS.tints[tint];
@@ -143,17 +156,16 @@ export function GradientCard({ tint = 'bus', style, children, id }) {
       {children}
     </View>
   );
-}
+});
 
-export function Banner({ tone = 'danger', children }) {
-  useTheme();
+export const Banner = themed(function Banner({ tone = 'danger', children }) {
   const c = tone === 'success' ? [COLORS.successSoft, COLORS.success] : [COLORS.dangerSoft, COLORS.danger];
   return (
     <View accessibilityRole="alert" style={{ backgroundColor: c[0], borderRadius: RADII.md, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 }}>
       <Text style={{ ...TYPE.smallBold, ...FONT, color: c[1] }}>{children}</Text>
     </View>
   );
-}
+});
 
 // ─── Buttons ────────────────────────────────────────────────────────────────
 // Read at render time so a mode switch is picked up. Text on lime or lavender fills is always dark (onBright).
@@ -167,8 +179,7 @@ const tones = () => ({
   glass: { bg: COLORS.surface, fg: COLORS.ink },
 });
 
-export function Button({ title, onPress, tone = 'primary', size = 'lg', loading, disabled, icon, style, textStyle, accessibilityLabel, full = true }) {
-  useTheme();
+export const Button = themed(function Button({ title, onPress, tone = 'primary', size = 'lg', loading, disabled, icon, style, textStyle, accessibilityLabel, full = true }) {
   const t = tones()[tone];
   const off = disabled || loading;
   return (
@@ -198,11 +209,10 @@ export function Button({ title, onPress, tone = 'primary', size = 'lg', loading,
       )}
     </Pressable>
   );
-}
+});
 
 // Round icon button (≥44px target) — bell, close, call, message.
-export function IconButton({ children, onPress, label, tone = 'glass', size = 44, style, disabled }) {
-  useTheme();
+export const IconButton = themed(function IconButton({ children, onPress, label, tone = 'glass', size = 44, style, disabled }) {
   const t = tones()[tone];
   return (
     <Pressable
@@ -222,7 +232,7 @@ export function IconButton({ children, onPress, label, tone = 'glass', size = 44
       {children}
     </Pressable>
   );
-}
+});
 
 // Light / dark switch. The icon turns a quarter as it swaps (220ms, strong ease-out); still when reduced motion is on.
 function ThemeToggle({ size = 44, style }) {
@@ -230,7 +240,7 @@ function ThemeToggle({ size = 44, style }) {
   const reduced = useReducedMotion();
   const turn = useRef(new Animated.Value(isDark ? 1 : 0)).current;
   useEffect(() => {
-    Animated.timing(turn, { toValue: isDark ? 1 : 0, duration: reduced ? 0 : 220, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: Platform.OS !== 'web' }).start();
+    Animated.timing(turn, { toValue: isDark ? 1 : 0, duration: reduced ? 0 : 220, easing: EASE_OUT, useNativeDriver: Platform.OS !== 'web' }).start();
   }, [isDark, reduced, turn]);
   const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['-90deg', '0deg'] });
   const c = COLORS.ink;
@@ -250,8 +260,7 @@ function ThemeToggle({ size = 44, style }) {
   );
 }
 
-export function Chip({ label, selected, onPress, tone = 'primary', style }) {
-  useTheme();
+export const Chip = themed(function Chip({ label, selected, onPress, tone = 'primary', style }) {
   const on = selected;
   return (
     <Pressable
@@ -269,11 +278,10 @@ export function Chip({ label, selected, onPress, tone = 'primary', style }) {
       <Text style={{ ...TYPE.smallBold, ...FONT, color: on ? (tone === 'primary' ? COLORS.onBright : COLORS.white) : COLORS.ink }}>{label}</Text>
     </Pressable>
   );
-}
+});
 
 // ─── Form controls ──────────────────────────────────────────────────────────
-function EyeIcon({ off, color, size = 20 }) {
-  useTheme();
+const EyeIcon = themed(function EyeIcon({ off, color, size = 20 }) {
   color = color || COLORS.muted;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,10 +290,9 @@ function EyeIcon({ off, color, size = 20 }) {
       {off ? <Path d="M3 3l18 18" /> : null}
     </Svg>
   );
-}
+});
 
-export function TextField({ label, icon, error, hint, secure, style, inputStyle, ...input }) {
-  useTheme();
+export const TextField = themed(function TextField({ label, icon, error, hint, secure, style, inputStyle, ...input }) {
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(false);
   return (
@@ -319,10 +326,9 @@ export function TextField({ label, icon, error, hint, secure, style, inputStyle,
         : hint ? <Text style={{ ...TYPE.small, ...FONT, color: COLORS.muted, marginTop: 6 }}>{hint}</Text> : null}
     </View>
   );
-}
+});
 
-export function Checkbox({ checked, onChange, children }) {
-  useTheme();
+export const Checkbox = themed(function Checkbox({ checked, onChange, children }) {
   return (
     <Pressable onPress={() => onChange(!checked)} accessibilityRole="checkbox" accessibilityState={{ checked }} style={({ focused }) => [{ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44, flexShrink: 1 }, webRing(focused)]}>
       <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: checked ? COLORS.primaryStrong : COLORS.surfaceSoft, borderWidth: 2, borderColor: checked ? COLORS.primaryStrong : COLORS.mutedLight, alignItems: 'center', justifyContent: 'center' }}>
@@ -331,7 +337,7 @@ export function Checkbox({ checked, onChange, children }) {
       <Text style={{ ...TYPE.small, ...FONT, color: COLORS.ink, flexShrink: 1 }}>{children}</Text>
     </Pressable>
   );
-}
+});
 
 function passwordStrength(pw = '') {
   let s = 0;
@@ -342,8 +348,7 @@ function passwordStrength(pw = '') {
   return { score: pw ? Math.max(1, s) : 0, label: ['', 'Weak', 'Fair', 'Good', 'Strong'][pw ? Math.max(1, s) : 0] };
 }
 
-export function StrengthMeter({ password }) {
-  useTheme();
+export const StrengthMeter = themed(function StrengthMeter({ password }) {
   const { score, label } = passwordStrength(password);
   if (!score) return null;
   const color = score <= 1 ? COLORS.danger : score === 2 ? COLORS.warning : COLORS.success;
@@ -355,11 +360,10 @@ export function StrengthMeter({ password }) {
       <Text style={{ ...TYPE.caption, ...FONT, color, marginTop: 6 }}>{label} password</Text>
     </View>
   );
-}
+});
 
 // ─── Auth layout (hero + curved white panel; split screen on desktop) ───────
-export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title, subtitle, children, footer }) {
-  useTheme();
+export const AuthLayout = themed(function AuthLayout({ scene = 'login', brand, tagline, title, subtitle, children, footer }) {
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const scroller = useRef(null);
@@ -369,14 +373,14 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
     return () => sub.remove();
   }, []);
   const hero = (
-    <View style={[{ backgroundColor: COLORS.backdrop, paddingTop: 24 + SAFE_TOP, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
+    <View style={[{ backgroundColor: COLORS.backdrop, paddingTop: 24 + TOP_INSET, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMaxYMid slice">
         <Path d="M230 330C240 230 310 140 430 96" fill="none" stroke={COLORS.ink} strokeOpacity="0.22" strokeWidth="1.2" strokeDasharray="5 7" />
         <Path d="M150 -20C165 70 235 118 340 104" fill="none" stroke={COLORS.ink} strokeOpacity="0.16" strokeWidth="1.2" strokeDasharray="5 7" />
         <Polygon points="350,36 356,54 374,60 356,66 350,84 344,66 326,60 344,54" fill={COLORS.accent} />
         <Polygon points="60,150 64,161 75,165 64,169 60,180 56,169 45,165 56,161" fill={COLORS.ink} fillOpacity="0.5" />
       </Svg>
-      <View style={{ position: 'absolute', top: 16 + SAFE_TOP, right: wide ? 24 : 16, zIndex: 2 }}>
+      <View style={{ position: 'absolute', top: 16 + TOP_INSET, right: wide ? 24 : 16, zIndex: 2 }}>
         <ThemeToggle />
       </View>
       <View style={[{ paddingHorizontal: 24 }, wide && { paddingHorizontal: 0 }]}>
@@ -423,22 +427,20 @@ export function AuthLayout({ scene = 'login', brand = 'SmartBus', tagline, title
     </ScrollView>
     </KeyboardAvoidingView>
   );
-}
+});
 
 // Screen header and body. They used to be a coloured block with a curved sheet over it; now they are plain
 // containers on the glowing page (AppBackdrop), the same look as the admin dashboard. The names are kept so every
 // screen keeps working.
-export function OverlapHeader({ children }) {
-  useTheme();
+export const OverlapHeader = themed(function OverlapHeader({ children }) {
   return <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>{children}</View>;
-}
-export function OverlapSheet({ children, style }) {
-  useTheme();
+});
+export const OverlapSheet = themed(function OverlapSheet({ children, style }) {
   return <View style={[{ paddingHorizontal: 20, paddingTop: 4 }, style]}>{children}</View>;
-}
+});
 
 // The dashboard's page background: an orange glow top-left and a cool glow bottom-right over the base colour.
-export function AppBackdrop() {
+export const AppBackdrop = themed(function AppBackdrop() {
   const { mode } = useTheme();
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.bg }]}>
@@ -458,20 +460,18 @@ export function AppBackdrop() {
       </Svg>
     </View>
   );
-}
+});
 
 // Navigation icon: Lucide outline. The current item sits on an orange circle, so it is drawn in night; idle items are muted.
 const NAV_GLYPHS = { home: House, arrow: Navigation, route: RouteGlyph, user: User, gauge: Gauge, people: Users, bus: BusGlyph, pulse: Activity, chart: ChartColumn };
-export function NavIcon({ name, active, size = 24 }) {
-  useTheme();
+export const NavIcon = themed(function NavIcon({ name, active, size = 24 }) {
   const Glyph = NAV_GLYPHS[name] || House;
   return <Glyph size={size} color={active ? COLORS.onBright : COLORS.muted} strokeWidth={active ? 2 : 1.75} />;
-}
+});
 
 // Bottom navigation: a white pill docked in the screen's own footer (content never slides behind it). Every item
 // shows its label; the current item sits in an ink circle with a white icon. items: [{ id, label, icon(active) }]
-export function FloatingDock({ items, active, onChange }) {
-  useTheme();
+export const FloatingDock = themed(function FloatingDock({ items, active, onChange }) {
   const reduced = useReducedMotion();
   const n = items.length;
   const index = Math.max(0, items.findIndex((i) => i.id === active));
@@ -517,12 +517,11 @@ export function FloatingDock({ items, active, onChange }) {
       </View>
     </View>
   );
-}
+});
 
 // Stat card: white card with a round tinted icon, a muted label and a bold value (the admin's KPI card in small).
 // icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue).
-export function NotchStat({ label, value, tone = 'orange', icon, valueColor, style, pill, pillTone = 'green' }) {
-  useTheme();
+export const NotchStat = themed(function NotchStat({ label, value, tone = 'orange', icon, valueColor, style, pill, pillTone = 'green' }) {
   const [wash, ink] = tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];
   const pillBg = pillTone === 'red' ? COLORS.danger : pillTone === 'violet' ? COLORS.violet : COLORS.green;
   return (
@@ -537,11 +536,11 @@ export function NotchStat({ label, value, tone = 'orange', icon, valueColor, sty
       {pill ? <View style={{ alignSelf: 'flex-start', backgroundColor: pillBg, borderRadius: RADII.pill, paddingHorizontal: 10, paddingVertical: 3 }}><Text style={{ ...TYPE.caption, ...FONT, color: COLORS.onBright }}>{pill}</Text></View> : null}
     </View>
   );
-}
+});
 
 // ─── Animated pieces ─────────────────────────────────────────────────────────
 // A number that counts up to its value (700ms, strong ease-out). Shows the final number at once with reduced motion.
-export function CountUp({ value, duration = 700, suffix = '', style }) {
+export const CountUp = themed(function CountUp({ value, duration = 700, suffix = '', style }) {
   const reduced = useReducedMotion();
   const target = Number(value);
   const v = useRef(new Animated.Value(0)).current;
@@ -555,12 +554,11 @@ export function CountUp({ value, duration = 700, suffix = '', style }) {
     return () => v.removeListener(id);
   }, [target, duration, reduced, v]);
   return <Text style={style}>{Number.isNaN(target) ? '—' : `${text}${suffix}`}</Text>;
-}
+});
 
 // A ring that fills to value/max (600ms ease-out), like the dashboard's fleet donut. Children sit in the middle.
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-export function RingGauge({ value = 0, max = 100, size = 150, stroke = 12, color, track, children }) {
-  useTheme();
+export const RingGauge = themed(function RingGauge({ value = 0, max = 100, size = 150, stroke = 12, color, track, children }) {
   const reduced = useReducedMotion();
   const frac = Math.max(0, Math.min(1, Number(value) / max || 0));
   const v = useRef(new Animated.Value(0)).current;
@@ -578,11 +576,10 @@ export function RingGauge({ value = 0, max = 100, size = 150, stroke = 12, color
       {children}
     </View>
   );
-}
+});
 
 // A status dot with a soft ring that expands and fades (1.8s loop). Still with reduced motion.
-export function LiveDot({ color, size = 8 }) {
-  useTheme();
+export const LiveDot = themed(function LiveDot({ color, size = 8 }) {
   const reduced = useReducedMotion();
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -598,11 +595,10 @@ export function LiveDot({ color, size = 8 }) {
       <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: c }} />
     </View>
   );
-}
+});
 
 // A thin progress bar that eases to its value (500ms) instead of jumping.
-export function ProgressTrack({ value = 0, height = 6, color, track, style }) {
-  useTheme();
+export const ProgressTrack = themed(function ProgressTrack({ value = 0, height = 6, color, track, style }) {
   const reduced = useReducedMotion();
   const frac = Math.max(0, Math.min(1, Number(value) || 0));
   const v = useRef(new Animated.Value(0)).current;
@@ -614,17 +610,15 @@ export function ProgressTrack({ value = 0, height = 6, color, track, style }) {
       <Animated.View style={{ height, borderRadius: height / 2, backgroundColor: color || COLORS.orange, width: v.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
     </View>
   );
-}
+});
 
 // Bottom sheet card used by modals.
-export function Sheet({ children, style }) {
-  useTheme();
+export const Sheet = themed(function Sheet({ children, style }) {
   return <View style={[{ backgroundColor: COLORS.surface, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, padding: 24, maxHeight: '88%', width: '100%', maxWidth: 560, alignSelf: 'center', ...SHADOWS.lg }, style]}>{children}</View>;
-}
+});
 
 // Toast: slides down 10px and fades in (220ms strong ease-out); leaves faster (160ms), as the system responding.
-export function Toast({ message }) {
-  useTheme();
+export const Toast = themed(function Toast({ message }) {
   const reduced = useReducedMotion();
   const [shown, setShown] = useState(message || null);
   const v = useRef(new Animated.Value(0)).current;
@@ -648,10 +642,10 @@ export function Toast({ message }) {
       </View>
     </Animated.View>
   );
-}
+});
 
 // A tab's screen arrives with a short fade and 8px rise (180ms). Tabs are used often, so it stays small. Key it by tab.
-export function ScreenFade({ children, style }) {
+export const ScreenFade = themed(function ScreenFade({ children, style }) {
   const reduced = useReducedMotion();
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -662,21 +656,21 @@ export function ScreenFade({ children, style }) {
       {children}
     </Animated.View>
   );
-}
+});
 
 // List item entrance: fades up 10px, staggered 40ms per item (the first six only), once when it mounts.
-export function Reveal({ index = 0, children, style }) {
+export const Reveal = themed(function Reveal({ index = 0, children, style }) {
   const reduced = useReducedMotion();
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(v, { toValue: 1, duration: reduced ? 0 : 260, delay: reduced ? 0 : Math.min(index, 6) * 40, easing: EASE_OUT, useNativeDriver: native }).start();
   }, [index, reduced, v]);
   return <Animated.View style={[{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }, style]}>{children}</Animated.View>;
-}
+});
 
 // Bottom sheet host. The backdrop fades while the sheet itself rises (the stock "slide" animation drags the backdrop
 // up with it). Opens in 280ms on the drawer curve, closes faster (180ms).
-export function SheetModal({ visible, onClose, children }) {
+export const SheetModal = themed(function SheetModal({ visible, onClose, children }) {
   const reduced = useReducedMotion();
   const [mounted, setMounted] = useState(visible);
   const v = useRef(new Animated.Value(0)).current;
@@ -698,12 +692,11 @@ export function SheetModal({ visible, onClose, children }) {
       </View>
     </Modal>
   );
-}
+});
 
 // ─── Settings building blocks ────────────────────────────────────────────────
 // Choose one of a few options; the pill slides to the choice (200ms strong ease-out).
-export function Segmented({ options, value, onChange, label }) {
-  useTheme();
+export const Segmented = themed(function Segmented({ options, value, onChange, label }) {
   const reduced = useReducedMotion();
   const n = options.length;
   const index = Math.max(0, options.findIndex((o) => o.value === value));
@@ -731,11 +724,10 @@ export function Segmented({ options, value, onChange, label }) {
       })}
     </View>
   );
-}
+});
 
 // A titled group of rows on one card.
-export function SettingsSection({ title, note, children }) {
-  useTheme();
+export const SettingsSection = themed(function SettingsSection({ title, note, children }) {
   const rows = React.Children.toArray(children).filter(Boolean);
   return (
     <View style={{ marginBottom: 20 }}>
@@ -746,11 +738,10 @@ export function SettingsSection({ title, note, children }) {
       {note ? <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.muted, marginTop: 8, marginHorizontal: 8 }}>{note}</Text> : null}
     </View>
   );
-}
+});
 
 // One row: optional icon, label, a value on the right, a chevron when it opens something. tone="danger" for destructive rows.
-export function SettingsRow({ icon, label, value, onPress, tone, first, children }) {
-  useTheme();
+export const SettingsRow = themed(function SettingsRow({ icon, label, value, onPress, tone, first, children }) {
   const danger = tone === 'danger';
   const body = (
     <View style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: first ? 0 : 1, borderTopColor: COLORS.glassLine }}>
@@ -765,4 +756,4 @@ export function SettingsRow({ icon, label, value, onPress, tone, first, children
   );
   if (!onPress) return body;
   return <Tap onPress={onPress} accessibilityRole="button" accessibilityLabel={label} scale={0.99}>{body}</Tap>;
-}
+});

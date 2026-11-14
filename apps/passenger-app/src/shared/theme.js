@@ -156,6 +156,10 @@ export const RADII = { xs: 10, sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
 
+// The strong ease-out every press, toast and switch uses: cubic-bezier control points.
+// Mobile: Easing.bezier(...EASE_OUT); admin: the --ease-out CSS variable written by sync.js.
+export const EASE_OUT = [0.23, 1, 0.32, 1];
+
 // Type scale: one fixed size + line-height + weight per role.
 export const TYPE = {
   display: { fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.6 },

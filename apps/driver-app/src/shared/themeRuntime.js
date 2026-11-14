@@ -18,7 +18,8 @@ const Ctx = createContext({ mode: 'light', isDark: false, toggle: () => {}, setM
 
 const system = () => (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light');
 
-// On the web the saved choice can be read synchronously, so the first paint is already in the right mode.
+// On the web AsyncStorage is window.localStorage under the same key, so the saved choice can be read synchronously
+// and the first paint is already in the right mode. Writes always go through AsyncStorage.
 function initial() {
   try {
     if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
@@ -46,7 +47,7 @@ export function ThemeProvider({ children }) {
   if (applied.current !== mode) { applyTheme(mode); applied.current = mode; }
   useEffect(() => { paintWeb(mode); }, [mode]);
 
-  // Native (and web without a saved choice): load the saved choice once.
+  // Native: load the saved choice once (the web read it in initial()).
   useEffect(() => {
     if (Platform.OS === 'web') return undefined;
     let on = true;
@@ -63,7 +64,6 @@ export function ThemeProvider({ children }) {
 
   const save = useCallback((next) => {
     setState({ mode: next, source: 'saved' });
-    try { if (Platform.OS === 'web' && typeof localStorage !== 'undefined') localStorage.setItem(KEY, next); } catch { /* ignore */ }
     AsyncStorage.setItem(KEY, next).catch(() => {});
   }, []);
 
@@ -74,7 +74,6 @@ export function ThemeProvider({ children }) {
     setMode: save,
     toggle: () => save(mode === 'dark' ? 'light' : 'dark'),
     followSystem: () => {
-      try { if (Platform.OS === 'web' && typeof localStorage !== 'undefined') localStorage.removeItem(KEY); } catch { /* ignore */ }
       AsyncStorage.removeItem(KEY).catch(() => {});
       setState({ mode: system(), source: 'system' });
     },

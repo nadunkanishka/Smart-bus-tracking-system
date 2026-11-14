@@ -1,17 +1,18 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Banner, OverlapHeader, OverlapSheet, Vehicle, NotchStat } from '../shared/ui';
-import { BusIcon, NavigationArrowIcon, PlayIcon, RouteIcon, StopIcon } from '../shared/icons';
-import { ProfileRow } from '../components/ProfileRow';
+import { Banner, OverlapHeader, OverlapSheet, NotchStat } from '../shared/ui';
+import { PlayIcon, StopIcon } from '../shared/icons';
+import { ProfileRow } from '../shared/shell';
 import { useD } from './ShiftScreen.styles';
 
 // Intentionally minimal: one large On Duty / Off Duty toggle and the status a driver needs at a glance.
-export function ShiftScreen({
-  isOnShift, busy, hasRoute, busRegistration, driverName, routeLabel, routeNumber, nextStop,
-  busSpeed, gpsStatus, connected, queued, mode, onToggleShift,
-}) {
+export function ShiftScreen({ session, duty }) {
   const D = useD();
+  const { registration: busRegistration, driverName, routeLabel, routeNumber, route, routeStops } = session;
+  const { isOnShift, busy, busSpeed, gpsStatus, connected, queued, mode, currentStopIndex, toggle: onToggleShift } = duty;
+  const hasRoute = !!route?.trackable;
+  const nextStop = routeStops[currentStopIndex];
   const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
@@ -63,7 +64,7 @@ export function ShiftScreen({
         {isOnShift ? (
           <View style={D.profileCard}>
             <ProfileRow label="Route" value={routeLabel} />
-            <ProfileRow label="Next stop" value={nextStop || '—'} accent />
+            <ProfileRow label="Next stop" value={nextStop || '—'} accent={COLORS.success} />
             <ProfileRow label="Speed" value={`${busSpeed} km/h`} />
             <ProfileRow label="Tracking" value={mode === 'background' ? 'Continues with the screen off' : 'While this screen is open'} last />
           </View>
