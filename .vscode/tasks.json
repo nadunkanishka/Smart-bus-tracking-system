@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Install everything", "type": "npm", "script": "install:all", "problemMatcher": [] },
+    { "label": "Backend: dev server", "type": "npm", "script": "dev:backend", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "run" } },
+    { "label": "Admin: dev server", "type": "npm", "script": "dev:admin", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "run" } },
+    { "label": "Driver app: Expo", "type": "npm", "script": "dev:driver", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "run" } },
+    { "label": "Passenger app: Expo", "type": "npm", "script": "dev:passenger", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "run" } },
+    { "label": "Test: backend and admin", "type": "npm", "script": "test", "group": "test", "problemMatcher": [] },
+    { "label": "Build: admin", "type": "npm", "script": "build", "group": "build", "problemMatcher": [] },
+    { "label": "Sync shared design system", "type": "npm", "script": "sync", "problemMatcher": [] },
+    { "label": "Seed demo route", "type": "npm", "script": "seed", "problemMatcher": [] }
+  ]
+}

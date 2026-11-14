@@ -1,0 +1,101 @@
+import React from 'react';
+import { Text, View } from 'react-native';
+import { COLORS } from '../shared/theme';
+import { Button, Sheet, Tap, SheetModal } from '../shared/ui';
+import { ArrowRightIcon, MessageCircleIcon, PhoneCallIcon } from '../shared/icons';
+import { DISPATCH_PHONE } from '../constants';
+import { useD } from './DispatchModal.styles';
+
+export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dispatchMode, setDispatchMode, showToast }) {
+  const D = useD();
+  return (
+    <SheetModal visible={isDispatchModalOpen} onClose={() => setIsDispatchModalOpen(false)}>
+        <Sheet>
+          <View style={D.handleRow}><View style={D.handle} /></View>
+
+          {/* Dispatch Info */}
+          <View style={D.dispatchRow}>
+            <View style={D.dispatchAvatar}>
+              <Text style={D.dispatchAvatarText}>HQ</Text>
+            </View>
+            <View style={D.dispatchInfo}>
+              <Text style={D.dispatchName}>Transit Dispatch</Text>
+              <Text style={D.dispatchRole}>Central Command Center</Text>
+              <Text style={D.dispatchPhone}>{DISPATCH_PHONE}</Text>
+            </View>
+            <View style={D.onlineChip}>
+              <View style={D.onlineDot} />
+              <Text style={D.onlineText}>24/7</Text>
+            </View>
+          </View>
+
+          {/* Mode Tabs */}
+          <View style={D.modeTabs} accessibilityRole="tablist">
+            <Tap
+              style={[D.modeTab, dispatchMode === 'call' && D.modeTabActive]}
+              onPress={() => setDispatchMode('call')}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: dispatchMode === 'call' }}
+            >
+              <PhoneCallIcon color={dispatchMode === 'call' ? COLORS.white : COLORS.muted} size={14} />
+              <Text style={[D.modeTabText, dispatchMode === 'call' && D.modeTabTextActive]}>
+                Call Dispatch
+              </Text>
+            </Tap>
+            <Tap
+              style={[D.modeTab, dispatchMode === 'message' && D.modeTabActive]}
+              onPress={() => setDispatchMode('message')}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: dispatchMode === 'message' }}
+            >
+              <MessageCircleIcon color={dispatchMode === 'message' ? COLORS.white : COLORS.muted} size={14} />
+              <Text style={[D.modeTabText, dispatchMode === 'message' && D.modeTabTextActive]}>
+                Send Message
+              </Text>
+            </Tap>
+          </View>
+
+          {dispatchMode === 'call' ? (
+            <View style={D.callView}>
+              <Text style={D.callLabel}>Direct dispatch line</Text>
+              <Text style={D.callNumber}>{DISPATCH_PHONE}</Text>
+              <Text style={D.callNote}>
+                Contact for route changes, incidents, or operational support.
+              </Text>
+              <Button
+                title="Start call"
+                tone="primary"
+                icon={<PhoneCallIcon color={COLORS.accent} size={18} />}
+                onPress={() => {
+                  setIsDispatchModalOpen(false);
+                  showToast(`Calling Transit Dispatch at ${DISPATCH_PHONE}...`);
+                }}
+              />
+            </View>
+          ) : (
+            <View style={D.messageView}>
+              <Text style={D.callLabelLeft}>Quick dispatch messages</Text>
+              {[
+                'Running behind schedule. Update ETA.',
+                'Mechanical issue. Need assistance.',
+                'Route obstruction. Seeking alternative.',
+                'Arrived at terminus. Shift complete.',
+              ].map((msg, idx) => (
+                <Tap
+                  key={idx}
+                  style={D.quickMsgBtn}
+                  onPress={() => {
+                    setIsDispatchModalOpen(false);
+                    showToast(`Message sent: "${msg}"`);
+                  }}
+                >
+                  <Text style={D.quickMsgText}>{msg}</Text>
+                  <ArrowRightIcon color={COLORS.accentText} size={14} />
+                </Tap>
+              ))}
+            </View>
+          )}
+        </Sheet>
+    </SheetModal>
+  );
+}

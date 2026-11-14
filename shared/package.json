@@ -1,0 +1,1 @@
+{ "name": "smartbus-design-system", "private": true, "type": "module", "scripts": { "sync": "node sync.js" } }

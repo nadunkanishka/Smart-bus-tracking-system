@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      # the CRUD integration tests need a real MongoDB (they fail when CI is set and it is missing)
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/admin-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/admin-dashboard/package-lock.json
+      - run: npm ci
+      - run: npm test -- --watchAll=false
+      # CI=true makes Create React App treat ESLint warnings as errors, so this is also the lint step.
+      - run: npm run build
+
+  apps-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm run test:apps
+
+  shared-sync:
+    # The apps hold generated copies of shared/. This fails if a copy was edited by hand or the sync was not run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node shared/sync.js
+      - run: git diff --exit-code
+
+  mobile:
+    # The Expo apps have no tests, so bundling them for web and Android is the check: it fails on broken imports or syntax.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [driver-app, passenger-app]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+      - run: npm ci
+      - run: npx expo export --platform web --platform android

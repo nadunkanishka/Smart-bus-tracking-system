@@ -1,0 +1,120 @@
+# API specification
+
+Base URL: `http://localhost:5000` in development. REST paths are under `/api`. Bodies and responses are JSON. Errors are `{ "error": "message" }`: 400 for invalid input, 401 without a valid token, 403 for the wrong role, 404 for an unknown record, 409 for a duplicate (registration, license, username), 500 otherwise. Required roles per path are in `backend/middleware/access.js`.
+
+Protected endpoints need `Authorization: Bearer <token>`. Login endpoints are limited to 50 requests per 15 minutes per IP.
+
+## REST
+
+### Health and auth
+
+| Method | Path | Access | Body | Returns |
+|---|---|---|---|---|
+| GET | `/api/health` | open | – | `status`, `mongo`, `cache` (`redis` or `memory`), `sockets` |
+| POST | `/api/auth/login` | open | `username`, `password` | `token`, `user` (admin) |
+| POST | `/api/auth/driver-login` | open | `registration` (or `busId`), `password` | `token`, `bus`, `driver`, `assignedRoute` (with `path` and `stopPoints`) |
+| POST | `/api/passengers/register` | open | `name`, `username` (3–30 chars), `password` (6+), `phone` optional | `token`, `user` |
+| POST | `/api/passengers/login` | open | `username`, `password` | `token`, `user` |
+| GET | `/api/passengers/me` | passenger | – | `user` |
+| PUT | `/api/passengers/me` | passenger | `name`, `phone` (username cannot change) | `user` |
+| PUT | `/api/passengers/me/password` | passenger | `currentPassword`, `newPassword` (6+) | `message` |
+| DELETE | `/api/passengers/me` | passenger | `password` (confirms the delete) | `message` |
+| GET | `/api/passengers` | admin | – | all passenger accounts (no passwords) |
+| DELETE | `/api/passengers/:id` | admin | – | `:id` is the `_id` or username |
+
+### Routes
+
+| Method | Path | Access | Notes |
+|---|---|---|---|
+| GET | `/api/routes` | open | All routes with geometry |
+| GET | `/api/routes/:id` | open | One route, `:id` is the `routeId` or Mongo `_id` |
+| GET | `/api/routes/:id/buses` | open | Live buses on a route, read from the latest-fix cache |
+| POST | `/api/routes` | admin | See body below |
+| PUT | `/api/routes/:id` | admin | `:id` is the `routeId` (e.g. `RT-001`) or the Mongo `_id` |
+| DELETE | `/api/routes/:id` | admin | |
+
+`busIds` is the route's whole list of buses (`["BUS-002", "BUS-003"]`): a route can have many buses, a bus can run on one route only. An unknown bus is a 400; a bus that is already on another route is a 409 and nothing changes. Leave `busIds` out of a PUT to keep the current buses. Responses carry `busIds` and `buses` (`{ busId, registration }`). Only the listed fields can be changed: `routeId` and `_id` are ignored.
+
+Route body: `name`, `routeNumber`, `start`, `end`, `distance` (km), `busIds`, `status`, plus geometry as plain arrays:
+
+```json
+{
+  "path": [[6.9344, 79.85], [6.9147, 79.8778]],
+  "stopPoints": [{ "name": "Pettah", "lat": 6.9344, "lng": 79.85 }]
+}
+```
+
+`path` is `[lat, lng]` pairs. The server stores it as GeoJSON (`[lng, lat]`), and responses return the GeoJSON form: `path.coordinates` and `stopPoints[].location.coordinates`.
+
+### Fleet (admin)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET / POST | `/api/drivers` | `name`, `license`, `expiry`, `phone`, `status` |
+| GET / PUT / DELETE | `/api/drivers/:id` | `:id` is `driverId` or `_id`. Deleting a driver clears `assignedDriver` on their buses (`unassignedBuses` in the response) |
+| GET / POST | `/api/buses` | `registration`, `capacity`, `mileage`, `password`, `assignedDriver` (a `driverId`), `status` |
+| GET / PUT / DELETE | `/api/buses/:id` | A blank `password` keeps the current one. `assignedDriver` must be an existing driver. `routeId` puts the bus on a route (must exist; a bus has one route, so this moves it). Deleting a bus takes it off its route. Deleting a route frees its buses |
+| GET | `/api/dashboard/summary` | Counts for the dashboard |
+
+Bus responses never include the password. They carry `hasPassword: true/false`.
+
+### Admin accounts (admin)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET / POST | `/api/admins` | Create with `username` (3–30), `password` (8+), `name`, `role` |
+| GET / PUT / DELETE | `/api/admins/:id` | PUT changes `name`, `role`, or resets the password when `password` is sent. A signed-in admin cannot delete themself, and the last admin cannot be deleted |
+| PUT | `/api/admins/me/password` | `currentPassword`, `newPassword` (8+) |
+
+### Errors on writes
+
+`400` validation (field message), `404` unknown id, `409` a unique value (license, registration, username) is already used.
+
+### Monitoring and analytics (admin)
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/live` | Per bus: `connected`, `onDuty`, `lastSeen`, `lat`, `lng`, `speed`, `tripId` |
+| GET | `/api/metrics` | Fix counters, open sockets, cache kind, latency (`deviceToServer`, `serverProcessing`: `avg`, `p95`, `max` in ms), `fixesPerMinute` (accepted positions in each of the last 12 minutes: `t`, `n`) |
+| GET | `/api/analytics/segments?routeId=RT-001` | Per segment: `samples`, `traversalSec` (`avg`, `min`, `p50`, `p90`, `max`), `dwellSecAvg`, raw `values` |
+| GET | `/api/analytics/eta?routeId=RT-001` | `samples`, `maeSec`, `biasSec`, `maxAbsSec`, `compared` (`samples`, `engineMaeSec`, `baselineMaeSec`, `improvementPct`: engine against a straight-line estimate on the same arrivals), `byHorizon` (the same split by how far ahead the prediction was made: under 2 min, 2 to 5, 5 to 10, 10 to 20, over 20 min; empty horizons are left out) |
+
+## Socket.IO events
+
+Connect to the base URL. Drivers pass their token in the handshake: `io(url, { auth: { token } })`.
+
+### Passenger
+
+| Direction | Event | Payload |
+|---|---|---|
+| client → server | `route:subscribe` | `{ routeId }`. Leaves any previous route room. Ack: `{ ok, buses }`, where `buses` is the number of buses (the array arrives in `route:snapshot`) |
+| client → server | `route:unsubscribe` | – |
+| server → client | `route:snapshot` | `{ routeId, buses: [busUpdate], serverTs }`, sent once after subscribing |
+| server → client | `bus:update` | `busUpdate` (below), on every accepted live fix |
+| server → client | `bus:offline` | `{ busId }`, when a driver goes off duty, or when the bus signs in again assigned to another route (sent to the old route) |
+
+`busUpdate`:
+
+```json
+{
+  "busId": "BUS-001", "registration": "NA-1111", "driverName": "A. Bandara", "routeId": "RT-001",
+  "lat": 6.9211, "lng": 79.8702, "speed": 9.4, "heading": 132,
+  "deviceTs": 1791306871911, "serverRecvTs": 1791306871950, "serverEmitTs": 1791306871953,
+  "segIndex": 0, "offRouteM": 6, "finished": false, "buffered": false,
+  "stops": [
+    { "index": 0, "name": "Pettah", "status": "passed", "etaSec": null, "etaMin": null },
+    { "index": 1, "name": "Borella Junction", "status": "upcoming", "etaSec": 312, "etaMin": 5 }
+  ]
+}
+```
+
+### Driver
+
+| Direction | Event | Payload |
+|---|---|---|
+| client → server | `driver:duty` | `{ onDuty: true/false }`. Off duty removes the bus from the map. Ack: `{ ok: true, onDuty }` |
+| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, ts, nextStopIndex }` (`ts` echoes the fix's `ts`) where `result` is `accepted`, `duplicate` (also an out-of-order fix), `too frequent`, `position jump` or a validation message; `ok` is true for `accepted` and `duplicate` (the app may drop the fix) |
+| client → server | `gps:batch` | Array of up to 1000 fixes (`MAX_BATCH` in the contract) from the offline queue, replayed oldest first. A fix without a numeric `ts` counts as rejected. Ack: `{ ok: true, accepted, duplicate, rejected, lastTs }` (`lastTs`: the newest usable `ts`, or null); `{ ok: false, error: 'Batch must be an array of at most 1000 fixes' }` otherwise |
+| client → server | `driver:auth` | `{ token }` (a driver token). Alternative to the handshake token, used by the load tests. Ack: `{ ok: true }` or `{ ok: false, error: 'Invalid driver token' }`; accepted once per connection |
+
+Every driver event acks `{ ok: false, error: 'No route assigned to this bus' }` when the token has no route, and `{ ok: false, error: 'Server error' }` when the database or cache fails (the failure is logged). A driver token is `{ role: 'driver', busId, registration, routeId, driverName }` (`driverClaims` in `backend/lib/auth.js`).
