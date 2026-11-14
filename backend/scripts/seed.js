@@ -10,8 +10,11 @@ const mongoose = require('mongoose');
 const connectDB = require('../config/db');
 const Route = require('../models/Route');
 const Bus = require('../models/Bus');
-const Counter = require('../models/Counter');
-const { haversine } = require('../lib/geo');
+const { nextId } = require('../lib/sequence');
+const { formatBusRef } = require('../lib/busRef');
+const { STATUS } = require('../lib/contract');
+const { cumulativeDistances, toPoint, toLineString } = require('../lib/geo');
+const { OSRM_URL } = require('../config/env');
 const { ROUTES } = require('./data/routes');
 
 const PILOT = '138';
@@ -20,18 +23,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function roadLine(stops) {
   const coords = stops.map((s) => `${s.lng},${s.lat}`).join(';');
-  const base = process.env.OSRM_URL || 'https://router.project-osrm.org/route/v1/driving';
   try {
-    const res = await fetch(`${base}/${coords}?overview=full&geometries=geojson`, { signal: AbortSignal.timeout(12000) });
+    const res = await fetch(`${OSRM_URL}/${coords}?overview=full&geometries=geojson`, { signal: AbortSignal.timeout(12000) });
     const data = await res.json();
     const line = data.routes?.[0]?.geometry?.coordinates;
     if (Array.isArray(line) && line.length > 1) return { line, km: data.routes[0].distance / 1000, source: 'OSRM' };
   } catch (err) {
     console.warn(`  OSRM unavailable: ${err.message}`);
   }
-  const line = stops.map((s) => [s.lng, s.lat]);
-  const m = stops.slice(1).reduce((sum, s, i) => sum + haversine([stops[i].lat, stops[i].lng], [s.lat, s.lng]), 0);
-  return { line, km: (m * 1.3) / 1000, source: 'straight lines' };
+  const points = stops.map((s) => [s.lat, s.lng]);
+  const m = cumulativeDistances(points).pop();
+  return { line: toLineString(points).coordinates, km: (m * 1.3) / 1000, source: 'straight lines' };
 }
 
 (async () => {
@@ -61,10 +63,7 @@ async function roadLine(stops) {
     const { line, km, source } = await roadLine(stops);
 
     let route = await Route.findOne({ routeNumber: def.number });
-    if (!route) {
-      const counter = await Counter.findOneAndUpdate({ name: 'route' }, { $inc: { seq: 1 } }, { new: true, upsert: true });
-      route = new Route({ routeId: `RT-${String(counter.seq).padStart(3, '0')}` });
-    }
+    if (!route) route = new Route({ routeId: await nextId('route') });
     Object.assign(route, {
       routeNumber: def.number,
       name: `Route ${def.number}: ${def.start} ➔ ${def.end}`,
@@ -72,11 +71,11 @@ async function roadLine(stops) {
       end: def.end,
       distance: Math.round(km * 10) / 10,
       stops: stops.map((s) => s.name),
-      stopPoints: stops.map((s) => ({ name: s.name, location: { type: 'Point', coordinates: [s.lng, s.lat] } })),
-      path: { type: 'LineString', coordinates: line },
-      status: 'Active',
+      stopPoints: stops.map((s) => ({ name: s.name, location: toPoint(s.lat, s.lng) })),
+      path: { type: 'LineString', coordinates: line }, // already GeoJSON order, from roadLine()
+      status: STATUS.route[0],
     });
-    if (def.number === PILOT && !route.assignedBus && bus) route.assignedBus = `${bus.registration} (${bus.busId})`;
+    if (def.number === PILOT && !route.assignedBus && bus) route.assignedBus = formatBusRef(bus);
     await route.save();
     done += 1;
     console.log(`Route ${def.number} ${route.routeId}: ${def.start} -> ${def.end}, ${stops.length} stops, ${route.distance} km, ${line.length} path points (${source})${route.assignedBus ? `, bus ${route.assignedBus}` : ''}`);

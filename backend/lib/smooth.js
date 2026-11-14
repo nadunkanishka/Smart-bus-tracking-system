@@ -6,8 +6,8 @@
 //      or a real jump is followed after at most two fixes.
 //   3. Stop hold: a bus that reports it is not moving does not wander about its stop.
 // The raw fix is never thrown away: realtime.js logs it beside the smoothed point.
-const R = 6371000;
-const rad = (d) => (d * Math.PI) / 180;
+const { toXY, toLatLng } = require('./geo');
+const { SMOOTHER_RESET_MS } = require('./limits');
 
 // Tune here. Everything the filter does is set by these numbers.
 const SMOOTHING = {
@@ -20,11 +20,8 @@ const SMOOTHING = {
   turnGateSigma: 2, // fixes missing the prediction by more than this many standard deviations suggest a turn...
   turnBoost: 6, // ...so the next prediction allows this many times more change of course
   stoppedAccelFactor: 0.05, // while stopped, trust the prediction ("still here") much more: acceleration noise is scaled by this
-  resetGapSec: 30, // after a gap this long (signal lost, offline buffer) start again from the next fix
+  resetGapSec: SMOOTHER_RESET_MS / 1000, // after a gap this long (signal lost, offline buffer) start again from the next fix
 };
-
-const toXY = (st, lat, lng) => [rad(lng - st.lng0) * R * Math.cos(rad(st.lat0)), rad(lat - st.lat0) * R];
-const toLatLng = (st, x, y) => [st.lat0 + ((y / R) * 180) / Math.PI, st.lng0 + ((x / (R * Math.cos(rad(st.lat0)))) * 180) / Math.PI];
 
 function axis(pos, vel, r) {
   return { pos, vel, p00: r, p01: 0, p11: 225 }; // velocity starts uncertain (15 m/s)

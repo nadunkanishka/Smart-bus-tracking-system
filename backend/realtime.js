@@ -1,183 +1,52 @@
-// Real-time pipeline: drivers emit GPS fixes, the server validates them, recomputes the ETA for every downstream
-// stop, caches the latest fix per bus and pushes the update to the Socket.IO room of that bus's route.
-const crypto = require('crypto');
-const { prepareRoute, computeEta } = require('./lib/eta');
-const { haversine } = require('./lib/geo');
-const { validateFix, MAX_SPEED_MPS } = require('./lib/validate');
-const { startTrip, advance } = require('./lib/tripTracker');
-const { smoothFix, SMOOTHING } = require('./lib/smooth');
-const { createRate } = require('./lib/rate');
+// Real-time layer: Socket.IO wiring and the live state of each bus. Drivers send GPS fixes, lib/fixPipeline.js turns
+// them into updates, and this file pushes those to the Socket.IO room of the bus's route and to the latest-fix cache.
 const { readToken } = require('./lib/auth');
+const { EVENTS, MAX_BATCH } = require('./lib/contract');
+const { FORGET_BUS_MS } = require('./lib/limits');
+const { createFixPipeline, OK_RESULTS } = require('./lib/fixPipeline');
+const { createRouteCache } = require('./lib/routeCache');
+const { createTripRecorder } = require('./lib/tripRecorder');
+const { createMetrics, liveRow } = require('./lib/metrics');
+const env = require('./config/env');
 
-const Route = require('./models/Route');
-const Trip = require('./models/Trip');
-const SegmentLog = require('./models/SegmentLog');
-const EtaLog = require('./models/EtaLog');
-const GpsLog = require('./models/GpsLog');
-
-const ROUTE_CACHE_MS = 5 * 60 * 1000; // history baseline is re-read from MongoDB this often
-const LIVE_MAX_AGE_MS = 15000; // a fix older than this is historical (offline buffer), not a live position
-const GPS_FLUSH_MS = 5000;
-const MIN_FIX_GAP_MS = 900; // drivers send every 3 s; anything faster than ~1/s is dropped
 const room = (routeId) => `route:${routeId}`;
-// GPS smoothing is on unless GPS_SMOOTHING=off (switch it off to compare raw against smoothed on the same route).
-const SMOOTHING_ON = String(process.env.GPS_SMOOTHING || 'on').toLowerCase() !== 'off';
+const leaveRouteRooms = (socket) => [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
+const NO_ROUTE = 'No route assigned to this bus';
 
-function createRealtime(io, store) {
+// io: Socket.IO server. store: latest-fix cache (lib/store.js). The rest is injected by tests; index.js passes the
+// shared routeCache so the REST routes drop the same cache.
+function createRealtime(io, store, {
+  routeCache = createRouteCache(),
+  recorder = createTripRecorder({ onHistoryAdded: (routeId) => routeCache.invalidate(routeId) }),
+  metrics = createMetrics(),
+  smoothing = env.GPS_SMOOTHING,
+} = {}) {
   const buses = new Map(); // busId -> live state for this process
-  const routes = new Map(); // routeId -> { prepared, at }
-  let gpsBuffer = [];
 
-  const fixRate = createRate(); // accepted positions per minute, for the dashboard chart
-  const metrics = {
-    startedAt: Date.now(), received: 0, accepted: 0, rejected: 0, duplicates: 0, batches: 0, bufferedFixes: 0, broadcasts: 0,
-    ingestMs: [], // device timestamp -> server receive (includes device clock skew)
-    processMs: [], // server receive -> emitted to the route room
-  };
-  const sample = (list, v) => { list.push(v); if (list.length > 5000) list.shift(); };
+  const pipeline = createFixPipeline({
+    getRoute: (routeId) => routeCache.get(routeId),
+    track: recorder.track,
+    recordFix: recorder.recordFix,
+    publish(bus, payload) {
+      io.to(room(bus.routeId)).emit(EVENTS.UPDATE, payload);
+      // A cache failure must not stop live updates: passengers already subscribed still get the push above.
+      store.setLast(bus.busId, payload).catch((err) => console.error('[store] write failed:', err.message));
+    },
+    metrics,
+    smoothing,
+  });
 
-  // ── Route geometry + historical baseline ────────────────────────────────
-  async function getRoute(routeId) {
-    const hit = routes.get(routeId);
-    if (hit && Date.now() - hit.at < ROUTE_CACHE_MS) return hit.prepared;
-    const doc = await Route.findOne({ routeId }).lean();
-    let prepared = null;
-    if (doc && doc.path?.coordinates?.length >= 2 && doc.stopPoints?.length >= 2) {
-      const rows = await SegmentLog.aggregate([
-        { $match: { routeId } },
-        { $group: { _id: '$segIndex', traversalSec: { $avg: '$traversalSec' }, dwellSec: { $avg: '$dwellSec' }, samples: { $sum: 1 } } },
-      ]);
-      const history = Object.fromEntries(rows.map((r) => [r._id, r]));
-      const line = doc.path.coordinates.map(([lng, lat]) => [lat, lng]);
-      const stops = doc.stopPoints.map((s) => ({ name: s.name, lat: s.location.coordinates[1], lng: s.location.coordinates[0] }));
-      prepared = prepareRoute(line, stops, history);
-    }
-    routes.set(routeId, { prepared, at: Date.now() });
-    return prepared;
-  }
-  const invalidateRoute = (routeId) => (routeId ? routes.delete(routeId) : routes.clear());
-
-  // ── One GPS fix through the pipeline ────────────────────────────────────
-  // `buffered` marks fixes replayed from the offline queue.
-  async function handleFix(bus, raw, { buffered = false, broadcast = true, recvTs = Date.now() } = {}) {
-    metrics.received += 1;
-    const v = validateFix(raw, recvTs);
-    if (!v.ok) { metrics.rejected += 1; return v.error; }
-    const fix = v.fix;
-
-    // Duplicates and out-of-order fixes: only strictly newer device timestamps move the bus.
-    if (bus.lastFix && fix.ts <= bus.lastFix.ts) { metrics.duplicates += 1; return 'duplicate'; }
-    if (bus.lastFix) {
-      const dt = (fix.ts - bus.lastFix.ts) / 1000;
-      if (!buffered && dt * 1000 < MIN_FIX_GAP_MS) { metrics.rejected += 1; return 'too frequent'; }
-      if (haversine([bus.lastFix.lat, bus.lastFix.lng], [fix.lat, fix.lng]) / dt > MAX_SPEED_MPS * 1.5) {
-        metrics.rejected += 1;
-        return 'position jump';
-      }
-    }
-    metrics.accepted += 1;
-    fixRate.hit(recvTs);
-    if (buffered) metrics.bufferedFixes += 1;
-    bus.lastFix = fix;
-    bus.lastSeen = recvTs;
-
-    // The raw fix is kept (jump checks, GpsLog.location); everything downstream (ETA, passengers) uses the smoothed point.
-    const sm = smoothFix(bus.smooth, fix, { ...SMOOTHING, enabled: SMOOTHING_ON });
-    bus.smooth = sm.state;
-    const used = SMOOTHING_ON ? { ...fix, lat: sm.lat, lng: sm.lng } : fix;
-
-    const route = await getRoute(bus.routeId);
-    let eta = null;
-    if (route) {
-      eta = computeEta(route, used, bus.distAlong);
-      bus.distAlong = eta.distAlong;
-      bus.nextStopIndex = Math.min(eta.segIndex + 1, route.stops.length - 1);
-      await track(bus, route, eta, used);
-    }
-
-    gpsBuffer.push({
-      busId: bus.busId, routeId: bus.routeId, tripId: bus.trip?.tripId,
-      location: { type: 'Point', coordinates: [fix.lng, fix.lat] }, // as the phone reported it
-      smoothed: { type: 'Point', coordinates: [used.lng, used.lat] }, // what the ETA engine and passengers used
-      accuracy: fix.accuracy,
-      speed: fix.speed, heading: fix.heading, deviceTs: new Date(fix.ts), buffered,
-    });
-
-    const live = recvTs - fix.ts <= LIVE_MAX_AGE_MS;
-    // Historical fixes (and all but the newest fix of a flushed batch) are logged and used for trip history,
-    // but never shown to passengers as the bus's current position.
-    if (!live || !broadcast) return 'accepted';
-
-    const payload = {
-      busId: bus.busId,
-      registration: bus.registration,
-      driverName: bus.driverName || null,
-      routeId: bus.routeId,
-      lat: used.lat, lng: used.lng, speed: fix.speed, heading: fix.heading,
-      deviceTs: fix.ts,
-      buffered,
-      serverRecvTs: recvTs,
-      serverEmitTs: Date.now(),
-      segIndex: eta ? eta.segIndex : null,
-      offRouteM: eta ? Math.round(eta.offRoute) : null,
-      finished: eta ? eta.finished : false,
-      stops: eta ? eta.stops : [],
-    };
-    io.to(room(bus.routeId)).emit('bus:update', payload);
-    // A cache failure must not stop live updates: passengers already subscribed still get the push above.
-    store.setLast(bus.busId, payload).catch((err) => console.error('[store] write failed:', err.message));
-    metrics.broadcasts += 1;
-    if (!buffered) { // latency is only meaningful for fixes sent as they were captured
-      sample(metrics.ingestMs, recvTs - fix.ts);
-      sample(metrics.processMs, payload.serverEmitTs - recvTs);
-    }
-    return 'accepted';
-  }
-
-  // Trip history: segment traversal/dwell samples and predicted-vs-actual arrival logs.
-  async function track(bus, route, eta, fix) {
-    // A bus waiting at the final stop after finishing is not on a trip until it is back near the start.
-    if (!bus.trip && eta.finished) return;
-    if (!bus.trip || (eta.segIndex < bus.trip.segIndex && eta.distAlong < 200)) {
-      if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date(fix.ts) });
-      bus.trip = startTrip(route, eta, fix, `TRIP-${crypto.randomUUID().slice(0, 8)}`);
-      await Trip.create({ tripId: bus.trip.tripId, busId: bus.busId, routeId: bus.routeId, startedAt: new Date(fix.ts) });
-      return;
-    }
-    const res = advance(bus.trip, route, eta, fix);
-    const base = { routeId: bus.routeId, tripId: bus.trip.tripId, busId: bus.busId };
-    if (res.segmentLogs.length) await SegmentLog.insertMany(res.segmentLogs.map((l) => ({ ...base, ...l, at: new Date(fix.ts) })));
-    if (res.etaLogs.length) {
-      await EtaLog.insertMany(res.etaLogs.map((l) => ({
-        ...base, ...l, predictedAt: new Date(l.predictedAt), predictedArrival: new Date(l.predictedArrival), actualArrival: new Date(l.actualArrival),
-        baselineArrival: l.baselineArrival == null ? undefined : new Date(l.baselineArrival),
-      })));
-    }
-    if (res.ended) {
-      await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date(fix.ts), completed: true });
-      bus.trip = null;
-      routes.delete(bus.routeId); // the next trip on this route uses the history this one just added
-    }
-  }
-
-  const flushTimer = setInterval(async () => {
-    if (!gpsBuffer.length) return;
-    const docs = gpsBuffer;
-    gpsBuffer = [];
-    try { await GpsLog.insertMany(docs, { ordered: false }); } catch (err) { console.error('[gps] log write failed:', err.message); }
-  }, GPS_FLUSH_MS);
-  flushTimer.unref();
-
-  async function goOffline(bus) {
-    bus.onDuty = false;
-    // The next duty period starts fresh: no open trip, and no comparison with the last position of this one.
-    if (bus.trip) await Trip.updateOne({ tripId: bus.trip.tripId }, { endedAt: new Date() });
-    bus.trip = null;
-    bus.lastFix = null;
-    bus.smooth = null;
-    bus.distAlong = undefined;
-    await store.remove(bus.busId);
-    io.to(room(bus.routeId)).emit('bus:offline', { busId: bus.busId });
+  // The bus leaves its route's map: its trip ends, its position is forgotten (the next duty period starts fresh, with
+  // no comparison against this one's last fix) and the route's passengers are told. They are told even when ending
+  // the trip or clearing the cache fails; the failure is then reported to the caller.
+  async function takeOffMap(bus) {
+    const routeId = bus.routeId;
+    const ending = recorder.endTrip(bus, false, Date.now());
+    Object.assign(bus, { onDuty: false, lastFix: null, smooth: null, distAlong: undefined, nextStopIndex: undefined });
+    const results = await Promise.allSettled([ending, store.remove(bus.busId)]);
+    io.to(room(routeId)).emit(EVENTS.OFFLINE, { busId: bus.busId });
+    const failed = results.find((r) => r.status === 'rejected');
+    if (failed) throw failed.reason;
   }
 
   // A failing handler (database or cache down) is logged and reported to the client instead of crashing the server.
@@ -191,7 +60,6 @@ function createRealtime(io, store) {
     }
   };
 
-  // ── Sockets ─────────────────────────────────────────────────────────────
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     socket.data.user = token ? readToken(token) : null;
@@ -202,22 +70,20 @@ function createRealtime(io, store) {
     const user = socket.data.user;
 
     // Passengers: one route room at a time, snapshot served from the cache.
-    socket.on('route:subscribe', safe(async ({ routeId } = {}, ack) => {
+    socket.on(EVENTS.SUBSCRIBE, safe(async ({ routeId } = {}, ack) => {
       if (typeof routeId !== 'string' || !routeId) return ack?.({ ok: false, error: 'routeId is required' });
-      [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
+      leaveRouteRooms(socket);
       socket.join(room(routeId));
       const snapshot = await store.byRoute(routeId);
-      socket.emit('route:snapshot', { routeId, buses: snapshot, serverTs: Date.now() });
+      socket.emit(EVENTS.SNAPSHOT, { routeId, buses: snapshot, serverTs: Date.now() });
       return ack?.({ ok: true, buses: snapshot.length });
     }));
-    socket.on('route:unsubscribe', () => {
-      [...socket.rooms].filter((r) => r.startsWith('route:')).forEach((r) => socket.leave(r));
-    });
+    socket.on(EVENTS.UNSUBSCRIBE, () => leaveRouteRooms(socket));
 
     // Drivers authenticate with the handshake token, or afterwards with driver:auth (used by the load tests).
     if (user?.role === 'driver') attachDriver(socket, user);
     else {
-      socket.once('driver:auth', ({ token } = {}, ack) => {
+      socket.once(EVENTS.AUTH, ({ token } = {}, ack) => {
         const claims = token ? readToken(token) : null;
         if (claims?.role !== 'driver') return ack?.({ ok: false, error: 'Invalid driver token' });
         attachDriver(socket, claims);
@@ -226,42 +92,45 @@ function createRealtime(io, store) {
     }
   });
 
-  function attachDriver(socket, user) {
+  function attachDriver(socket, claims) {
     // One live state per bus; a reconnect re-attaches to it so trip history survives network drops.
-    let bus = buses.get(user.busId);
+    let bus = buses.get(claims.busId);
     if (!bus) {
-      bus = { busId: user.busId, registration: user.registration, routeId: user.routeId, driverName: user.driverName, onDuty: false };
-      buses.set(user.busId, bus);
+      bus = { busId: claims.busId, routeId: claims.routeId, onDuty: false, ready: Promise.resolve() };
+      buses.set(claims.busId, bus);
+    } else if (bus.routeId !== claims.routeId) {
+      // The bus was moved to another route since its last token: it leaves the old route first, and its events wait
+      // for that, so nothing more is published to the old room.
+      bus.ready = takeOffMap(bus).catch((err) => console.error('[socket] leaving the old route failed:', err.message));
     }
-    Object.assign(bus, { routeId: user.routeId, driverName: user.driverName, socketId: socket.id, connected: true, connectedAt: Date.now() });
+    Object.assign(bus, {
+      routeId: claims.routeId, registration: claims.registration, driverName: claims.driverName,
+      socketId: socket.id, connected: true, connectedAt: Date.now(),
+    });
 
-    socket.on('driver:duty', safe(async ({ onDuty } = {}, ack) => {
-      if (onDuty) { bus.onDuty = true; bus.lastSeen = Date.now(); } else await goOffline(bus);
+    // Every driver event needs a route, and runs after a pending route change has finished.
+    const driverEvent = (fn) => safe(async (payload, ack) => {
+      if (!bus.routeId) return ack?.({ ok: false, error: NO_ROUTE });
+      await bus.ready;
+      return fn(payload, ack);
+    });
+
+    socket.on(EVENTS.DUTY, driverEvent(async ({ onDuty } = {}, ack) => {
+      if (onDuty) { bus.onDuty = true; bus.lastSeen = Date.now(); } else await takeOffMap(bus);
       ack?.({ ok: true, onDuty: bus.onDuty });
     }));
 
-    socket.on('gps:fix', safe(async (raw, ack) => {
-      if (!bus.routeId) return ack?.({ ok: false, error: 'No route assigned to this bus' });
+    socket.on(EVENTS.FIX, driverEvent(async (raw, ack) => {
       bus.onDuty = true;
-      const result = await handleFix(bus, raw);
-      return ack?.({ ok: result === 'accepted' || result === 'duplicate', result, ts: raw?.ts, nextStopIndex: bus.nextStopIndex ?? null });
+      const result = await pipeline.handleFix(bus, raw);
+      return ack?.({ ok: OK_RESULTS.has(result), result, ts: raw?.ts, nextStopIndex: bus.nextStopIndex ?? null });
     }));
 
-    // Offline buffer flush: fixes are replayed oldest-first so trip history stays correct, and duplicates
-    // (a batch re-sent because its ack was lost) are dropped by the timestamp check.
-    socket.on('gps:batch', safe(async (list, ack) => {
-      if (!Array.isArray(list) || list.length > 1000) return ack?.({ ok: false, error: 'Batch must be an array of at most 1000 fixes' });
-      if (!bus.routeId) return ack?.({ ok: false, error: 'No route assigned to this bus' });
-      metrics.batches += 1;
-      const recvTs = Date.now();
-      const counts = { accepted: 0, duplicate: 0, rejected: 0 };
-      const sorted = [...list].sort((a, b) => Number(a?.ts) - Number(b?.ts));
-      for (let i = 0; i < sorted.length; i += 1) {
-        const result = await handleFix(bus, sorted[i], { buffered: true, broadcast: i === sorted.length - 1, recvTs }); // eslint-disable-line no-await-in-loop
-        counts[result === 'accepted' || result === 'duplicate' ? result : 'rejected'] += 1;
-      }
-      return ack?.({ ok: true, ...counts, lastTs: sorted.length ? Number(sorted[sorted.length - 1]?.ts) : null });
-    }));
+    const batch = driverEvent(async (list, ack) => ack?.({ ok: true, ...(await pipeline.handleBatch(bus, list)) }));
+    socket.on(EVENTS.BATCH, (list, ack) => {
+      if (!Array.isArray(list) || list.length > MAX_BATCH) return ack?.({ ok: false, error: `Batch must be an array of at most ${MAX_BATCH} fixes` });
+      return batch(list, ack);
+    });
 
     socket.on('disconnect', () => {
       if (bus.socketId === socket.id) { bus.connected = false; bus.disconnectedAt = Date.now(); }
@@ -269,32 +138,12 @@ function createRealtime(io, store) {
     });
   }
 
-  // ── Read models for the admin dashboard ─────────────────────────────────
-  const stats = (list) => {
-    if (!list.length) return { count: 0, avg: null, p95: null, max: null };
-    const s = [...list].sort((a, b) => a - b);
-    return { count: s.length, avg: Math.round(s.reduce((a, b) => a + b, 0) / s.length), p95: s[Math.floor(s.length * 0.95)], max: s[s.length - 1] };
-  };
-
   return {
-    invalidateRoute,
     liveStatus: () => {
-      buses.forEach((b, id) => { if (!b.connected && Date.now() - (b.lastSeen || b.connectedAt || 0) > 15 * 60 * 1000) buses.delete(id); });
-      return [...buses.values()].map((b) => ({
-      busId: b.busId, registration: b.registration, routeId: b.routeId, driverName: b.driverName || null,
-      connected: !!b.connected, onDuty: !!b.onDuty, lastSeen: b.lastSeen || null,
-      lat: b.lastFix?.lat ?? null, lng: b.lastFix?.lng ?? null, speed: b.lastFix?.speed ?? null,
-      tripId: b.trip?.tripId || null,
-      }));
+      buses.forEach((b, id) => { if (!b.connected && Date.now() - (b.lastSeen || b.connectedAt || 0) > FORGET_BUS_MS) buses.delete(id); });
+      return [...buses.values()].map(liveRow);
     },
-    metrics: () => ({
-      uptimeSec: Math.round((Date.now() - metrics.startedAt) / 1000),
-      store: store.kind,
-      sockets: io.engine.clientsCount,
-      fixesPerMinute: fixRate.series(Date.now(), 12),
-      fixes: { received: metrics.received, accepted: metrics.accepted, rejected: metrics.rejected, duplicates: metrics.duplicates, buffered: metrics.bufferedFixes, batches: metrics.batches, broadcasts: metrics.broadcasts },
-      latencyMs: { deviceToServer: stats(metrics.ingestMs), serverProcessing: stats(metrics.processMs) },
-    }),
+    metrics: () => metrics.snapshot({ store: store.kind, sockets: io.engine.clientsCount }),
   };
 }
 

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { STATUS } = require('../lib/contract');
 
 const busSchema = new mongoose.Schema(
   {
@@ -33,8 +34,8 @@ const busSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Active', 'Idle', 'Maintenance'],
-      default: 'Active',
+      enum: STATUS.bus,
+      default: STATUS.bus[0],
     },
   },
   {

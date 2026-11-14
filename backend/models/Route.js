@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { STATUS } = require('../lib/contract');
 
 const routeSchema = new mongoose.Schema(
   {
@@ -60,8 +61,8 @@ const routeSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Active', 'Inactive', 'Under Construction'],
-      default: 'Active',
+      enum: STATUS.route,
+      default: STATUS.route[0],
     },
   },
   {

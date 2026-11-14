@@ -9,20 +9,10 @@ const mongoose = require('mongoose');
 const Route = require('../models/Route');
 const { ROUTES } = require('./data/routes');
 const places = require('./data/places.json');
-const { haversine, cumulativeDistances, projectOntoLine } = require('../lib/geo');
+const { haversine, cumulativeDistances, projectOntoLine, pointAt: along, offset, fromLineString } = require('../lib/geo');
 const { smoothFix, SMOOTHING } = require('../lib/smooth');
-
-// Reproducible random numbers.
-function rng(seed) {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const gauss = (rand) => Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+const { MONGODB_URI } = require('../config/env');
+const { rng, gauss, sigmaForMeanError } = require('./lib/rand');
 
 const SPEED = 8;
 const STEP = 3;
@@ -37,9 +27,9 @@ async function loadRoute(number) {
   let source = 'straight lines between the stops';
   line = stops;
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smart_bus_tracking', { serverSelectionTimeoutMS: 2000 });
+    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 2000 });
     const route = await Route.findOne({ routeNumber: number }).lean();
-    if (route?.path?.coordinates?.length > 1) { line = route.path.coordinates.map(([lng, lat]) => [lat, lng]); source = `the stored road line (${line.length} points)`; }
+    if (route?.path?.coordinates?.length > 1) { line = fromLineString(route.path.coordinates); source = `the stored road line (${line.length} points)`; }
     await mongoose.disconnect();
   } catch (err) { /* no database: straight lines */ }
   cum = cumulativeDistances(line);
@@ -47,12 +37,7 @@ async function loadRoute(number) {
   return `Route ${number}, ${(cum[cum.length - 1] / 1000).toFixed(1)} km, from ${source}`;
 }
 
-function pointAt(d) {
-  let i = 1;
-  while (i < cum.length - 1 && cum[i] < d) i += 1;
-  const t = Math.min(1, Math.max(0, (d - cum[i - 1]) / (cum[i] - cum[i - 1] || 1)));
-  return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t];
-}
+const pointAt = (d) => along(line, cum, d);
 
 // The true track: [{ ts, lat, lng, speed, stopped }]
 function truth() {
@@ -85,7 +70,7 @@ const f1 = (n) => n.toFixed(1).padStart(6);
 
 function run(meanErrM, cfg) {
   const rand = rng(7);
-  const sigma = meanErrM / 1.2533; // mean of a 2-D Gaussian error is sigma * 1.2533
+  const sigma = sigmaForMeanError(meanErrM);
   const track = truth();
   const rawErr = [];
   const smErr = [];
@@ -98,8 +83,7 @@ function run(meanErrM, cfg) {
     const mx = gauss(rand) * sigma;
     const my = gauss(rand) * sigma;
     const spike = rand() < 0.01 ? 80 : 0;
-    const lat = p.lat + ((my + spike) / 6371000) * (180 / Math.PI);
-    const lng = p.lng + (mx / (6371000 * Math.cos((p.lat * Math.PI) / 180))) * (180 / Math.PI);
+    const [lat, lng] = offset(p.lat, p.lng, mx, my + spike);
     const fix = { lat, lng, ts: 1e12 + p.ts, speed: p.speed, heading: null, accuracy: sigma * 1.5 };
     const res = smoothFix(state, fix, cfg);
     state = res.state;

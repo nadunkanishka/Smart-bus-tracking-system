@@ -1,11 +1,8 @@
 // Per-bus trip state machine (pure). Turns the stream of ETA results into the records the proposal needs:
 //   - segment logs (traversal + dwell time per segment) that become the ETA engine's historical baseline
 //   - ETA logs (predicted vs actual arrival per stop) for the mean-absolute-error evaluation metric
-const { DEFAULTS, baselineEtaSec } = require('./eta');
-
-const STOP_RADIUS_M = 40; // slow time this close to a stop counts as dwell
-const MAX_GAP_MS = 30000; // gaps longer than this (offline, off duty) are not counted as dwell
-const START_RADIUS_M = 150; // a trip that begins this close to the first stop counts as starting there
+const { baselineEtaSec } = require('./eta');
+const { STOP_RADIUS_M, DWELL_GAP_MS, START_RADIUS_M, MIN_MOVING_MPS } = require('./limits');
 
 // What was predicted for every upcoming stop at this moment: the engine's answer and, beside it, the plain baseline's.
 const snapshot = (route, eta, fix) => eta.stops
@@ -35,7 +32,7 @@ function advance(state, route, eta, fix) {
   state.lastTs = fix.ts;
 
   const nearStop = route.stopDist.some((d) => Math.abs(d - eta.distAlong) <= STOP_RADIUS_M);
-  if (nearStop && fix.speed < DEFAULTS.minMovingMps && dt > 0 && dt <= MAX_GAP_MS) state.dwellMs += dt;
+  if (nearStop && fix.speed < MIN_MOVING_MPS && dt > 0 && dt <= DWELL_GAP_MS) state.dwellMs += dt;
 
   const reached = eta.finished ? route.stops.length - 1 : eta.segIndex; // index of the last stop reached
   if (reached <= state.segIndex) return out; // still in the same segment (or GPS jitter backwards)

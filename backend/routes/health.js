@@ -1,8 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 
-// state: { store, realtime } filled in by index.js once the latest-fix store is ready.
-module.exports = (state, io) => {
+// services: { store, io } built by index.js before the routes are mounted.
+module.exports = ({ store, io }) => {
   const router = express.Router();
 
   router.get('/api/health', (req, res) => {
@@ -11,7 +11,7 @@ module.exports = (state, io) => {
       status: mongo ? 'ok' : 'degraded',
       message: 'Smart Bus Tracking API is running',
       mongo: mongo ? 'connected' : 'disconnected',
-      cache: state.store ? state.store.kind : 'starting',
+      cache: store.kind,
       sockets: io.engine.clientsCount,
     });
   });
