@@ -141,8 +141,6 @@ Each part reads its own file. Copy the `.env.example` beside it.
 | Admin | `apps/admin-dashboard/.env.local` | `REACT_APP_API_URL` | No (default `http://localhost:5000`) | Backend address |
 | | | `REACT_APP_OSRM_URL` | No (default the public OSRM server) | Routing server for the route editor |
 | Driver, passenger | `apps/*/.env` | `EXPO_PUBLIC_API_URL` | Real phones only | Backend address on your network |
-| | | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Native builds only | Google Maps key |
-| | | `GOOGLE_MAPS_API_KEY` | EAS builds | The same key, stored as an EAS environment variable (`eas env:create`) because a terminal variable never reaches EAS. See `SETUP-APKS.md` |
 | Driver | `apps/driver-app/.env` | `EXPO_PUBLIC_DISPATCH_PHONE` | No (default `+94 11 248 7700`) | Number shown for dispatch |
 
 After changing an `EXPO_PUBLIC_` value, restart Expo with `-c` so the cache is cleared.

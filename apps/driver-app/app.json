@@ -9,9 +9,6 @@
     "ios": {
       "bundleIdentifier": "lk.smartbus.driver",
       "supportsTablet": true,
-      "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
-      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Allow the driver app to share live bus location while on duty.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow the driver app to share the live bus location while on duty, including when the screen is off.",
@@ -28,15 +25,9 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION"
       ],
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
-        }
-      },
       "adaptiveIcon": {
-        "backgroundColor": "#FF9A6E",
+        "backgroundColor": "#130E0D",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "lk.smartbus.driver"
