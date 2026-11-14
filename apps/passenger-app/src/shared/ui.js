@@ -14,6 +14,10 @@ import { Activity, ChartColumn, ChevronRight, Gauge, House, Navigation, Route as
 import { IMAGES } from './busImages';
 import { MARKERS } from './busMarkers';
 
+// One platform switch for this file: web (react-native-web) or a phone.
+const IS_WEB = Platform.OS === 'web';
+const native = !IS_WEB;
+
 // Urbanist on web (same as the admin); native keeps the system font (no font-loading dependency).
 // Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
 // TOP_INSET is the one top inset every screen header uses. StatusBar.currentHeight can read 0 on edge-to-edge Android and
@@ -21,10 +25,10 @@ import { MARKERS } from './busMarkers';
 export const TOP_INSET = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0, StatusBar.currentHeight ?? 0) : 0;
 const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
-export const FONT = Platform.OS === 'web' ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
+export const FONT = IS_WEB ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
 // A text style for one role of the type scale, in the kit's font: { ...type('small'), color }.
 export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
-if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
+if (IS_WEB && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
   l.id = 'sb-font'; l.rel = 'stylesheet';
   l.href = 'https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700;800&display=swap';
@@ -55,16 +59,15 @@ function useReducedMotion() {
 }
 
 const webRing = (focused, color = COLORS.ring) =>
-  (Platform.OS === 'web' && focused ? { boxShadow: `0 0 0 3px ${color}` } : null);
+  (IS_WEB && focused ? { boxShadow: `0 0 0 3px ${color}` } : null);
 
 // Press feel shared by every tappable thing: instant scale(0.97) on press; on the web the release eases back
 // over 160ms (strong ease-out). Native releases instantly.
-const PRESS_WEB = Platform.OS === 'web'
+const PRESS_WEB = IS_WEB
   ? { transitionProperty: 'transform, background-color, opacity', transitionDuration: '160ms', transitionTimingFunction: `cubic-bezier(${EASE_CURVE.join(', ')})` }
   : null;
 const EASE_OUT = Easing.bezier(...EASE_CURVE);
 const EASE_DRAWER = Easing.bezier(0.32, 0.72, 0, 1);
-const native = Platform.OS !== 'web';
 
 // Drop-in for TouchableOpacity: scale feedback instead of an opacity flash, plus the keyboard focus ring.
 export const Tap = themed(function Tap({ onPress, style, children, scale = 0.97, ...rest }) {
@@ -114,7 +117,7 @@ export const VehicleLoader = themed(function VehicleLoader({ name = 'bus', label
   const x = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (reduced) return undefined;
-    const loop = Animated.loop(Animated.timing(x, { toValue: 1, duration: 2600, easing: Easing.bezier(0.45, 0, 0.55, 1), useNativeDriver: Platform.OS !== 'web' }));
+    const loop = Animated.loop(Animated.timing(x, { toValue: 1, duration: 2600, easing: Easing.bezier(0.45, 0, 0.55, 1), useNativeDriver: native }));
     loop.start();
     return () => loop.stop();
   }, [reduced, x]);
@@ -240,7 +243,7 @@ function ThemeToggle({ size = 44, style }) {
   const reduced = useReducedMotion();
   const turn = useRef(new Animated.Value(isDark ? 1 : 0)).current;
   useEffect(() => {
-    Animated.timing(turn, { toValue: isDark ? 1 : 0, duration: reduced ? 0 : 220, easing: EASE_OUT, useNativeDriver: Platform.OS !== 'web' }).start();
+    Animated.timing(turn, { toValue: isDark ? 1 : 0, duration: reduced ? 0 : 220, easing: EASE_OUT, useNativeDriver: native }).start();
   }, [isDark, reduced, turn]);
   const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['-90deg', '0deg'] });
   const c = COLORS.ink;
@@ -303,7 +306,7 @@ export const TextField = themed(function TextField({ label, icon, error, hint, s
           minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[4], borderRadius: RADII.sm,
           backgroundColor: COLORS.surface, borderWidth: 1.5,
           borderColor: error ? COLORS.danger : focused ? COLORS.primary : COLORS.outline,
-          ...(Platform.OS === 'web' && focused ? { boxShadow: error ? `0 0 0 4px ${COLORS.dangerSoft}` : `0 0 0 4px ${COLORS.primaryLight}` } : null),
+          ...(IS_WEB && focused ? { boxShadow: error ? `0 0 0 4px ${COLORS.dangerSoft}` : `0 0 0 4px ${COLORS.primaryLight}` } : null),
         }}
       >
         {React.isValidElement(icon) ? React.cloneElement(icon, { color: error ? COLORS.danger : COLORS.primary }) : icon}
@@ -314,7 +317,7 @@ export const TextField = themed(function TextField({ label, icon, error, hint, s
           onFocus={(e) => { setFocused(true); input.onFocus?.(e); }}
           onBlur={(e) => { setFocused(false); input.onBlur?.(e); }}
           placeholderTextColor={COLORS.mutedLight}
-          style={[{ flex: 1, ...TYPE.body, ...FONT, color: COLORS.ink, paddingVertical: 12, minHeight: 48 }, Platform.OS === 'web' ? { outlineStyle: 'none' } : null, inputStyle]}
+          style={[{ flex: 1, ...TYPE.body, ...FONT, color: COLORS.ink, paddingVertical: 12, minHeight: 48 }, IS_WEB ? { outlineStyle: 'none' } : null, inputStyle]}
         />
         {secure ? (
           <Pressable onPress={() => setShown((s) => !s)} accessibilityRole="button" accessibilityLabel={shown ? 'Hide password' : 'Show password'} hitSlop={12} style={{ width: 28, height: 44, alignItems: 'center', justifyContent: 'center' }}>
@@ -418,7 +421,7 @@ export const AuthLayout = themed(function AuthLayout({ scene = 'login', brand, t
   );
   // Edge-to-edge Android ignores adjustResize, so lift the form above the keyboard ourselves.
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" enabled={Platform.OS !== 'web'}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" enabled={native}>
     <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.backdrop }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={[{ flexGrow: 1 }, wide ? { flexDirection: 'row', minHeight: 640 } : { width: '100%', maxWidth: 560, alignSelf: 'center' }]}>
         {hero}
