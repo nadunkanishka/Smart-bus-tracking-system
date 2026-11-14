@@ -260,6 +260,24 @@ test('a route can have many buses, and a bus can run on one route only', async (
   for (const b of [b1, b2, b3]) await A.del(`/api/buses/${b.busId}`);
 });
 
+test('new ids skip records that were imported ahead of the counter', async (t) => {
+  if (guard(t)) return;
+  const A = as(admin);
+  const first = (await A.post('/api/drivers', { name: 'Ctr A', license: 'L-CTR-A', expiry: '2030-01-01', phone: '0714444441' })).data;
+  const n = Number(first.driverId.slice(4));
+  // A driver written straight into the database (an import) with the next two ids, so the counter is behind.
+  await mongoose.connect(`${BASE_URI}/${DB}`);
+  try {
+    const drivers = mongoose.connection.collection('drivers');
+    for (const k of [n + 1, n + 2]) await drivers.insertOne({ driverId: `DRV-${String(k).padStart(3, '0')}`, name: `Imported ${k}`, license: `L-IMP-${k}`, expiry: '2030-01-01', phone: `07155500${k}`, status: 'Active' });
+  } finally {
+    await mongoose.disconnect();
+  }
+  const made = await A.post('/api/drivers', { name: 'Ctr B', license: 'L-CTR-B', expiry: '2030-01-01', phone: '0714444442' });
+  assert.equal(made.status, 201, 'saving works instead of failing with "already in use"');
+  assert.equal(made.data.driverId, `DRV-${String(n + 3).padStart(3, '0')}`);
+});
+
 test('driver login finds the route of exactly that bus, not a bus whose registration contains it', async (t) => {
   if (guard(t)) return;
   const A = as(admin);
