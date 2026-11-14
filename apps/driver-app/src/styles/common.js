@@ -1,18 +1,14 @@
 import { StyleSheet } from 'react-native';
-import { COLORS, RADII, SHADOWS, TYPE, SPACE } from '../shared/theme';
-import { FONT } from '../shared/ui';
-import { TOP_INSET } from '../constants';
-
-// CHANGED: every value comes from shared tokens (COLORS / RADII / SHADOWS / TYPE); spacing is on the 4px scale.
-export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
+import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
+import { TOP_INSET, type } from '../shared/ui';
+import { COMMON_STYLES } from '../shared/shell';
 
 // Styles used by more than one screen.
 export const buildCommon = () => StyleSheet.create({
-  flex: { flex: 1 },
+  ...COMMON_STYLES,
   routeScroll: { paddingBottom: 120 },
   screenTitle: { ...type('display'), fontWeight: '500', color: COLORS.ink, paddingTop: TOP_INSET },
   screenSubHeader: { ...type('small'), color: COLORS.muted, marginTop: SPACE[1] },
-  headerBus: { position: 'absolute', right: 12, bottom: 34 },
   sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: SPACE[6], marginBottom: SPACE[3] },
   emptyLogBox: { alignItems: 'center', paddingVertical: SPACE[6], gap: SPACE[2] },
   emptyLog: { ...type('small'), color: COLORS.muted, textAlign: 'center' },

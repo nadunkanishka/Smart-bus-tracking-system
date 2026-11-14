@@ -1,20 +1,10 @@
 import React from 'react';
 import { Vehicle } from '../design/Vehicle';
 import Icon from './Icon';
+import { signOut } from '../api';
 
-const NAV = [
-  { section: 'Administrator', key: 'dashboard', label: 'Dashboard', icon: 'tiles' },
-  { section: 'Fleet', key: 'drivers', label: 'Drivers', icon: 'drivers' },
-  { section: 'Fleet', key: 'buses', label: 'Buses', icon: 'bus' },
-  { section: 'Network', key: 'routes', label: 'Routes', icon: 'route' },
-  { section: 'Network', key: 'live', label: 'Live Monitor', icon: 'pulse' },
-  { section: 'Network', key: 'analytics', label: 'Analytics', icon: 'chart' },
-  { section: 'Accounts', key: 'passengers', label: 'Passengers', icon: 'drivers' },
-  { section: 'Accounts', key: 'admins', label: 'Administrators', icon: 'lock' },
-  { section: 'System', key: 'settings', label: 'Settings', icon: 'settings' },
-];
-
-export default function Sidebar({ activePage, setActivePage, sidebarCollapsed, handleLogout }) {
+// `pages` and `sections` come from the page registry (pages.js), in menu order.
+export default function Sidebar({ pages, sections, activePage, setActivePage, sidebarCollapsed }) {
   return (
     <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-brand">
@@ -25,10 +15,10 @@ export default function Sidebar({ activePage, setActivePage, sidebarCollapsed, h
       </div>
 
       <nav className="sidebar-nav">
-        {['Administrator', 'Fleet', 'Network', 'Accounts', 'System'].map((section) => (
+        {sections.map((section) => (
           <div key={section}>
             <div className="nav-section-label">{section}</div>
-            {NAV.filter((item) => item.section === section).map((item) => (
+            {pages.filter((item) => item.section === section).map((item) => (
               <button
                 key={item.key}
                 type="button"
@@ -46,7 +36,7 @@ export default function Sidebar({ activePage, setActivePage, sidebarCollapsed, h
       </nav>
 
       <div className="sidebar-footer">
-        <button type="button" className="nav-item nav-logout" onClick={handleLogout} aria-label="Log out">
+        <button type="button" className="nav-item nav-logout" onClick={() => signOut()} aria-label="Log out">
           <Icon type="logout" className="nav-icon" />
           <span className="nav-label">Log out</span>
         </button>

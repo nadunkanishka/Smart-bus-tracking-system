@@ -2,12 +2,12 @@ import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
 import { CountUp, LiveDot, OverlapHeader, OverlapSheet, RingGauge, Vehicle } from '../shared/ui';
-import { SpeedometerIcon } from '../shared/icons';
 import { formatCoord } from '../utils';
 import { useD } from './DiagnosticsScreen.styles';
 
-export function DiagnosticsScreen({ busSpeed, gpsStatus, driverCoordinate, logs, isOnShift }) {
+export function DiagnosticsScreen({ duty }) {
   const D = useD();
+  const { busSpeed, gpsStatus, driverCoordinate, logs, isOnShift } = duty;
   const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView

@@ -1,23 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { smoothFix, SMOOTHING } = require('../lib/smooth');
-const { haversine } = require('../lib/geo');
+const { haversine, offset } = require('../lib/geo');
+const { rng, gauss } = require('../scripts/lib/rand');
 
-const M_LAT = 1 / 111195; // degrees of latitude per metre
-const M_LNG = 1 / (111195 * Math.cos((6.9 * Math.PI) / 180));
+const [, M_LNG] = offset(6.9, 0, 1, 0); // degrees of longitude per metre east, at the test latitude
+const [M_LAT] = offset(0, 0, 0, 1); // degrees of latitude per metre north
 const T0 = 1e12;
-
-// Small repeatable random numbers.
-function rng(seed) {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const gauss = (r) => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
 
 // Runs fixes through the smoother and returns the smoothed points.
 function run(fixes) {

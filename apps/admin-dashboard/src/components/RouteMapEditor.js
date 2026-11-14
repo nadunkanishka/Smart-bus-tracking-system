@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { TILE_ATTRIBUTION, TILE_URL, routeColor, useThemeMode } from '../theme';
+import { MAP_CENTER, TILE_ATTRIBUTION, TILE_URL, routeColor } from '../map';
 import { MapContainer, Marker, Polyline, TileLayer, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
 // Draw a route's road path and register its stops on an OpenStreetMap map.
 // path: [[lat, lng], ...]   stops: [{ name, lat, lng }, ...] in travel order (first = start terminal).
-const COLOMBO = [6.9, 79.87];
 const OSRM = process.env.REACT_APP_OSRM_URL || 'https://router.project-osrm.org/route/v1/driving';
 
 const stopIcon = (n) => L.divIcon({
@@ -28,11 +27,10 @@ function ClickCapture({ onClick }) {
 }
 
 export default function RouteMapEditor({ path, stops, onChange }) {
-  const theme = useThemeMode();
   const [mode, setMode] = useState('stop'); // 'stop' | 'path'
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const center = useMemo(() => (stops[0] ? [stops[0].lat, stops[0].lng] : path[0] || COLOMBO), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const center = useMemo(() => (stops[0] ? [stops[0].lat, stops[0].lng] : path[0] || MAP_CENTER), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (next) => onChange({ path, stops, ...next, distanceKm: km(next.path || path) });
 
@@ -85,9 +83,9 @@ export default function RouteMapEditor({ path, stops, onChange }) {
 
       <div className="route-editor-map">
         <MapContainer center={center} zoom={13} style={{ width: '100%', height: '100%' }}>
-          <TileLayer key={theme} attribution={TILE_ATTRIBUTION} url={TILE_URL[theme]} />
+          <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
           <ClickCapture onClick={handleClick} />
-          {path.length > 1 && <Polyline positions={path} pathOptions={{ color: routeColor(theme), weight: 5 }} />}
+          {path.length > 1 && <Polyline positions={path} pathOptions={{ color: routeColor(), weight: 5 }} />}
           {mode === 'path' && path.length <= 200 && path.map((p, i) => <Marker key={`v${i}`} position={p} icon={vertexIcon} interactive={false} />)}
           {stops.map((s, i) => (
             <Marker

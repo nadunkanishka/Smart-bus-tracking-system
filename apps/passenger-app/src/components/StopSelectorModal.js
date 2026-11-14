@@ -1,18 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
 import { Button, Chip, Sheet, Tap, SheetModal } from '../shared/ui';
 import { CheckIcon, ChevronDownIcon, FlagIcon, MapPinIcon } from '../shared/icons';
 import { useS } from './StopSelectorModal.styles';
 
-export function StopSelectorModal({
-  isStopModalOpen, setIsStopModalOpen, routes, selectedRoute, selectRoute, isBoardingOpen,
-  setIsBoardingOpen, isDestOpen, setIsDestOpen, boardingStop, setBoardingStop, destinationStop,
-  setDestinationStop, tracked, boardingIndex, destinationIndex,
-}) {
+// trip: the route list and stop selection from useRoutes. Which picker is unfolded is the modal's own state.
+export function StopSelectorModal({ visible, onClose, trip, tracked }) {
   const S = useS();
+  const { routes, selectedRoute, selectRoute, boardingStop, setBoardingStop, destinationStop, setDestinationStop, boardingIndex, destinationIndex } = trip;
+  const [isBoardingOpen, setIsBoardingOpen] = useState(false);
+  const [isDestOpen, setIsDestOpen] = useState(false);
   return (
-    <SheetModal visible={isStopModalOpen} onClose={() => setIsStopModalOpen(false)}>
+    <SheetModal visible={visible} onClose={onClose}>
         <Sheet>
           <View style={S.modalHandleRow}>
             <View style={S.modalHandle} />
@@ -20,7 +20,7 @@ export function StopSelectorModal({
 
           <View style={S.modalHeaderRow}>
             <Text style={S.modalTitle}>Select Your Stops</Text>
-            <Button title="Done" tone="primary" size="sm" full={false} onPress={() => setIsStopModalOpen(false)} />
+            <Button title="Done" tone="primary" size="sm" full={false} onPress={onClose} />
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>

@@ -7,13 +7,14 @@
 //   (c) time to finish the current segment from instantaneous speed
 //   (d) add historical average traversal + dwell time for every later segment
 const { cumulativeDistances, projectOntoLine, haversine } = require('./geo');
+const L = require('./limits');
 
 const DEFAULTS = {
-  speedMps: 5.5, // ~20 km/h urban bus average, used when a segment has no history yet
+  speedMps: L.DEFAULT_SPEED_MPS, // used when a segment has no history yet
   dwellSec: 20, // default dwell per intermediate stop without history
-  minMovingMps: 1.5, // below this the bus is treated as stopped/crawling
-  baselineSpeedMps: 5.5, // the plain comparison estimate: straight-line distance / this average speed (about 20 km/h)
-  arriveM: 40, // within this distance of the final stop the trip counts as finished (buses rarely park on the exact point)
+  minMovingMps: L.MIN_MOVING_MPS,
+  baselineSpeedMps: L.BASELINE_SPEED_MPS, // the plain comparison estimate: straight-line distance / this average speed
+  arriveM: L.ARRIVE_RADIUS_M, // within this distance of the final stop the trip counts as finished (buses rarely park on the exact point)
 };
 
 // line: [[lat,lng]...], stops: [{ name, lat, lng }], history: { [segIndex]: { traversalSec, dwellSec, samples } }
@@ -45,7 +46,6 @@ function prepareRoute(line, stops, history = {}) {
   return { line, cum, stops, stopDist, segments, length: cum[cum.length - 1] };
 }
 
-// fix: { lat, lng, speed (m/s) }, near: last known distAlong for this bus (optional)
 function computeEta(route, fix, near) {
   const proj = projectOntoLine(route.line, route.cum, [fix.lat, fix.lng], near); // (a)
   const d = proj.distAlong;
@@ -74,7 +74,6 @@ function computeEta(route, fix, near) {
   return {
     distAlong: d,
     offRoute: proj.offRoute,
-    snapped: proj.point,
     segIndex: seg,
     remainingInSegment: remaining,
     finished: atEnd,

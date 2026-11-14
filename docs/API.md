@@ -1,6 +1,6 @@
 # API specification
 
-Base URL: `http://localhost:5000` in development. REST paths are under `/api`. Bodies and responses are JSON. Errors are `{ "error": "message" }`.
+Base URL: `http://localhost:5000` in development. REST paths are under `/api`. Bodies and responses are JSON. Errors are `{ "error": "message" }`: 400 for invalid input, 401 without a valid token, 403 for the wrong role, 404 for an unknown record, 409 for a duplicate (registration, license, username), 500 otherwise. Required roles per path are in `backend/middleware/access.js`.
 
 Protected endpoints need `Authorization: Bearer <token>`. Login endpoints are limited to 50 requests per 15 minutes per IP.
 
@@ -77,7 +77,7 @@ Bus responses never include the password. They carry `hasPassword: true/false`.
 | GET | `/api/live` | Per bus: `connected`, `onDuty`, `lastSeen`, `lat`, `lng`, `speed`, `tripId` |
 | GET | `/api/metrics` | Fix counters, open sockets, cache kind, latency (`deviceToServer`, `serverProcessing`: `avg`, `p95`, `max` in ms), `fixesPerMinute` (accepted positions in each of the last 12 minutes: `t`, `n`) |
 | GET | `/api/analytics/segments?routeId=RT-001` | Per segment: `samples`, `traversalSec` (`avg`, `min`, `p50`, `p90`, `max`), `dwellSecAvg`, raw `values` |
-| GET | `/api/analytics/eta?routeId=RT-001` | `samples`, `maeSec`, `biasSec`, `maxAbsSec`, `compared` (`samples`, `engineMaeSec`, `baselineMaeSec`, `improvementPct`: engine against a straight-line estimate on the same arrivals), `byHorizon` (the same split by how far ahead the prediction was made) |
+| GET | `/api/analytics/eta?routeId=RT-001` | `samples`, `maeSec`, `biasSec`, `maxAbsSec`, `compared` (`samples`, `engineMaeSec`, `baselineMaeSec`, `improvementPct`: engine against a straight-line estimate on the same arrivals), `byHorizon` (the same split by how far ahead the prediction was made: under 2 min, 2 to 5, 5 to 10, 10 to 20, over 20 min; empty horizons are left out) |
 
 ## Socket.IO events
 
@@ -87,11 +87,11 @@ Connect to the base URL. Drivers pass their token in the handshake: `io(url, { a
 
 | Direction | Event | Payload |
 |---|---|---|
-| client → server | `route:subscribe` | `{ routeId }`. Leaves any previous route room. Ack: `{ ok, buses }` |
+| client → server | `route:subscribe` | `{ routeId }`. Leaves any previous route room. Ack: `{ ok, buses }`, where `buses` is the number of buses (the array arrives in `route:snapshot`) |
 | client → server | `route:unsubscribe` | – |
 | server → client | `route:snapshot` | `{ routeId, buses: [busUpdate], serverTs }`, sent once after subscribing |
 | server → client | `bus:update` | `busUpdate` (below), on every accepted live fix |
-| server → client | `bus:offline` | `{ busId }`, when a driver goes off duty |
+| server → client | `bus:offline` | `{ busId }`, when a driver goes off duty, or when the bus signs in again assigned to another route (sent to the old route) |
 
 `busUpdate`:
 
@@ -112,7 +112,9 @@ Connect to the base URL. Drivers pass their token in the handshake: `io(url, { a
 
 | Direction | Event | Payload |
 |---|---|---|
-| client → server | `driver:duty` | `{ onDuty: true/false }`. Off duty removes the bus from the map |
-| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts, seq }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, nextStopIndex }` where `result` is `accepted`, `duplicate` or a rejection reason |
-| client → server | `gps:batch` | Array of up to 1000 fixes from the offline queue. Ack: `{ ok, accepted, duplicate, rejected, lastTs }` |
-| client → server | `driver:auth` | `{ token }`. Alternative to the handshake token, used by the load tests |
+| client → server | `driver:duty` | `{ onDuty: true/false }`. Off duty removes the bus from the map. Ack: `{ ok: true, onDuty }` |
+| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, ts, nextStopIndex }` (`ts` echoes the fix's `ts`) where `result` is `accepted`, `duplicate` (also an out-of-order fix), `too frequent`, `position jump` or a validation message; `ok` is true for `accepted` and `duplicate` (the app may drop the fix) |
+| client → server | `gps:batch` | Array of up to 1000 fixes (`MAX_BATCH` in the contract) from the offline queue, replayed oldest first. A fix without a numeric `ts` counts as rejected. Ack: `{ ok: true, accepted, duplicate, rejected, lastTs }` (`lastTs`: the newest usable `ts`, or null); `{ ok: false, error: 'Batch must be an array of at most 1000 fixes' }` otherwise |
+| client → server | `driver:auth` | `{ token }` (a driver token). Alternative to the handshake token, used by the load tests. Ack: `{ ok: true }` or `{ ok: false, error: 'Invalid driver token' }`; accepted once per connection |
+
+Every driver event acks `{ ok: false, error: 'No route assigned to this bus' }` when the token has no route, and `{ ok: false, error: 'Server error' }` when the database or cache fails (the failure is logged). A driver token is `{ role: 'driver', busId, registration, routeId, driverName }` (`driverClaims` in `backend/lib/auth.js`).

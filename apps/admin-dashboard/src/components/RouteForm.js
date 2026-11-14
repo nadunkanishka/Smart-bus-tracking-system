@@ -1,12 +1,14 @@
 import React from 'react';
 import Field from './Field';
 import RouteMapEditor from './RouteMapEditor';
+import { formatBusRef } from '../design/contract';
+import { seats } from '../format';
 
 export default function RouteForm({ formData, updateField, setFormData, buses }) {
   return (
     <div className="modal-form">
       <div className="form-grid">
-        <Field label="Route Name *">
+        <Field label="Route Name *" icon="route">
           <input
             className="form-input"
             value={formData.name}
@@ -14,7 +16,7 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
             placeholder="e.g. Pettah to Homagama"
           />
         </Field>
-        <Field label="Route Number">
+        <Field label="Route Number" icon="hash">
           <input
             className="form-input"
             value={formData.routeNumber}
@@ -24,7 +26,7 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
         </Field>
       </div>
       <div className="form-grid">
-        <Field label="Start Terminal *">
+        <Field label="Start Terminal *" icon="pin">
           <input
             className="form-input"
             value={formData.start}
@@ -32,7 +34,7 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
             placeholder="Origin Terminal"
           />
         </Field>
-        <Field label="End Terminal *">
+        <Field label="End Terminal *" icon="pin">
           <input
             className="form-input"
             value={formData.end}
@@ -42,7 +44,7 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
         </Field>
       </div>
       <div className="form-grid">
-        <Field label="Distance (km) *">
+        <Field label="Distance (km) *" icon="ruler">
           <input
             type="number"
             className="form-input"
@@ -51,7 +53,7 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
             placeholder="120"
           />
         </Field>
-        <Field label="Assign Bus (From Fleet)">
+        <Field label="Assign Bus (From Fleet)" icon="bus">
           <select
             className="form-input"
             value={formData.assignedBus}
@@ -59,8 +61,8 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
           >
             <option value="">-- No Bus Assigned --</option>
             {buses.map((b) => (
-              <option key={b.id} value={`${b.registration} (${b.id})`}>
-                {b.registration} — {b.id} ({b.capacity})
+              <option key={b.id} value={formatBusRef({ registration: b.registration, busId: b.id })}>
+                {b.registration} — {b.id} ({seats(b.capacity)})
               </option>
             ))}
           </select>

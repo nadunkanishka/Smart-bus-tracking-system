@@ -21,7 +21,7 @@ Live bus tracking for Sri Lanka's public bus network. A driver's phone sends its
 | `docs/` | Architecture, API, database, deployment, evaluation, and [where things live](docs/STRUCTURE.md) |
 | `loadtest/` | Load test used in the evaluation |
 
-Looking for a specific file? [docs/STRUCTURE.md](docs/STRUCTURE.md) has a "find it fast" table. Each folder above also has its own short README.
+Looking for a specific file? [docs/STRUCTURE.md](docs/STRUCTURE.md) has a "find it fast" table. `backend/`, `shared/` and each app also have their own short README.
 
 ## Shortcut commands
 
@@ -33,7 +33,7 @@ Each part has its own `package.json` and `node_modules`. The root `package.json`
 | `npm run dev:backend` | Start the backend with auto-restart |
 | `npm run dev:admin` | Start the admin dashboard |
 | `npm run dev:driver` / `npm run dev:passenger` | Start an Expo app (ports 8081 / 8082) |
-| `npm run seed` | Add the 25 Colombo routes (`npm run seed -- 138` adds just one) |
+| `npm run seed` | Add the Colombo routes (`npm run seed -- 138` adds just one) |
 | `npm test` | Backend and admin tests |
 | `npm run build` | Production build of the admin dashboard |
 | `npm run sync` | Copy `shared/` into the apps |
@@ -46,7 +46,7 @@ The step-by-step guide below uses the long form of each command so you can see w
 
 ## Before you start (install once)
 
-1. **Node.js 20 or newer.** Download from <https://nodejs.org>. Check it with `node -v`.
+1. **Node.js 22 or newer.** Download from <https://nodejs.org>. Check it with `node -v`.
 2. **MongoDB Community Server.** Download from <https://www.mongodb.com/try/download/community>, install it with the default settings and let it run as a service. It listens on `127.0.0.1:27017`, which is where the backend looks. (MongoDB Compass, the visual tool, is optional.)
 3. **Expo Go** on your phone, only if you want to try the apps on a real phone. Install it from the Play Store or App Store. The apps use **Expo SDK 57**, so keep Expo Go up to date: the store version only opens projects on its own SDK.
 
@@ -86,7 +86,7 @@ JWT_SECRET=type-any-long-random-text-here
 ADMIN_PASSWORD=choose-a-password-for-the-admin
 ```
 
-Add the Colombo routes (25 routes with road lines and stops on the map; Route 138, Pettah to Homagama, is the pilot route). You only need this once. It is safe to run again:
+Add the Colombo routes (with road lines and stops on the map; Route 138, Pettah to Homagama, is the pilot route). You only need this once. It is safe to run again:
 
 ```bash
 npm run seed
@@ -185,7 +185,7 @@ The apps talk to the backend, and only the backend talks to the database:
 phone apps and websites  ->  backend (Railway)  ->  MongoDB Atlas
 ```
 
-Free hosting is for building and the pilot: the Railway trial covers about a month, and the free database has no backups, so export your data before and after each pilot day. [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) has the longer reference (Docker, Redis, Netlify sites, stress test hosting).
+Free hosting is for building and the pilot: the Railway trial covers about a month, and the free database has no backups, so export your data before and after each pilot day. [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) has the longer reference (Docker, Redis, environment variables, Netlify sites, free-hosting limits).
 
 ---
 
@@ -237,7 +237,7 @@ cd backend && npm test                              # ETA engine, GPS pipeline, 
 cd apps/admin-dashboard && npm test -- --watchAll=false
 ```
 
-**The design system.** Colours, type, radii and shadows live in `shared/tokens.js`. The shared mobile components live in `shared/native/`, the bus illustrations in `shared/buses/`, and the navigation icons in `shared/navIcons.js`. After changing anything in `shared/`, copy it into the apps (the copies land in each mobile app's `src/shared/` and the admin's `src/design/`; never edit them there):
+**The design system.** Colours, type, radii and shadows live in `shared/tokens.js`. The shared mobile components live in `shared/native/`, the bus illustrations in `shared/buses/`, and the navigation icons in `shared/native/icons.js`. After changing anything in `shared/`, copy it into the apps (the copies land in each mobile app's `src/shared/` and the admin's `src/design/`; never edit them there):
 
 ```bash
 node shared/sync.js
@@ -263,5 +263,5 @@ Open `shared/buses/export.html` in a browser to preview every bus image.
 | [docs/SETUP-MONGODB.md](docs/SETUP-MONGODB.md) | Step by step: the free Atlas database, loading the routes, backups |
 | [docs/SETUP-RAILWAY.md](docs/SETUP-RAILWAY.md) | Step by step: the backend on Railway, variables, CORS, testing with a simulated bus |
 | [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Step by step: building and installing the driver and passenger APKs, the Maps key |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Reference: Docker, Redis, Netlify sites, Render and Railway options, stress test hosting |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Reference: Docker, Redis, environment variables, Netlify sites, free-hosting limits, post-deploy checks |
 | [docs/EVALUATION.md](docs/EVALUATION.md) | Measuring latency, ETA accuracy and load; user study |

@@ -3,10 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { request } from '../shared/api';
 import { SESSION_KEY } from '../constants';
 
-// Passenger account: the remembered session, the login and register form fields, and the calls that sign in.
-// onSessionStart(message) runs after a successful login or registration.
-export function useAuth({ onSessionStart }) {
-  // Account session ({ token, user }) from the backend
+// Passenger account: the remembered session ({ token, user }), the login and register form fields, and the calls
+// that sign in. handleLogin and handleRegister resolve to a welcome message once a session started (null otherwise),
+// so the caller decides what happens next.
+export function useAuth() {
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
@@ -30,28 +30,29 @@ export function useAuth({ onSessionStart }) {
       .finally(() => setBooting(false));
   }, []);
 
-  function startSession(data, message) {
+  function startSession(data) {
     const next = { token: data.token, user: data.user };
     setSession(next);
     if (rememberMe) AsyncStorage.setItem(SESSION_KEY, JSON.stringify(next)).catch(() => {});
     setLoginPassword('');
     setRegPassword('');
     setRegConfirm('');
-    onSessionStart(message);
   }
 
   async function handleLogin() {
     setAuthError('');
     if (!loginUsername.trim() || !loginPassword) {
       setAuthError('Enter your username and password.');
-      return;
+      return null;
     }
     setAuthLoading(true);
     try {
       const data = await request('/passengers/login', { method: 'POST', body: { username: loginUsername.trim(), password: loginPassword } });
-      startSession(data, `Welcome back, ${data.user.name}!`);
+      startSession(data);
+      return `Welcome back, ${data.user.name}!`;
     } catch (err) {
       setAuthError(err.message);
+      return null;
     } finally {
       setAuthLoading(false);
     }
@@ -65,9 +66,11 @@ export function useAuth({ onSessionStart }) {
         method: 'POST',
         body: { name: regFullName.trim(), username: regUsername.trim(), phone: regPhone.trim(), password: regPassword },
       });
-      startSession(data, `Account created! Welcome, ${data.user.name}.`);
+      startSession(data);
+      return `Account created! Welcome, ${data.user.name}.`;
     } catch (err) {
       setAuthError(err.message);
+      return null;
     } finally {
       setAuthLoading(false);
     }
@@ -112,7 +115,7 @@ export function useAuth({ onSessionStart }) {
     updateProfile,
     changePassword,
     deleteAccount,
-    // Everything <AuthScreen> needs, except showToast.
+    // Everything <AuthScreen> needs, except showToast (App wraps handleLogin and handleRegister to act on the result).
     form: {
       authMode, switchAuthMode, authError, authLoading,
       loginUsername, setLoginUsername, loginPassword, setLoginPassword, rememberMe, setRememberMe, handleLogin,

@@ -17,6 +17,7 @@ export function AuthScreen({
   return authMode === 'login' ? (
     <AuthLayout
       scene="login"
+      brand="SmartBus"
       tagline="Real-time bus tracking for Colombo commuters"
       title="Welcome back"
       subtitle="Where are you going today?"
@@ -65,6 +66,7 @@ export function AuthScreen({
   ) : (
     <AuthLayout
       scene="register"
+      brand="SmartBus"
       tagline="Personalise your daily commute"
       title="Create account"
       subtitle="It takes less than a minute."

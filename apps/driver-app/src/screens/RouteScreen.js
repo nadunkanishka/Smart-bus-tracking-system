@@ -7,8 +7,10 @@ import { COLORS } from '../shared/theme';
 import { MAP_PADDING } from '../constants';
 import { useD } from './RouteScreen.styles';
 
-export function RouteScreen({ route, busMarkers, routeNumber, routeLabel, routeStops, currentStopIndex, isOnShift }) {
+export function RouteScreen({ session, duty }) {
   const D = useD();
+  const { route, routeNumber, routeLabel, routeStops } = session;
+  const { busMarkers, currentStopIndex, isOnShift } = duty;
   return (
     <ScrollView
       style={D.flex}

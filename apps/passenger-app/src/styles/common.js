@@ -1,13 +1,11 @@
 import { StyleSheet } from 'react-native';
-import { COLORS, TYPE, SPACE } from '../shared/theme';
-import { FONT } from '../shared/ui';
-
-// CHANGED: every value comes from shared tokens (COLORS / RADII / SHADOWS / TYPE); spacing is on the 4px scale.
-export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
+import { COLORS, SPACE } from '../shared/theme';
+import { type } from '../shared/ui';
+import { COMMON_STYLES } from '../shared/shell';
 
 // Styles used by more than one screen.
 export const buildCommon = () => StyleSheet.create({
-  flex: { flex: 1 },
+  ...COMMON_STYLES,
   link: { ...type('smallBold'), color: COLORS.accentText },
   linkTap: { minHeight: 44, justifyContent: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: SPACE[6], gap: SPACE[1] },

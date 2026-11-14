@@ -9,8 +9,10 @@
 // the same .env as the backend. Latency is measured on one clock (this machine): device timestamp -> passenger receive.
 require('dotenv').config();
 const { io } = require('socket.io-client');
-const { signToken } = require('../lib/auth');
-const { cumulativeDistances, haversine } = require('../lib/geo');
+const { signToken, driverClaims } = require('../lib/auth');
+const { cumulativeDistances, haversine, pointAt, offset, fromLineString } = require('../lib/geo');
+const { gauss, sigmaForMeanError } = require('./lib/rand');
+const { EVENTS } = require('../lib/contract');
 
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -26,23 +28,14 @@ const [OFF_FROM, OFF_TO] = String(arg('offline', '')).split(':').map(Number);
 const START = Number(arg('start', 0)); // 0..1: where along the route the first bus begins
 const NOISE = Number(arg('noise', 0)); // metres: mean GPS error added to every fix (0 = a perfect track)
 const QUIET = process.argv.includes('--quiet');
-const gauss = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random());
 
 if (!ROUTE) { console.error('Usage: npm run replay -- --route <routeId> [--buses N] [--offline from:to]'); process.exit(1); }
-
-const pointAt = (line, cum, d) => {
-  const dist = Math.min(d, cum[cum.length - 1]);
-  let i = 1;
-  while (i < cum.length - 1 && cum[i] < dist) i += 1;
-  const t = (dist - cum[i - 1]) / (cum[i] - cum[i - 1] || 1);
-  return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t];
-};
 
 (async () => {
   const routes = await (await fetch(`${URL}/api/routes`)).json();
   const route = routes.find((r) => r.routeId === ROUTE);
   if (!route?.path?.coordinates?.length) { console.error(`Route ${ROUTE} not found or has no path. Run "npm run seed" first.`); process.exit(1); }
-  const line = route.path.coordinates.map(([lng, lat]) => [lat, lng]);
+  const line = fromLineString(route.path.coordinates);
   const cum = cumulativeDistances(line);
   const total = cum[cum.length - 1];
 
@@ -53,9 +46,9 @@ const pointAt = (line, cum, d) => {
   let updates = 0;
   let lastPrint = 0;
   const passenger = io(URL, { transports: ['websocket'] });
-  passenger.on('connect', () => passenger.emit('route:subscribe', { routeId: ROUTE }));
-  passenger.on('route:snapshot', (s) => console.log(`[passenger] snapshot from cache: ${s.buses.length} bus(es)`));
-  passenger.on('bus:update', (u) => {
+  passenger.on('connect', () => passenger.emit(EVENTS.SUBSCRIBE, { routeId: ROUTE }));
+  passenger.on(EVENTS.SNAPSHOT, (s) => console.log(`[passenger] snapshot from cache: ${s.buses.length} bus(es)`));
+  passenger.on(EVENTS.UPDATE, (u) => {
     updates += 1;
     if (!u.buffered) latencies.push(Date.now() - u.deviceTs);
     if (truth.has(u.deviceTs)) shown.push(haversine(truth.get(u.deviceTs), [u.lat, u.lng]));
@@ -69,7 +62,8 @@ const pointAt = (line, cum, d) => {
   // Drivers
   const drivers = Array.from({ length: BUSES }, (_, n) => {
     const busId = `SIM-${String(n + 1).padStart(2, '0')}`;
-    const socket = io(URL, { transports: ['websocket'], auth: { token: signToken({ role: 'driver', busId, registration: busId, routeId: ROUTE, driverName: 'Simulator' }) } });
+    const token = signToken(driverClaims({ busId, registration: busId }, { routeId: ROUTE }, 'Simulator'));
+    const socket = io(URL, { transports: ['websocket'], auth: { token } });
     return { busId, socket, dist: total * START + (total / BUSES) * n * 0.6, queue: [], sent: 0, offline: false };
   });
 
@@ -78,24 +72,24 @@ const pointAt = (line, cum, d) => {
     const elapsed = (Date.now() - started) / 1000;
     drivers.forEach((d, n) => {
       // reach the end exactly once, then go off duty and start again from the first stop as a new trip
-      if (d.dist >= total) { d.dist = 0; d.socket.emit('driver:duty', { onDuty: false }); }
+      if (d.dist >= total) { d.dist = 0; d.socket.emit(EVENTS.DUTY, { onDuty: false }); }
       else d.dist = Math.min(total, d.dist + SPEED * (INTERVAL / 1000));
       const [lat, lng] = pointAt(line, cum, d.dist);
       const ts = Date.now();
       truth.set(ts, [lat, lng]);
       if (truth.size > 5000) truth.delete(truth.keys().next().value);
-      const sigma = NOISE / 1.2533; // the mean of a 2-D Gaussian error is sigma * 1.2533
-      const noisy = NOISE > 0 ? { lat: lat + ((gauss() * sigma) / 6371000) * (180 / Math.PI), lng: lng + ((gauss() * sigma) / (6371000 * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI) } : { lat, lng };
-      const fix = { lat: noisy.lat, lng: noisy.lng, speed: SPEED, heading: 0, accuracy: NOISE > 0 ? Math.round(NOISE * 1.2) : 5, ts, seq: d.sent += 1 };
+      const sigma = sigmaForMeanError(NOISE);
+      const [nLat, nLng] = NOISE > 0 ? offset(lat, lng, gauss() * sigma, gauss() * sigma) : [lat, lng];
+      const fix = { lat: nLat, lng: nLng, speed: SPEED, heading: 0, accuracy: NOISE > 0 ? Math.round(NOISE * 1.2) : 5, ts, seq: d.sent += 1 };
 
       const shouldBeOffline = n === 0 && Number.isFinite(OFF_FROM) && elapsed >= OFF_FROM && elapsed < OFF_TO;
       if (shouldBeOffline && !d.offline) { d.offline = true; console.log(`[${d.busId}] signal lost, buffering fixes`); }
       if (!shouldBeOffline && d.offline) {
         d.offline = false;
         const batch = d.queue.splice(0);
-        d.socket.emit('gps:batch', batch, (ack) => console.log(`[${d.busId}] signal back, flushed ${batch.length} buffered fixes ->`, ack));
+        d.socket.emit(EVENTS.BATCH, batch, (ack) => console.log(`[${d.busId}] signal back, flushed ${batch.length} buffered fixes ->`, ack));
       }
-      if (d.offline) d.queue.push(fix); else d.socket.emit('gps:fix', fix);
+      if (d.offline) d.queue.push(fix); else d.socket.emit(EVENTS.FIX, fix);
     });
     if (elapsed >= DURATION) finish();
   }, INTERVAL);
@@ -112,7 +106,7 @@ const pointAt = (line, cum, d) => {
         console.log(`GPS noise ${NOISE} m: the passenger's bus was ${Math.round((e.reduce((a, b) => a + b, 0) / e.length) * 10) / 10} m from the truth on average (95th percentile ${Math.round(e[Math.floor(e.length * 0.95)] * 10) / 10} m)`);
       }
       console.log(`end-to-end latency (device -> passenger): avg ${avg} ms, p95 ${s[Math.floor(s.length * 0.95)] ?? null} ms, peak ${s[s.length - 1] ?? null} ms`);
-      drivers.forEach((d) => { d.socket.emit('driver:duty', { onDuty: false }); d.socket.close(); });
+      drivers.forEach((d) => { d.socket.emit(EVENTS.DUTY, { onDuty: false }); d.socket.close(); });
       passenger.close();
       setTimeout(() => process.exit(0), 300);
     }, 500);

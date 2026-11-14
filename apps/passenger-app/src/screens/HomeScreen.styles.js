@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
 import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
-import { TOP_INSET } from '../constants';
-import { buildCommon, type } from '../styles/common';
+import { buildCommon } from '../styles/common';
+import { TOP_INSET, type } from '../shared/ui';
 
 export const useS = createStyles(() => ({
   ...buildCommon(),
@@ -17,8 +17,6 @@ export const useS = createStyles(() => ({
     statValue: { ...type('display'), color: COLORS.ink, letterSpacing: -0.5 },
     livePill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: SPACE[2], backgroundColor: 'rgba(19, 14, 13, 0.14)', borderRadius: RADII.pill, paddingHorizontal: SPACE[3], paddingVertical: SPACE[1], marginBottom: SPACE[2] },
     livePillText: { ...type('caption'), color: COLORS.onBright, letterSpacing: 0.6 },
-    homeHeaderBus: { position: "absolute", right: 12, bottom: 34 },
-    homeSheet: { minHeight: 600 },
     travelCard: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE[3],
       backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[4], marginBottom: SPACE[4],
@@ -35,7 +33,6 @@ export const useS = createStyles(() => ({
       alignItems: 'center', justifyContent: 'center', ...SHADOWS.sm,
     },
     quickLabel: { ...type('caption'), color: COLORS.ink, textAlign: 'center' },
-    sectionTitle: { ...type('h3'), color: COLORS.ink, marginBottom: SPACE[3] },
     sectionTitleFlat: { ...type('h3'), color: COLORS.ink },
     sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[3] },
     journeyCard: { marginBottom: SPACE[4] },

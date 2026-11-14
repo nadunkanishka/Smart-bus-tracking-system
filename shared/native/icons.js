@@ -3,8 +3,8 @@
 import React from 'react';
 import { View } from 'react-native';
 import {
-  ArrowLeft, ArrowRight, Bell, Bus, Check, ChevronDown, Clock, EllipsisVertical, Flag, Gauge, Lock, Map, MapPin,
-  MessageCircle, Navigation, Phone, Play, Plus, Route, ScanLine, Search, Settings, Square, User,
+  ArrowLeft, ArrowRight, Bell, Bus, Check, ChevronDown, Clock, EllipsisVertical, Flag, Gauge, Lock, MapPin,
+  MessageCircle, Navigation, Phone, Play, Route, Search, Settings, Square, User,
 } from 'lucide-react-native';
 import { COLORS } from './theme';
 
@@ -17,7 +17,6 @@ export const BusIcon = make(Bus, () => COLORS.accentText, 20);
 export const LockIcon = make(Lock, () => COLORS.ink, 20);
 export const MapPinIcon = make(MapPin, () => COLORS.accentText, 18);
 export const FlagIcon = make(Flag, () => COLORS.accentText, 18);
-export const MapIcon = make(Map, () => COLORS.muted, 20);
 export const SettingsIcon = make(Settings, () => COLORS.muted, 20);
 export const UserIcon = make(User, () => COLORS.muted, 20);
 export const ChevronDownIcon = make(ChevronDown, () => COLORS.muted, 16);
@@ -25,11 +24,9 @@ export const ArrowRightIcon = make(ArrowRight, () => COLORS.accentText, 16);
 export const ArrowLeftIcon = make(ArrowLeft, () => COLORS.ink, 20);
 export const CheckIcon = make(Check, () => COLORS.white, 10, { strokeWidth: 3.2 });
 export const SearchIcon = make(Search, () => COLORS.muted, 18);
-export const ScanIcon = make(ScanLine, () => COLORS.ink, 18);
 export const PhoneCallIcon = make(Phone, () => COLORS.white, 18);
 export const MessageCircleIcon = make(MessageCircle, () => COLORS.ink, 18);
 export const MoreVerticalIcon = make(EllipsisVertical, () => COLORS.ink, 20);
-export const PlusIcon = make(Plus, () => COLORS.white, 22);
 export const NavigationArrowIcon = make(Navigation, () => COLORS.white, 16);
 export const SpeedometerIcon = make(Gauge, () => COLORS.muted, 18);
 export const ClockIcon = make(Clock, () => COLORS.muted, 16);

@@ -1,10 +1,11 @@
 import React from 'react';
-import Field from './Field';
+import Field, { StatusOptions } from './Field';
+import { ENTITIES } from '../entities';
 
-export default function BusForm({ formData, updateField, modalState, drivers }) {
+export default function BusForm({ formData, updateField, mode, drivers }) {
   return (
     <div className="modal-form">
-      <Field label="Registration Number (e.g. NB-4712) *">
+      <Field label="Registration Number (e.g. NB-4712) *" icon="bus">
         <input
           className="form-input mono-input"
           value={formData.registration}
@@ -13,7 +14,7 @@ export default function BusForm({ formData, updateField, modalState, drivers }) 
         />
       </Field>
       <div className="form-grid">
-        <Field label="Seating Capacity *">
+        <Field label="Seating Capacity *" icon="drivers">
           <input
             type="number"
             className="form-input"
@@ -22,7 +23,7 @@ export default function BusForm({ formData, updateField, modalState, drivers }) 
             placeholder="52"
           />
         </Field>
-        <Field label="Initial Mileage (km) *">
+        <Field label="Initial Mileage (km) *" icon="gauge">
           <input
             type="number"
             className="form-input"
@@ -33,29 +34,27 @@ export default function BusForm({ formData, updateField, modalState, drivers }) 
         </Field>
       </div>
       <div className="form-grid">
-        <Field label={modalState.mode === 'edit' ? 'New Bus Password (optional)' : 'Bus Password *'}>
+        <Field label={mode === 'edit' ? 'New Bus Password (optional)' : 'Bus Password *'} icon="lock">
           <input
             type="password"
             className="form-input mono-input"
             value={formData.password}
             onChange={(event) => updateField('password', event.target.value)}
-            placeholder={modalState.mode === 'edit' ? 'Leave blank to keep the current one' : 'Driver app login password'}
+            placeholder={mode === 'edit' ? 'Leave blank to keep the current one' : 'Driver app login password'}
             autoComplete="new-password"
           />
         </Field>
-        <Field label="Bus Operating Status">
+        <Field label="Bus Operating Status" icon="pulse">
           <select
             className="form-input"
             value={formData.status}
             onChange={(event) => updateField('status', event.target.value)}
           >
-            <option value="Active">Active</option>
-            <option value="Idle">Idle</option>
-            <option value="Maintenance">Maintenance</option>
+            <StatusOptions statuses={ENTITIES.bus.statuses} />
           </select>
         </Field>
       </div>
-      <Field label="Assigned Driver">
+      <Field label="Assigned Driver" icon="user">
         <select
           className="form-input"
           value={formData.assignedDriver}

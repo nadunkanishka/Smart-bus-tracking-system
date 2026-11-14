@@ -4,7 +4,6 @@ const { haversine, cumulativeDistances, projectOntoLine } = require('../lib/geo'
 const { prepareRoute, computeEta, DEFAULTS } = require('../lib/eta');
 const { validateFix } = require('../lib/validate');
 const { startTrip, advance } = require('../lib/tripTracker');
-const { memoryStore } = require('../lib/store');
 const { hashPassword, verifyPassword, signToken, readToken } = require('../lib/auth');
 
 // Fixture: an L-shaped route. 0.009 deg of latitude is ~1000.8 m, so each leg is ~1 km.
@@ -150,17 +149,6 @@ test('a bus that joins mid-segment does not produce a partial traversal sample',
   assert.equal(state.partial, true);
   const next = { lat: 0.009, lng: 0.001, speed: 10, ts: 61000 };
   assert.equal(advance(state, route, computeEta(route, next), next).segmentLogs.length, 0);
-});
-
-test('latest-fix store keeps one entry per bus and reads by route', async () => {
-  const store = memoryStore();
-  await store.setLast('BUS-1', { busId: 'BUS-1', routeId: 'RT-1', lat: 1 });
-  await store.setLast('BUS-1', { busId: 'BUS-1', routeId: 'RT-1', lat: 2 });
-  await store.setLast('BUS-2', { busId: 'BUS-2', routeId: 'RT-2', lat: 3 });
-  assert.deepEqual((await store.byRoute('RT-1')).map((b) => b.lat), [2]);
-  assert.equal((await store.all()).length, 2);
-  await store.remove('BUS-1');
-  assert.equal((await store.byRoute('RT-1')).length, 0);
 });
 
 test('passwords are hashed, legacy plaintext still verifies, tokens round-trip', () => {

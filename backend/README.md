@@ -7,7 +7,7 @@ Node.js API for the Smart Bus system: REST (Express), live updates (Socket.IO) a
 ```bash
 npm install
 cp .env.example .env     # Windows: copy .env.example .env   then set JWT_SECRET and ADMIN_PASSWORD
-npm run seed             # once: adds the 25 Colombo routes (npm run seed -- 138 for one)
+npm run seed             # once: adds the Colombo routes (npm run seed -- 138 for one)
 npm start                # http://localhost:5000  (npm run dev restarts on changes)
 ```
 

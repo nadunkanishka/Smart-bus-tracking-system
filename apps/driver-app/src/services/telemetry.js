@@ -1,26 +1,24 @@
-// Driver telemetry: captures GPS every 3 seconds while on duty and streams it to the backend over Socket.IO.
+// Driver telemetry: captures GPS every FIX_INTERVAL_MS while on duty and streams it to the backend over Socket.IO.
 // When the connection drops, fixes are queued (and persisted) and flushed in batches once it is back.
+// The decisions (speed, queue cap, batching) are pure functions in telemetryCore.js; this file is the socket, GPS and
+// storage shell around them.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { io } from 'socket.io-client';
 import { API_URL } from '../shared/api';
-import { COLORS } from '../shared/theme';
+import { EVENTS, FIX_INTERVAL_MS } from '../shared/contract';
+import { TIMING, buildFix, enqueueFix, removeAcked, takeBatch } from './telemetryCore';
 
 const TASK = 'smartbus-gps';
 const QUEUE_KEY = 'smartbus:gps-queue';
-const INTERVAL_MS = 3000;
-const BATCH_SIZE = 500;
-// ponytail: the queue is capped at 2000 fixes (~100 minutes offline); older fixes are dropped first.
-// Raise the cap or move to SQLite if pilots show longer dead zones.
-const MAX_QUEUE = 2000;
 
 let socket = null;
 let queue = [];
 let flushing = false;
-let seq = 0;
 let foregroundWatch = null;
+let retryTimer = null;
 const listeners = new Set();
 const status = { connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, mode: null, error: null };
 
@@ -29,11 +27,8 @@ export const subscribe = (fn) => { listeners.add(fn); fn({ ...status }); return 
 
 const persist = () => AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue)).catch(() => {});
 
-let retryTimer = null;
-
 function enqueue(fix) {
-  queue.push(fix);
-  if (queue.length > MAX_QUEUE) queue.splice(0, queue.length - MAX_QUEUE);
+  queue = enqueueFix(queue, fix);
   persist();
   notify();
   // Keep trying to send while anything is queued, even if no new fix arrives (e.g. the bus is parked).
@@ -41,7 +36,7 @@ function enqueue(fix) {
     retryTimer = setInterval(() => {
       if (queue.length) flush();
       else { clearInterval(retryTimer); retryTimer = null; }
-    }, 5000);
+    }, TIMING.RETRY_MS);
   }
 }
 
@@ -52,10 +47,11 @@ async function flush() {
   flushing = true;
   try {
     while (socket?.connected && queue.length) {
-      const batch = queue.slice(0, BATCH_SIZE);
-      const ack = await socket.timeout(10000).emitWithAck('gps:batch', batch); // eslint-disable-line no-await-in-loop
+      const batch = takeBatch(queue);
+      // Batches go one at a time on purpose: the next one waits for this one's ack.
+      const ack = await socket.timeout(TIMING.BATCH_ACK_MS).emitWithAck(EVENTS.BATCH, batch); // eslint-disable-line no-await-in-loop
       if (!ack?.ok) { status.error = ack?.error || 'Server rejected buffered fixes'; break; }
-      queue.splice(0, batch.length);
+      queue = removeAcked(queue, batch.length);
       status.sent += batch.length;
       persist();
       notify();
@@ -67,24 +63,8 @@ async function flush() {
   }
 }
 
-// Metres between two fixes (equirectangular; fine over a few seconds of travel).
-const metres = (a, b) => Math.hypot((b.lat - a.lat) * 111320, (b.lng - a.lng) * 111320 * Math.cos((a.lat * Math.PI) / 180));
-
 export function submitFix(coords, timestamp) {
-  const ts = Math.round(timestamp || Date.now());
-  const prev = status.lastFix;
-  // Some devices and browsers do not report speed: derive it from the previous fix instead.
-  let speed = coords.speed != null && coords.speed >= 0 ? coords.speed : null;
-  if (speed == null) speed = prev && ts > prev.ts ? metres(prev, { lat: coords.latitude, lng: coords.longitude }) / ((ts - prev.ts) / 1000) : 0;
-  const fix = {
-    lat: coords.latitude,
-    lng: coords.longitude,
-    speed: Math.min(speed, 40), // m/s
-    heading: coords.heading != null && coords.heading >= 0 ? coords.heading : null,
-    accuracy: coords.accuracy ?? null,
-    ts,
-    seq: (seq += 1),
-  };
+  const fix = buildFix(coords, timestamp, status.lastFix);
   status.lastFix = fix;
   status.error = null;
 
@@ -94,7 +74,7 @@ export function submitFix(coords, timestamp) {
     flush();
     return;
   }
-  socket.timeout(5000).emit('gps:fix', fix, (err, ack) => {
+  socket.timeout(TIMING.FIX_ACK_MS).emit(EVENTS.FIX, fix, (err, ack) => {
     if (err) { enqueue(fix); return; } // no ack: assume it never arrived
     status.sent += 1;
     if (ack?.nextStopIndex != null) status.nextStopIndex = ack.nextStopIndex;
@@ -115,10 +95,10 @@ if (Platform.OS !== 'web') {
 export async function connect(token) {
   try { queue = JSON.parse((await AsyncStorage.getItem(QUEUE_KEY)) || '[]'); } catch { queue = []; }
   socket?.close();
-  socket = io(API_URL, { auth: { token }, transports: ['websocket'], reconnectionDelayMax: 5000 });
+  socket = io(API_URL, { auth: { token }, transports: ['websocket'], reconnectionDelayMax: TIMING.RECONNECT_MAX_MS });
   socket.on('connect', () => {
     status.connected = true;
-    if (status.onDuty) socket.emit('driver:duty', { onDuty: true });
+    if (status.onDuty) socket.emit(EVENTS.DUTY, { onDuty: true });
     notify();
     flush();
   });
@@ -126,12 +106,13 @@ export async function connect(token) {
   notify();
 }
 
-export async function startDuty() {
+// notificationColor: the accent of the Android "on duty" notification (the caller passes the theme colour).
+export async function startDuty({ notificationColor } = {}) {
   const fg = await Location.requestForegroundPermissionsAsync();
   if (fg.status !== 'granted') throw new Error('Location permission is needed to share the bus position.');
 
   status.onDuty = true;
-  socket?.emit('driver:duty', { onDuty: true });
+  socket?.emit(EVENTS.DUTY, { onDuty: true });
 
   let background = false;
   if (Platform.OS !== 'web') {
@@ -140,13 +121,13 @@ export async function startDuty() {
       if (bg.status === 'granted') {
         await Location.startLocationUpdatesAsync(TASK, {
           accuracy: Location.Accuracy.High,
-          timeInterval: INTERVAL_MS,
+          timeInterval: FIX_INTERVAL_MS,
           distanceInterval: 0,
           pausesUpdatesAutomatically: false,
           foregroundService: {
             notificationTitle: 'SmartBus Driver is on duty',
             notificationBody: 'Sharing the live bus location with passengers.',
-            notificationColor: COLORS.orange,
+            notificationColor,
           },
         });
         background = true;
@@ -157,7 +138,7 @@ export async function startDuty() {
   }
   if (!background) {
     foregroundWatch = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.High, timeInterval: INTERVAL_MS, distanceInterval: 0 },
+      { accuracy: Location.Accuracy.High, timeInterval: FIX_INTERVAL_MS, distanceInterval: 0 },
       (loc) => submitFix(loc.coords, loc.timestamp),
     );
   }
@@ -176,17 +157,21 @@ export async function stopDuty() {
     } catch { /* task was never started */ }
   }
   await flush();
-  socket?.emit('driver:duty', { onDuty: false });
+  socket?.emit(EVENTS.DUTY, { onDuty: false });
   notify();
 }
 
+// Always closes the socket, even when stopping duty fails (the error is still thrown to the caller).
 export async function disconnect() {
-  await stopDuty();
-  socket?.close();
-  socket = null;
-  status.connected = false;
-  status.sent = 0;
-  status.lastFix = null;
-  status.nextStopIndex = null;
-  notify();
+  try {
+    await stopDuty();
+  } finally {
+    socket?.close();
+    socket = null;
+    status.connected = false;
+    status.sent = 0;
+    status.lastFix = null;
+    status.nextStopIndex = null;
+    notify();
+  }
 }

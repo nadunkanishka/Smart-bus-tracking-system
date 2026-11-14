@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RoadScene, Vehicle } from '../design/Vehicle';
 import Icon from '../components/Icon';
 import ThemeToggle from '../components/ThemeToggle';
+import { getSignOutNotice, login } from '../api';
 
-export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, setLoginCreds, showPw, setShowPw, loginLoading }) {
+// The sign-in form. It owns its fields; on success it hands the signed-in user to onLoggedIn.
+export default function LoginPage({ onLoggedIn }) {
+  const [creds, setCreds] = useState({ username: '', password: '' });
+  const [error, setError] = useState(getSignOutNotice); // e.g. "Your session has expired" after an automatic sign-out
+  const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const user = await login(creds);
+      onLoggedIn(user);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="login-shell">
-      {/* CHANGED: teal hero with vehicles on a road; the white form panel curves up over it on mobile */}
       <section className="login-hero">
         <ThemeToggle className="login-theme" />
         <div>
@@ -23,9 +42,9 @@ export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, s
         <h2 className="login-title">Admin sign in</h2>
         <p className="login-subtitle">Manage your fleet, drivers and routes.</p>
 
-        {loginError && <div className="login-error" role="alert">{loginError}</div>}
+        {error && <div className="login-error" role="alert">{error}</div>}
 
-        <form onSubmit={handleLoginSubmit} className="login-form">
+        <form onSubmit={submit} className="login-form">
           <label className="field">
             <span className="form-label">Username</span>
             <span className="input-wrap">
@@ -33,8 +52,8 @@ export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, s
               <input
                 type="text"
                 className="form-input"
-                value={loginCreds.username}
-                onChange={(e) => setLoginCreds({ ...loginCreds, username: e.target.value })}
+                value={creds.username}
+                onChange={(e) => setCreds({ ...creds, username: e.target.value })}
                 placeholder="Enter admin username"
                 autoComplete="username"
                 required
@@ -49,8 +68,8 @@ export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, s
               <input
                 type={showPw ? 'text' : 'password'}
                 className="form-input"
-                value={loginCreds.password}
-                onChange={(e) => setLoginCreds({ ...loginCreds, password: e.target.value })}
+                value={creds.password}
+                onChange={(e) => setCreds({ ...creds, password: e.target.value })}
                 placeholder="Enter password"
                 autoComplete="current-password"
                 required
@@ -61,8 +80,8 @@ export default function LoginPage({ loginError, handleLoginSubmit, loginCreds, s
             </span>
           </label>
 
-          <button type="submit" className="login-btn" disabled={loginLoading}>
-            {loginLoading ? (<><span className="spinner" aria-hidden="true" />Signing In…</>) : 'Sign In to Dashboard'}
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? (<><span className="spinner" aria-hidden="true" />Signing In…</>) : 'Sign In to Dashboard'}
           </button>
         </form>
 

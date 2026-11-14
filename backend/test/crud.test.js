@@ -1,13 +1,17 @@
 // CRUD integration tests: start the real server against a throwaway MongoDB database and call every endpoint.
-// Needs MongoDB (MONGODB_TEST_URI, default mongodb://127.0.0.1:27017). Skipped, not failed, when it is unreachable.
+// Needs MongoDB (MONGODB_TEST_URI, default the local MongoDB in config/env.js). Skipped when it is unreachable,
+// except when the CI environment variable is set: then it fails.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('node:net');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const mongoose = require('mongoose');
+const { formatBusRef, parseBusRef } = require('../lib/contract');
 
-const BASE_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27017';
+const { MONGO_HOST } = require('../config/env');
+
+const BASE_URI = process.env.MONGODB_TEST_URI || MONGO_HOST;
 const DB = `smartbus_crud_${process.pid}`;
 const ADMIN_PW = 'crud-admin-pass';
 let proc;
@@ -44,21 +48,43 @@ const as = (token) => ({
   del: (p, body) => call('DELETE', p, { token, body }),
 });
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Waits until the server answers and the first admin account exists (it is created just after MongoDB connects).
+// Sign-in attempts share one rate limit with the tests, so the polling is gentle.
+async function waitForAdmin() {
+  for (let i = 0; i < 80 && proc.exitCode === null; i += 1) {
+    try { if ((await fetch(`${URL}/api/health`)).ok) break; } catch { /* not listening yet */ }
+    await sleep(250); // eslint-disable-line no-await-in-loop
+  }
+  for (let i = 0; i < 15 && proc.exitCode === null; i += 1) {
+    try {
+      const login = await call('POST', '/api/auth/login', { body: { username: 'admin', password: ADMIN_PW } }); // eslint-disable-line no-await-in-loop
+      if (login.status === 200) return login.data.token;
+    } catch { /* not listening yet */ }
+    await sleep(400); // eslint-disable-line no-await-in-loop
+  }
+  return null;
+}
+
 test.before(async () => {
-  if (!(await mongoUp())) { skipReason = `MongoDB not reachable at ${BASE_URI}`; return; }
+  if (!(await mongoUp())) {
+    // On CI a missing database is a broken setup, not a reason to skip.
+    if (process.env.CI) throw new Error(`MongoDB not reachable at ${BASE_URI} (CI is set, so this fails instead of skipping)`);
+    skipReason = `MongoDB not reachable at ${BASE_URI}`;
+    return;
+  }
   const port = await freePort();
   URL = `http://127.0.0.1:${port}`;
+  let stderr = '';
   proc = spawn(process.execPath, ['index.js'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, PORT: String(port), MONGODB_URI: `${BASE_URI}/${DB}`, REDIS_URL: '', JWT_SECRET: 'crud-test-secret', ADMIN_USERNAME: 'admin', ADMIN_PASSWORD: ADMIN_PW, CORS_ORIGIN: '' },
-    stdio: 'ignore',
+    stdio: ['ignore', 'ignore', 'pipe'],
   });
-  for (let i = 0; i < 60; i += 1) {
-    try { const r = await fetch(`${URL}/api/health`); if (r.ok) break; } catch { /* not up yet */ }
-    await new Promise((r) => setTimeout(r, 250)); // eslint-disable-line no-await-in-loop
-  }
-  const login = await call('POST', '/api/auth/login', { body: { username: 'admin', password: ADMIN_PW } });
-  admin = login.data.token;
+  proc.stderr.on('data', (d) => { stderr += d; });
+  admin = await waitForAdmin();
+  if (!admin) throw new Error(`The server did not start or never created the admin account.\n--- server stderr ---\n${stderr || '(empty)'}`);
 });
 
 test.after(async () => {
@@ -181,13 +207,13 @@ test('relations: deleting or renaming a record never leaves a dangling reference
   const A = as(admin);
   const driver = (await A.post('/api/drivers', { name: 'Rel Driver', license: 'L-REL', expiry: '2030-01-01', phone: '0713333333' })).data;
   const bus = (await A.post('/api/buses', { registration: 'NB-REL', capacity: 40, mileage: 1, password: 'pw1234', assignedDriver: driver.driverId })).data;
-  const route = (await A.post('/api/routes', { name: 'Rel', start: 'A', end: 'B', distance: 1, assignedBus: `${bus.registration} (${bus.busId})` })).data;
-  assert.equal(route.assignedBus, 'NB-REL (' + bus.busId + ')');
+  const route = (await A.post('/api/routes', { name: 'Rel', start: 'A', end: 'B', distance: 1, assignedBus: formatBusRef(bus) })).data;
+  assert.deepEqual(parseBusRef(route.assignedBus), { registration: 'NB-REL', busId: bus.busId });
 
   // renaming the bus updates the route that points at it
   const renamed = await A.put(`/api/buses/${bus.busId}`, { registration: 'NB-NEW' });
   assert.equal(renamed.status, 200);
-  assert.equal((await A.get(`/api/routes/${route.routeId}`)).data.assignedBus, `NB-NEW (${bus.busId})`);
+  assert.deepEqual(parseBusRef((await A.get(`/api/routes/${route.routeId}`)).data.assignedBus), { registration: 'NB-NEW', busId: bus.busId });
 
   // deleting the driver frees the bus
   const delDriver = await A.del(`/api/drivers/${driver.driverId}`);
@@ -207,7 +233,7 @@ test('driver login finds the route of exactly that bus, not a bus whose registra
   const A = as(admin);
   const b1 = (await A.post('/api/buses', { registration: 'NB-1', capacity: 40, mileage: 1, password: 'pw1234' })).data;
   const b12 = (await A.post('/api/buses', { registration: 'NB-12', capacity: 40, mileage: 1, password: 'pw1234' })).data;
-  const route = (await A.post('/api/routes', { name: 'Only NB-12', start: 'A', end: 'B', distance: 1, assignedBus: `NB-12 (${b12.busId})` })).data;
+  const route = (await A.post('/api/routes', { name: 'Only NB-12', start: 'A', end: 'B', distance: 1, assignedBus: formatBusRef(b12) })).data;
   const login = (reg) => call('POST', '/api/auth/driver-login', { body: { registration: reg, password: 'pw1234' } });
   assert.equal((await login('NB-1')).data.assignedRoute, null);
   assert.equal((await login('NB-12')).data.assignedRoute.routeId, route.routeId);
@@ -308,4 +334,35 @@ test('admins: create, list, read, update, change password, delete, with safety g
   const rest = (await A.get('/api/admins')).data;
   assert.equal(rest.length, 1);
   assert.equal((await A.del(`/api/admins/${rest[0].id}`)).status, 400);
+});
+
+test('passengers: a legacy plaintext password signs in and is stored hashed from then on', async (t) => {
+  if (guard(t)) return;
+  await mongoose.connect(`${BASE_URI}/${DB}`);
+  try {
+    const passengers = mongoose.connection.collection('passengers');
+    await passengers.insertOne({ username: 'legacy.user', password: 'plain12', name: 'Legacy User', phone: '' });
+    const login = await call('POST', '/api/passengers/login', { body: { username: 'legacy.user', password: 'plain12' } });
+    assert.equal(login.status, 200);
+    const stored = (await passengers.findOne({ username: 'legacy.user' })).password;
+    assert.notEqual(stored, 'plain12');
+    assert.equal((await call('POST', '/api/passengers/login', { body: { username: 'legacy.user', password: 'plain12' } })).status, 200, 'the hash verifies');
+  } finally {
+    await mongoose.disconnect();
+  }
+});
+
+test('routes: clearing every stop point also clears the stop names', async (t) => {
+  if (guard(t)) return;
+  const A = as(admin);
+  const made = (await A.post('/api/routes', {
+    name: 'Clear', start: 'A', end: 'B', distance: 1,
+    stopPoints: [{ name: 'A', lat: 6.9, lng: 79.86 }, { name: 'B', lat: 6.91, lng: 79.87 }],
+  })).data;
+  assert.deepEqual(made.stops, ['A', 'B']);
+  const cleared = await A.put(`/api/routes/${made.routeId}`, { stopPoints: [] });
+  assert.equal(cleared.status, 200);
+  assert.deepEqual(cleared.data.stopPoints, []);
+  assert.deepEqual(cleared.data.stops, []);
+  await A.del(`/api/routes/${made.routeId}`);
 });

@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const { MONGODB_URI } = require('./env');
 
+// Resolves true when connected; logs and resolves false otherwise (callers decide whether that is fatal).
 const connectDB = async () => {
   try {
-    const connStr = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/smart_bus_tracking';
-    const conn = await mongoose.connect(connStr);
+    const conn = await mongoose.connect(MONGODB_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return true;
   } catch (error) {

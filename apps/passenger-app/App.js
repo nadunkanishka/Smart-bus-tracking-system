@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Platform, SafeAreaView, StatusBar, View } from 'react-native';
-import { ThemeProvider, useTheme } from './src/shared/themeRuntime';
-import { AppBackdrop, ScreenFade, Toast, VehicleLoader } from './src/shared/ui';
-import { useToast } from './src/hooks/useToast';
+import { View } from 'react-native';
+import { ThemeProvider } from './src/shared/themeRuntime';
+import { ScreenFade, VehicleLoader } from './src/shared/ui';
+import { AppColumn, AppFrame, useToast } from './src/shared/shell';
+import { TABS } from './src/constants';
 import { useAuth } from './src/hooks/useAuth';
 import { useRoutes } from './src/hooks/useRoutes';
 import { useLiveBuses } from './src/hooks/useLiveBuses';
@@ -19,48 +20,43 @@ import { useS } from './src/styles/app';
 // Root component: wires the hooks together, holds navigation state and switches between the tab screens.
 function AppShell() {
   const S = useS();
-  const { isDark } = useTheme();
-  // Navigation: 'home' | 'tracking' | 'routes' | 'profile'
-  const [activeTab, setActiveTab] = useState('tracking');
+  const [activeTab, setActiveTab] = useState(TABS.tracking);
   const [isBoardingExpanded, setIsBoardingExpanded] = useState(false);
   const [isDestExpanded, setIsDestExpanded] = useState(false);
-
-  // UI overlays
   const [isStopModalOpen, setIsStopModalOpen] = useState(false);
-  const [isBoardingOpen, setIsBoardingOpen] = useState(false);
-  const [isDestOpen, setIsDestOpen] = useState(false);
   const { toastMsg, showToast } = useToast();
 
-  const auth = useAuth({
-    onSessionStart: (message) => {
-      setActiveTab('tracking');
-      showToast(message);
-    },
-  });
+  const auth = useAuth();
   const { booting, session } = auth;
-  const isAuthenticated = !!session;
   const userProfile = session?.user;
 
+  const trip = useRoutes({ session, showToast });
   const {
-    routes, routesState, loadRoutes, routeSearchQuery, setRouteSearchQuery, filteredRoutes,
+    routesState, loadRoutes, routeSearchQuery, setRouteSearchQuery, filteredRoutes,
     selectedRouteId, selectedRoute, selectRoute,
     boardingStop, setBoardingStop, boardingIndex, destinationStop, setDestinationStop, destinationIndex,
-  } = useRoutes({ session, showToast });
+  } = trip;
 
   const { conn, liveBuses, tracked, mapBuses, clearBuses } = useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex, boardingStop, destinationStop });
 
-  // ─── Handlers ───────────────────────────────────────────────────────────────
+  // After a login or registration: land on tracking and greet.
+  async function afterSignIn(start) {
+    const welcome = await start();
+    if (!welcome) return;
+    setActiveTab(TABS.tracking);
+    showToast(welcome);
+  }
 
   function handleLogout() {
     auth.signOut();
     clearBuses();
-    setActiveTab('tracking');
+    setActiveTab(TABS.tracking);
   }
 
   function handleSelectRoute(route) {
     selectRoute(route);
     setRouteSearchQuery('');
-    setActiveTab('tracking');
+    setActiveTab(TABS.tracking);
   }
 
   function handleResetDefaults() {
@@ -69,34 +65,24 @@ function AppShell() {
     showToast('Reset stops to route terminals.');
   }
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  const openStops = () => setIsStopModalOpen(true);
+  const goTo = (tab) => () => setActiveTab(tab);
+
   return (
-    <SafeAreaView style={S.root}>
-      <AppBackdrop />
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor="transparent"
-        translucent={Platform.OS === 'android'}
-      />
-
-      {/* ─── Toast ─────────────────────────────────────── */}
-      <Toast message={toastMsg} />
-
+    <AppFrame toastMsg={toastMsg}>
       {booting ? (
         <View style={S.centerFill}><VehicleLoader label="Loading SmartBus" /></View>
-      ) : !isAuthenticated ? (
-        /* ═══════════════════════════════════════════════════
-            PASSENGER LOGIN / REGISTER (real accounts stored in MongoDB)
-        ═══════════════════════════════════════════════════ */
-        <AuthScreen {...auth.form} showToast={showToast} />
+      ) : !session ? (
+        <AuthScreen
+          {...auth.form}
+          handleLogin={() => afterSignIn(auth.form.handleLogin)}
+          handleRegister={() => afterSignIn(auth.form.handleRegister)}
+          showToast={showToast}
+        />
       ) : (
-        /* ═══════════════════════════════════════════════════
-            APPLICATION SHELL
-        ═══════════════════════════════════════════════════ */
-        <View style={S.appShell}>
-          {/* ─── SCREEN AREA ──────────────────────────── */}
+        <AppColumn>
           <ScreenFade key={activeTab}>
-            {activeTab === 'tracking' ? (
+            {activeTab === TABS.tracking ? (
               <TrackingScreen
                 conn={conn}
                 routesState={routesState}
@@ -107,7 +93,6 @@ function AppShell() {
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
                 boardingIndex={boardingIndex}
-                destinationIndex={destinationIndex}
                 routeStops={selectedRoute.stops}
                 isBoardingExpanded={isBoardingExpanded}
                 isDestExpanded={isDestExpanded}
@@ -115,10 +100,10 @@ function AppShell() {
                 setIsDestExpanded={setIsDestExpanded}
                 setBoardingStop={setBoardingStop}
                 setDestinationStop={setDestinationStop}
-                onOpenStops={() => setIsStopModalOpen(true)}
-                onGoRoutes={() => setActiveTab('routes')}
+                onOpenStops={openStops}
+                onGoRoutes={goTo(TABS.routes)}
               />
-            ) : activeTab === 'home' ? (
+            ) : activeTab === TABS.home ? (
               <HomeScreen
                 userProfile={userProfile}
                 selectedRoute={selectedRoute}
@@ -126,13 +111,13 @@ function AppShell() {
                 liveCount={liveBuses.length}
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
-                onGoTracking={() => setActiveTab('tracking')}
-                onGoRoutes={() => setActiveTab('routes')}
-                onOpenStops={() => setIsStopModalOpen(true)}
-                onOpenSettings={() => setActiveTab('settings')}
+                onGoTracking={goTo(TABS.tracking)}
+                onGoRoutes={goTo(TABS.routes)}
+                onOpenStops={openStops}
+                onOpenSettings={goTo(TABS.settings)}
                 showToast={showToast}
               />
-            ) : activeTab === 'routes' ? (
+            ) : activeTab === TABS.routes ? (
               <RoutesScreen
                 routesState={routesState}
                 onRetry={loadRoutes}
@@ -142,17 +127,17 @@ function AppShell() {
                 selectedRoute={selectedRoute}
                 onSelectRoute={handleSelectRoute}
               />
-            ) : activeTab === 'settings' ? (
+            ) : activeTab === TABS.settings ? (
               <SettingsScreen
                 userProfile={userProfile}
                 selectedRoute={selectedRoute}
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
                 onResetDefaults={handleResetDefaults}
-                onOpenStops={() => setIsStopModalOpen(true)}
-                onBack={() => setActiveTab('profile')}
+                onOpenStops={openStops}
+                onBack={goTo(TABS.profile)}
                 onLogout={handleLogout}
-                account={auth}
+                account={{ updateProfile: auth.updateProfile, changePassword: auth.changePassword, deleteAccount: auth.deleteAccount }}
                 showToast={showToast}
               />
             ) : (
@@ -162,38 +147,18 @@ function AppShell() {
                 boardingStop={boardingStop}
                 destinationStop={destinationStop}
                 onLogout={handleLogout}
-                onOpenStops={() => setIsStopModalOpen(true)}
-                onOpenSettings={() => setActiveTab('settings')}
+                onOpenStops={openStops}
+                onOpenSettings={goTo(TABS.settings)}
               />
             )}
           </ScreenFade>
 
-          {/* ─── BOTTOM DOCK ──────────────────────────── */}
-          <BottomDock activeTab={activeTab === 'settings' ? 'profile' : activeTab} setActiveTab={setActiveTab} />
+          <BottomDock activeTab={activeTab === TABS.settings ? TABS.profile : activeTab} setActiveTab={setActiveTab} />
 
-          {/* ─── STOP SELECTOR MODAL ──────────────────── */}
-          <StopSelectorModal
-            isStopModalOpen={isStopModalOpen}
-            setIsStopModalOpen={setIsStopModalOpen}
-            routes={routes}
-            selectedRoute={selectedRoute}
-            selectRoute={selectRoute}
-            isBoardingOpen={isBoardingOpen}
-            setIsBoardingOpen={setIsBoardingOpen}
-            isDestOpen={isDestOpen}
-            setIsDestOpen={setIsDestOpen}
-            boardingStop={boardingStop}
-            setBoardingStop={setBoardingStop}
-            destinationStop={destinationStop}
-            setDestinationStop={setDestinationStop}
-            tracked={tracked}
-            boardingIndex={boardingIndex}
-            destinationIndex={destinationIndex}
-          />
-
-        </View>
+          <StopSelectorModal visible={isStopModalOpen} onClose={() => setIsStopModalOpen(false)} trip={trip} tracked={tracked} />
+        </AppColumn>
       )}
-    </SafeAreaView>
+    </AppFrame>
   );
 }
 

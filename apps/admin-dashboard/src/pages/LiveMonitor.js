@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { TILE_ATTRIBUTION, TILE_URL, useThemeMode } from '../theme';
 import { MapContainer, Marker, TileLayer, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { Vehicle } from '../design/Vehicle';
+import PageHeader from '../components/PageHeader';
 import Stat from '../components/Stat';
+import TableShell, { EmptyRow } from '../components/TableShell';
+import { api } from '../api';
+import { MAP_CENTER, TILE_ATTRIBUTION, TILE_URL } from '../map';
 
 // Live system health: which drivers are connected, when each bus last reported, and pipeline latency.
 const REFRESH_MS = 3000;
@@ -15,29 +18,36 @@ const ago = (ts, now) => {
 };
 const ms = (v) => (v == null ? '—' : `${v} ms`);
 
-export default function LiveMonitor({ api, routes }) {
-  const mode = useThemeMode();
+export default function LiveMonitor({ routes }) {
   const [live, setLive] = useState({ buses: [], serverTs: Date.now() });
   const [metrics, setMetrics] = useState(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let stop = false;
+    let inFlight = false; // a tick while the last request is still out is skipped, so an old answer never lands after a newer one
     const load = async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         const [a, b] = await Promise.all([api('/live'), api('/metrics')]);
-        if (stop || !a.ok || !b.ok) { if (!stop) setFailed(true); return; }
-        setLive(await a.json());
-        setMetrics(await b.json());
+        if (stop) return;
+        if (!a.ok || !b.ok) { setFailed(true); return; }
+        const [nextLive, nextMetrics] = await Promise.all([a.json(), b.json()]);
+        if (stop) return;
+        setLive(nextLive);
+        setMetrics(nextMetrics);
         setFailed(false);
       } catch {
-        if (!stop) setFailed(true);
+        if (!stop) setFailed(true); // unreachable server or unreadable answer
+      } finally {
+        inFlight = false;
       }
     };
     load();
     const t = setInterval(load, REFRESH_MS);
     return () => { stop = true; clearInterval(t); };
-  }, [api]);
+  }, []);
 
   const routeName = (id) => routes.find((r) => r.id === id)?.name || id || 'Unassigned';
   const connected = live.buses.filter((b) => b.connected);
@@ -47,16 +57,12 @@ export default function LiveMonitor({ api, routes }) {
 
   return (
     <section className="page-section" data-page="live">
-      <div className="section-header">
-        <div>
-          <h1>Live Monitor</h1>
-          <p>Active driver connections and telemetry status, refreshed every {REFRESH_MS / 1000} seconds</p>
-        </div>
+      <PageHeader subtitle={`Active driver connections and telemetry status, refreshed every ${REFRESH_MS / 1000} seconds`}>
         <span className="system-status">
           <span className={`system-status-dot ${failed ? 'off' : 'on'}`} />
           {failed ? 'Not receiving data' : 'Receiving data'}
         </span>
-      </div>
+      </PageHeader>
 
       <div className="stat-grid">
         <Stat label="Drivers connected" value={connected.length} hint={`${onDuty.length} on duty`} />
@@ -70,8 +76,8 @@ export default function LiveMonitor({ api, routes }) {
       </div>
 
       <div className="panel live-map">
-        <MapContainer center={[6.9, 79.87]} zoom={12} style={{ width: '100%', height: '100%' }}>
-          <TileLayer key={mode} attribution={TILE_ATTRIBUTION} url={TILE_URL[mode]} />
+        <MapContainer center={MAP_CENTER} zoom={12} style={{ width: '100%', height: '100%' }}>
+          <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
           {located.map((b) => (
             <Marker key={b.busId} position={[b.lat, b.lng]} icon={busIcon(b.connected && b.onDuty)}>
               <Tooltip direction="top" offset={[0, -8]}>{b.registration} · {ago(b.lastSeen, live.serverTs)}</Tooltip>
@@ -80,7 +86,7 @@ export default function LiveMonitor({ api, routes }) {
         </MapContainer>
       </div>
 
-      <div className="panel table-shell">
+      <TableShell>
         <table className="data-table">
           <thead>
             <tr>
@@ -95,11 +101,9 @@ export default function LiveMonitor({ api, routes }) {
           </thead>
           <tbody>
             {live.buses.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="cell-empty">
-                  <div className="empty-state"><Vehicle name="bus" status="off" width={120} label="No drivers connected" />No driver has connected since the server started.</div>
-                </td>
-              </tr>
+              <EmptyRow colSpan="7" art={<Vehicle name="bus" status="off" width={120} label="No drivers connected" />}>
+                No driver has connected since the server started.
+              </EmptyRow>
             ) : live.buses.map((b) => (
               <tr key={b.busId}>
                 <td className="mono-cell table-strong">{b.registration}</td>
@@ -113,7 +117,7 @@ export default function LiveMonitor({ api, routes }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableShell>
     </section>
   );
 }

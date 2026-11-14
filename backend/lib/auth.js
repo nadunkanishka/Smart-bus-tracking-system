@@ -1,9 +1,7 @@
 // Minimal auth: scrypt password hashes (Node built-in) and JWT bearer tokens with a role claim.
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-
-const SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me';
-if (!process.env.JWT_SECRET) console.warn('[auth] JWT_SECRET not set: using an insecure development secret.');
+const env = require('../config/env');
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -14,7 +12,7 @@ function isHashed(stored) {
   return typeof stored === 'string' && stored.startsWith('scrypt$');
 }
 
-// Also accepts legacy plaintext values so existing records keep working; callers re-hash on success.
+// Also accepts legacy plaintext values so existing records keep working; lib/accounts.js re-hashes them on success.
 function verifyPassword(password, stored) {
   if (!stored) return false;
   if (!isHashed(stored)) return stored === password;
@@ -24,13 +22,21 @@ function verifyPassword(password, stored) {
   return real.length === test.length && crypto.timingSafeEqual(real, test);
 }
 
-const signToken = (claims, expiresIn = '12h') => jwt.sign(claims, SECRET, { expiresIn });
+const signToken = (claims, expiresIn = '12h') => jwt.sign(claims, env.JWT_SECRET, { expiresIn });
 
 function readToken(token) {
-  try { return jwt.verify(token, SECRET); } catch { return null; }
+  try { return jwt.verify(token, env.JWT_SECRET); } catch { return null; }
 }
 
-// Express middleware: requireRole('admin') etc.
+// What a driver token says: which bus this phone is, and the route it publishes to (null when none is assigned).
+const driverClaims = (bus, route, driverName = null) => ({
+  role: 'driver',
+  busId: bus.busId,
+  registration: bus.registration,
+  routeId: route ? route.routeId : null,
+  driverName,
+});
+
 const requireRole = (...roles) => (req, res, next) => {
   const header = req.headers.authorization || '';
   const claims = header.startsWith('Bearer ') ? readToken(header.slice(7)) : null;
@@ -40,4 +46,4 @@ const requireRole = (...roles) => (req, res, next) => {
   return next();
 };
 
-module.exports = { hashPassword, verifyPassword, isHashed, signToken, readToken, requireRole };
+module.exports = { hashPassword, verifyPassword, isHashed, signToken, readToken, driverClaims, requireRole };

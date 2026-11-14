@@ -5,7 +5,6 @@ const tripSchema = new mongoose.Schema(
   {
     tripId: { type: String, unique: true },
     busId: { type: String, index: true },
-    registration: String,
     routeId: { type: String, index: true },
     startedAt: Date,
     endedAt: Date,

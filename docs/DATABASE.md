@@ -1,6 +1,6 @@
 # Database schema
 
-MongoDB database `smart_bus_tracking`. Models are in `backend/models/`. All main collections have `createdAt` and `updatedAt`.
+MongoDB database `smart_bus_tracking` on a local install (the default `MONGODB_URI`). On Atlas the database is named in the connection string, `smartbus` in `docs/SETUP-MONGODB.md`. Models are in `backend/models/`; the default URI is in `backend/config/env.js`. Status values and id formats come from the shared contract (`STATUS`, `formatId` in `backend/lib/contract.js`; the first status is the default), and ids are issued by `nextId` in `backend/lib/sequence.js`. All main collections have `createdAt` and `updatedAt`.
 
 ## Collections
 
@@ -42,7 +42,7 @@ MongoDB database `smart_bus_tracking`. Models are in `backend/models/`. All main
 
 ### trips
 
-One run of a bus along its route: `tripId` (unique), `busId`, `registration`, `routeId`, `startedAt`, `endedAt`, `completed`.
+One run of a bus along its route: `tripId` (unique), `busId`, `routeId`, `startedAt`, `endedAt`, `completed` (true only when the bus reached the final stop; false when the trip was closed by going off duty, by a new trip from the first stop, or by a route change). Written by `backend/lib/tripRecorder.js`, like the segment, ETA and GPS logs.
 
 ### segmentlogs
 
@@ -73,8 +73,10 @@ Accepted fixes: `busId`, `routeId`, `tripId`, `location` (GeoJSON Point as the p
 | Key | Type | TTL | Purpose |
 |---|---|---|---|
 | `bus:<busId>:last` | String (JSON `busUpdate`) | 60 s | Latest fix and ETAs for one bus |
-| `route:<routeId>:buses` | Set of bus ids | – | Which buses to read for a route snapshot |
+| `route:<routeId>:buses` | Set of bus ids | 60 s, renewed by every write | Which buses to read for a route snapshot |
 | `buses:active` | Set of bus ids | – | All buses with a cached fix |
+
+The sets are indexes; the `bus:<busId>:last` value is the truth. A read drops set members whose value expired, cannot be parsed, or (for a route set) names another route, so a corrupt value never fails a `route:subscribe`. The store contract is tested against memory always and against Redis when `REDIS_URL` is set (`backend/test/store.test.js`).
 
 Without `REDIS_URL`, or if Redis cannot be reached at startup, the same data is kept in process memory. That fallback is for local development only.
 

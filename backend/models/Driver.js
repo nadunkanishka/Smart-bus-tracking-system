@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { STATUS } = require('../lib/contract');
 
 const driverSchema = new mongoose.Schema(
   {
@@ -28,8 +29,8 @@ const driverSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Active', 'Inactive', 'On Leave'],
-      default: 'Active',
+      enum: STATUS.driver,
+      default: STATUS.driver[0],
     },
   },
   {

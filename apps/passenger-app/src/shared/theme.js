@@ -74,7 +74,6 @@ const LIGHT = {
   tintLines: { bus: '#FFC4A8', train: '#D9BDF0', delivery: '#D9BDF0', taxi: '#DCCABF', green: '#B5E6C8' },
 
   white: '#FFFFFF',
-  black: '#000000',
 };
 
 const DARK = {
@@ -140,24 +139,9 @@ const DARK = {
   tintLines: { bus: '#5A3321', train: '#4A2D66', delivery: '#4A2D66', taxi: '#3F312D', green: '#1F5A36' },
 
   white: PALETTE.night, // "text on ink": night on the near-white fills
-  black: '#000000',
 };
 
-// Older keys, derived so they always follow the current mode.
-const withLegacy = (c) => ({
-  ...c,
-  bgBase: c.bg, bgSurface: c.surface, bgSurfaceMuted: c.surfaceSoft, bgSurfaceSubtle: c.surfaceSoft,
-  bgDark: c.ink, bgDarkElevated: c.inkSoft, bgDarkCard: c.inkSoft,
-  borderDark: c.line, borderDarkSubtle: 'rgba(255, 255, 255, 0.08)',
-  borderColor: c.line, borderLight: c.bg,
-  accentOrange: c.accent, accentOrangeLight: c.accentSoft, accentOrangeGlow: c.glow, accentDark: c.accentText,
-  accentBlue: c.primary, accentBlueLight: c.primarySoft,
-  successLight: c.successSoft, warningLight: c.warningSoft, dangerLight: c.dangerSoft,
-  textPrimary: c.ink, textSecondary: c.inkSoft, textMuted: c.muted, textMutedLight: c.mutedLight,
-  textDarkPrimary: c.white, textDarkSecondary: c.inkSoft, textDarkMuted: c.mutedLight,
-});
-
-export const THEMES = { light: withLegacy(LIGHT), dark: withLegacy(DARK) };
+export const THEMES = { light: LIGHT, dark: DARK };
 
 // The live colour object every style reads. `applyTheme('dark' | 'light')` swaps its values in place, so code that
 // reads COLORS when it renders (not when the file loads) always sees the current mode.
@@ -171,6 +155,10 @@ export function applyTheme(mode) {
 export const RADII = { xs: 10, sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
+
+// The strong ease-out every press, toast and switch uses: cubic-bezier control points.
+// Mobile: Easing.bezier(...EASE_OUT); admin: the --ease-out CSS variable written by sync.js.
+export const EASE_OUT = [0.23, 1, 0.32, 1];
 
 // Type scale: one fixed size + line-height + weight per role.
 export const TYPE = {
@@ -192,23 +180,4 @@ export const SHADOWS = {
   sm: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 0 },
   md: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 0 },
   lg: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 0 },
-};
-
-export const MOTION = {
-  easeOut: [0.23, 1, 0.32, 1], // cubic-bezier
-  press: 140,
-  enter: 260,
-};
-
-export const TOUCH = 44; // minimum touch target
-
-// ── Legacy exports (older code imports these) ──
-export const TYPOGRAPHY = {
-  fontFamily: 'System',
-  sizes: { xxs: 10, xs: 11, sm: 13, md: 15, lg: 17, xl: 20, xxl: 24, hero: 30 },
-  weights: { regular: '400', medium: '500', semibold: '600', bold: '700', heavy: '800' },
-};
-export const LAYOUT = {
-  borderRadiusXs: 8, borderRadiusSm: 12, borderRadiusMd: 16, borderRadiusLg: 24, borderRadiusXl: 32,
-  borderRadiusFull: 999, cardPadding: 20, screenPadding: 20,
 };

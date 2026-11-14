@@ -7,11 +7,14 @@ A map of the repository and the rules for adding to it. If you are looking for a
 | I want to change... | Go to | Example file |
 |---|---|---|
 | A REST endpoint | `backend/routes/` (one file per resource, full URL in the code) | `backend/routes/buses.js` |
-| What happens when a GPS fix arrives | `backend/realtime.js` | |
+| What happens when a GPS fix arrives | `backend/lib/fixPipeline.js` (checks, smoothing, ETA); `backend/realtime.js` (sockets) | |
 | How arrival times are calculated | `backend/lib/eta.js` | |
 | GPS validation, trip tracking, geometry maths | `backend/lib/` | `backend/lib/validate.js` |
+| A threshold or time window | `backend/lib/limits.js` (server only) or `shared/contract.js` (shared with the apps, then run the sync) | |
+| Password and username rules, token lifetimes | `backend/lib/accounts.js` | |
+| An environment variable or its default | `backend/config/env.js` | |
 | A database collection | `backend/models/` | `backend/models/Route.js` |
-| Who is allowed to call what | `backend/middleware/adminOnly.js`, mounted in `backend/index.js` | |
+| Who is allowed to call what | `backend/middleware/access.js` (one table) | |
 | A passenger screen | `apps/passenger-app/src/screens/` | `TrackingScreen.js` |
 | A driver screen | `apps/driver-app/src/screens/` | `ShiftScreen.js` |
 | An admin page | `apps/admin-dashboard/src/pages/` | `DriversPage.js` |
@@ -29,14 +32,28 @@ A map of the repository and the rules for adding to it. If you are looking for a
 
 ```
 backend/                 API server
-  index.js               Starts the server and mounts the route files (order matters: public first, then admin guards)
-  routes/                One file per resource: auth, passengers, drivers, buses, routes, monitoring, health
-  middleware/            Rate limiter for sign-in, admin-only guards
-  realtime.js            Socket.IO: driver fixes in, bus updates out
-  lib/                   ETA engine, GPS validation, trip tracker, geometry, auth helpers, latest-fix store
+  index.js               Builds the services (store, route cache, realtime), then mounts access table, routes, error handler
+  config/                env.js (every environment variable and default), db.js (MongoDB connection)
+  routes/                One file per resource: auth, admins, passengers, drivers, buses, routes, monitoring, health
+  middleware/            access.js (role guards, one table), errorHandler.js (the one error path), authLimiter.js
+  realtime.js            Socket.IO wiring and per-bus live state: driver fixes in, bus updates out
+  lib/
+    contract.js          GENERATED from shared/contract.js: event names, statuses, ids, shared time windows
+    limits.js            Server-only thresholds, with how they relate
+    fixPipeline.js       One fix: validate, dedupe, rate and jump checks, smoothing, ETA, broadcast decision
+    routeCache.js        Prepared routes for the ETA engine, and the one way to drop them
+    tripRecorder.js      Trip, SegmentLog, EtaLog and GpsLog documents
+    metrics.js           Counters, latency, fixes per minute, the admin's live list
+    analytics.js         Segment and ETA-accuracy pipelines and statistics (stats.js: percentile, average)
+    eta.js, tripTracker.js, smooth.js, validate.js   Pure engine parts
+    geo.js               Distances, flat-earth frame, pointAt, GeoJSON <-> [lat, lng]
+    accounts.js, auth.js Credential rules and sign-in; hashes and tokens
+    busRef.js            "NB-4712 (BUS-002)" queries
+    store.js             Latest-fix cache (Redis or memory)
+    crud.js, sequence.js, rate.js   Route-file helpers, record ids, per-minute counter
   models/                Mongoose schemas
-  scripts/               seed, replay (simulated buses), clear-sim-data, smoke (endpoint check)
-  test/                  node --test unit tests
+  scripts/               seed, replay (simulated buses), clear-sim-data, smoke (endpoint check, exits 1 on a wrong status), lib/rand.js
+  test/                  node --test unit tests, plus crud.test.js against a throwaway MongoDB database
 
 apps/passenger-app/      Expo app for passengers
 apps/driver-app/         Expo app for drivers
@@ -96,7 +113,7 @@ Two files are deliberately large: `shared/native/ui.js` (the mobile UI kit: many
 
 ## Adding things
 
-**A REST endpoint.** Add the handler to the matching file in `backend/routes/`, with the full path (`/api/...`). A new resource gets a new file, mounted in `backend/index.js`: above the admin guards if it is public, below if it is admin-only. Add a call to `backend/scripts/smoke.js`.
+**A REST endpoint.** Add the handler to the matching file in `backend/routes/`, with the full path (`/api/...`). A new resource gets a new file, mounted in `backend/index.js`. If it is not public, add its path and role to the table in `backend/middleware/access.js`. Handlers throw (or let Mongoose throw) instead of catching: `middleware/errorHandler.js` answers `{ error }` with 400, 404, 409 or 500. Add a call with its expected status to `backend/scripts/smoke.js`.
 
 **A mobile screen.** Create `src/screens/NameScreen.js` and `NameScreen.styles.js`, then render it from the tab switch in `App.js`. If two screens need the same style, move it to `src/styles/common.js`.
 
@@ -113,18 +130,21 @@ Each part reads its own file. Copy the `.env.example` beside it.
 | Part | File | Variable | Needed? | Purpose |
 |---|---|---|---|---|
 | Backend | `backend/.env` | `JWT_SECRET` | Yes | Signs login tokens |
-| | | `ADMIN_PASSWORD` | Yes | Password of the first admin account |
+| | | `ADMIN_PASSWORD` | Yes for any shared deployment (defaults are in `backend/config/env.js`) | Password of the first admin account. Falls back to `admin123` for local development only, so set it everywhere else |
 | | | `ADMIN_USERNAME` | No (default `admin`) | Name of the first admin account |
 | | | `MONGODB_URI` | No (local default) | MongoDB connection |
 | | | `PORT` | No (default 5000) | API port |
 | | | `REDIS_URL` | No | Latest-fix cache; empty uses memory |
 | | | `CORS_ORIGIN` | Production only | Allowed web origins, comma-separated |
-| | | `OSRM_URL` | No | Routing server used by `npm run seed` |
+| | | `GPS_SMOOTHING` | No (default `on`) | Set to `off` to disable the GPS smoothing filter |
+| | | `OSRM_URL` | No (default the public OSRM server) | Routing server used by `npm run seed` |
+| | | `API_URL` | No (default `http://localhost:5000`) | Backend address used by `npm run replay` |
 | Admin | `apps/admin-dashboard/.env.local` | `REACT_APP_API_URL` | No (default `http://localhost:5000`) | Backend address |
-| | | `REACT_APP_OSRM_URL` | No | Routing server for the route editor |
+| | | `REACT_APP_OSRM_URL` | No (default the public OSRM server) | Routing server for the route editor |
 | Driver, passenger | `apps/*/.env` | `EXPO_PUBLIC_API_URL` | Real phones only | Backend address on your network |
 | | | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Native builds only | Google Maps key |
-| Driver | `apps/driver-app/.env` | `EXPO_PUBLIC_DISPATCH_PHONE` | No | Number shown for dispatch |
+| | | `GOOGLE_MAPS_API_KEY` | EAS builds | The same key, stored as an EAS environment variable (`eas env:create`) because a terminal variable never reaches EAS. See `SETUP-APKS.md` |
+| Driver | `apps/driver-app/.env` | `EXPO_PUBLIC_DISPATCH_PHONE` | No (default `+94 11 248 7700`) | Number shown for dispatch |
 
 After changing an `EXPO_PUBLIC_` value, restart Expo with `-c` so the cache is cleared.
 
