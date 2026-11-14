@@ -7,7 +7,6 @@ const net = require('node:net');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const mongoose = require('mongoose');
-const { formatBusRef, parseBusRef } = require('../lib/contract');
 
 const { MONGO_HOST } = require('../config/env');
 
@@ -178,7 +177,7 @@ test('routes: create, read one, list, update, delete', async (t) => {
   };
   assert.equal((await A.post('/api/routes', { name: 'x' })).status, 400);
   assert.equal((await A.post('/api/routes', { ...body, path: [[6.9, 79.86]] })).status, 400);
-  assert.equal((await A.post('/api/routes', { ...body, assignedBus: 'GHOST (BUS-404)' })).status, 400, 'unknown bus is rejected');
+  assert.equal((await A.post('/api/routes', { ...body, busIds: ['BUS-404'] })).status, 400, 'unknown bus is rejected');
 
   const made = await A.post('/api/routes', body);
   assert.equal(made.status, 201);
@@ -202,30 +201,63 @@ test('routes: create, read one, list, update, delete', async (t) => {
   assert.equal((await A.del(`/api/routes/${made.data.routeId}`)).status, 404);
 });
 
-test('relations: deleting or renaming a record never leaves a dangling reference', async (t) => {
+test('relations: deleting a record never leaves a dangling reference', async (t) => {
   if (guard(t)) return;
   const A = as(admin);
   const driver = (await A.post('/api/drivers', { name: 'Rel Driver', license: 'L-REL', expiry: '2030-01-01', phone: '0713333333' })).data;
   const bus = (await A.post('/api/buses', { registration: 'NB-REL', capacity: 40, mileage: 1, password: 'pw1234', assignedDriver: driver.driverId })).data;
-  const route = (await A.post('/api/routes', { name: 'Rel', start: 'A', end: 'B', distance: 1, assignedBus: formatBusRef(bus) })).data;
-  assert.deepEqual(parseBusRef(route.assignedBus), { registration: 'NB-REL', busId: bus.busId });
-
-  // renaming the bus updates the route that points at it
-  const renamed = await A.put(`/api/buses/${bus.busId}`, { registration: 'NB-NEW' });
-  assert.equal(renamed.status, 200);
-  assert.deepEqual(parseBusRef((await A.get(`/api/routes/${route.routeId}`)).data.assignedBus), { registration: 'NB-NEW', busId: bus.busId });
+  const route = (await A.post('/api/routes', { name: 'Rel', start: 'A', end: 'B', distance: 1, busIds: [bus.busId] })).data;
+  assert.deepEqual(route.busIds, [bus.busId]);
+  assert.equal((await A.get(`/api/buses/${bus.busId}`)).data.routeId, route.routeId);
 
   // deleting the driver frees the bus
   const delDriver = await A.del(`/api/drivers/${driver.driverId}`);
   assert.equal(delDriver.data.unassignedBuses, 1);
   assert.equal((await A.get(`/api/buses/${bus.busId}`)).data.assignedDriver, '');
 
-  // deleting the bus frees the route
-  const delBus = await A.del(`/api/buses/${bus.busId}`);
-  assert.equal(delBus.data.unassignedRoutes, 1);
-  assert.equal((await A.get(`/api/routes/${route.routeId}`)).data.assignedBus, '');
-
+  // deleting the route frees its buses
   await A.del(`/api/routes/${route.routeId}`);
+  assert.equal((await A.get(`/api/buses/${bus.busId}`)).data.routeId, '');
+
+  // deleting a bus takes it off its route
+  const again = (await A.post('/api/routes', { name: 'Rel2', start: 'A', end: 'B', distance: 1, busIds: [bus.busId] })).data;
+  await A.del(`/api/buses/${bus.busId}`);
+  assert.deepEqual((await A.get(`/api/routes/${again.routeId}`)).data.busIds, []);
+  await A.del(`/api/routes/${again.routeId}`);
+});
+
+test('a route can have many buses, and a bus can run on one route only', async (t) => {
+  if (guard(t)) return;
+  const A = as(admin);
+  const mk = async (registration) => (await A.post('/api/buses', { registration, capacity: 40, mileage: 1, password: 'pw1234' })).data;
+  const [b1, b2, b3] = [await mk('NB-M1'), await mk('NB-M2'), await mk('NB-M3')];
+  const r1 = (await A.post('/api/routes', { name: 'Many', start: 'A', end: 'B', distance: 1, busIds: [b1.busId, b2.busId] })).data;
+  assert.deepEqual(r1.busIds, [b1.busId, b2.busId]);
+  assert.deepEqual(r1.buses.map((b) => b.registration), ['NB-M1', 'NB-M2']);
+
+  // a bus that is already on a route cannot be put on another one
+  const clash = await A.post('/api/routes', { name: 'Other', start: 'A', end: 'B', distance: 1, busIds: [b2.busId, b3.busId] });
+  assert.equal(clash.status, 409);
+  assert.match(clash.data.error, /NB-M2/);
+  assert.equal((await A.get(`/api/buses/${b3.busId}`)).data.routeId, '', 'a rejected list changes nothing');
+
+  const r2 = (await A.post('/api/routes', { name: 'Other', start: 'A', end: 'B', distance: 1, busIds: [b3.busId] })).data;
+  assert.equal((await A.put(`/api/routes/${r2.routeId}`, { busIds: [b1.busId] })).status, 409);
+  assert.equal((await A.put(`/api/buses/${b1.busId}`, { routeId: 'RT-999' })).status, 400, 'unknown route is rejected');
+
+  // changing the list frees the buses that were left out
+  const upd = await A.put(`/api/routes/${r1.routeId}`, { busIds: [b1.busId] });
+  assert.deepEqual(upd.data.busIds, [b1.busId]);
+  assert.equal((await A.get(`/api/buses/${b2.busId}`)).data.routeId, '');
+  // moving a bus from the bus side
+  assert.equal((await A.put(`/api/buses/${b2.busId}`, { routeId: r2.routeId })).data.routeId, r2.routeId);
+  assert.deepEqual((await A.get(`/api/routes/${r2.routeId}`)).data.busIds, [b2.busId, b3.busId]);
+  // a plain edit of the route keeps its buses
+  assert.deepEqual((await A.put(`/api/routes/${r2.routeId}`, { distance: 3 })).data.busIds, [b2.busId, b3.busId]);
+
+  await A.del(`/api/routes/${r1.routeId}`);
+  await A.del(`/api/routes/${r2.routeId}`);
+  for (const b of [b1, b2, b3]) await A.del(`/api/buses/${b.busId}`);
 });
 
 test('driver login finds the route of exactly that bus, not a bus whose registration contains it', async (t) => {
@@ -233,7 +265,7 @@ test('driver login finds the route of exactly that bus, not a bus whose registra
   const A = as(admin);
   const b1 = (await A.post('/api/buses', { registration: 'NB-1', capacity: 40, mileage: 1, password: 'pw1234' })).data;
   const b12 = (await A.post('/api/buses', { registration: 'NB-12', capacity: 40, mileage: 1, password: 'pw1234' })).data;
-  const route = (await A.post('/api/routes', { name: 'Only NB-12', start: 'A', end: 'B', distance: 1, assignedBus: formatBusRef(b12) })).data;
+  const route = (await A.post('/api/routes', { name: 'Only NB-12', start: 'A', end: 'B', distance: 1, busIds: [b12.busId] })).data;
   const login = (reg) => call('POST', '/api/auth/driver-login', { body: { registration: reg, password: 'pw1234' } });
   assert.equal((await login('NB-1')).data.assignedRoute, null);
   assert.equal((await login('NB-12')).data.assignedRoute.routeId, route.routeId);

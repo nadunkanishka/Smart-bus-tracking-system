@@ -745,3 +745,13 @@ button:disabled, [role="button"][aria-disabled="true"] { opacity: 0.55; cursor: 
   .sidebar-footer { border-top: 0; padding-top: 0; }
   .page-scroll { padding: var(--space-3) var(--space-2) var(--space-6); padding-bottom: 96px; } /* room for the phone navigation bar */
 }
+
+/* Search and filters above a list */
+.list-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 14px; }
+.list-search { flex: 1 1 240px; max-width: 360px; }
+.list-extra { flex: 0 1 220px; width: auto; }
+.pill-count { opacity: .7; font-variant-numeric: tabular-nums; margin-left: 2px; }
+.list-count { color: var(--a-muted); font-size: 13px; }
+.btn-link { background: none; border: 0; padding: 0 0 0 6px; color: var(--accent-text); cursor: pointer; font: inherit; text-decoration: underline; }
+.bus-checklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; max-height: 180px; overflow: auto; padding: 8px 2px; }
+.check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; }

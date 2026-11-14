@@ -16,6 +16,7 @@ const { createRealtime } = require('./realtime');
 const { ensureFirstAdmin } = require('./lib/accounts');
 const { accessGuard } = require('./middleware/access');
 const errorHandler = require('./middleware/errorHandler');
+const mongoose = require('mongoose');
 const Admin = require('./models/Admin');
 
 void env.JWT_SECRET; // warns at startup when the development secret is in use
@@ -23,6 +24,9 @@ void env.JWT_SECRET; // warns at startup when the development secret is in use
 connectDB().then(async (connected) => {
   if (!connected) return;
   try {
+    // Unique indexes (licence, registration, ...) are built in the background after connecting. Until they exist a
+    // duplicate would be accepted, so wait for them before the admin account (the readiness signal the tests poll) is made.
+    await Promise.all(Object.values(mongoose.models).map((model) => model.init()));
     await ensureFirstAdmin(Admin, { username: env.ADMIN_USERNAME, password: env.ADMIN_PASSWORD, passwordFromEnv: env.ADMIN_PASSWORD_SET });
   } catch (err) {
     console.error('Admin seeding error:', err.message);

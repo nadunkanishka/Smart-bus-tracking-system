@@ -108,7 +108,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
               <span className="rcb-number">{frontRoute.routeNumber ? `Route ${frontRoute.routeNumber}` : frontRoute.name}</span>
               <span className="rcb-name">{frontRoute.start} → {frontRoute.end} · {distanceKm(frontRoute.distance)}</span>
               <span className="rcb-foot">
-                <span className="rcb-bus">{frontRoute.assignedBus || 'No bus assigned'}</span>
+                <span className="rcb-bus">{frontRoute.busRegistrations.length ? `${frontRoute.busRegistrations.length} bus${frontRoute.busRegistrations.length > 1 ? 'es' : ''}: ${frontRoute.busRegistrations.join(', ')}` : 'No bus assigned'}</span>
                 <span className="rcb-brand">SmartBus</span>
               </span>
             </button>

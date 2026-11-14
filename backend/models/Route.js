@@ -55,10 +55,6 @@ const routeSchema = new mongoose.Schema(
       ],
       default: [],
     },
-    assignedBus: {
-      type: String,
-      default: '',
-    },
     status: {
       type: String,
       enum: STATUS.route,

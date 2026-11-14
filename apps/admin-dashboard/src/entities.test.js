@@ -20,12 +20,12 @@ const CASES = [
     form: {
       name: ' Pettah to Homagama ', routeNumber: ' 138 ', start: ' Pettah ', end: ' Homagama ', distance: '24.5',
       stopPoints: [{ name: ' Pettah ', lat: 6.93, lng: 79.85 }, { name: 'Homagama', lat: 6.84, lng: 80.0 }],
-      path: [[6.93, 79.85], [6.84, 80.0]], assignedBus: 'NB-4712 (BUS-002)', status: 'Active',
+      path: [[6.93, 79.85], [6.84, 80.0]], busIds: ['BUS-002', 'BUS-003'], status: 'Active',
     },
     payload: {
       name: 'Pettah to Homagama', routeNumber: '138', start: 'Pettah', end: 'Homagama', distance: 24.5,
       stopPoints: [{ name: 'Pettah', lat: 6.93, lng: 79.85 }, { name: 'Homagama', lat: 6.84, lng: 80.0 }],
-      stops: ['Pettah', 'Homagama'], path: [[6.93, 79.85], [6.84, 80.0]], assignedBus: 'NB-4712 (BUS-002)', status: 'Active',
+      stops: ['Pettah', 'Homagama'], path: [[6.93, 79.85], [6.84, 80.0]], busIds: ['BUS-002', 'BUS-003'], status: 'Active',
     },
   },
 ];

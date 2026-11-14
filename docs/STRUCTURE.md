@@ -48,7 +48,6 @@ backend/                 API server
     eta.js, tripTracker.js, smooth.js, validate.js   Pure engine parts
     geo.js               Distances, flat-earth frame, pointAt, GeoJSON <-> [lat, lng]
     accounts.js, auth.js Credential rules and sign-in; hashes and tokens
-    busRef.js            "NB-4712 (BUS-002)" queries
     store.js             Latest-fix cache (Redis or memory)
     crud.js, sequence.js, rate.js   Route-file helpers, record ids, per-minute counter
   models/                Mongoose schemas
