@@ -1,5 +1,5 @@
 // GPS fix payload validation. Returns { ok, fix } or { ok: false, error }.
-// Payload: { lat, lng, speed (m/s), heading (deg), accuracy (m), ts (device epoch ms), seq }
+// Payload: { lat, lng, speed (m/s), heading (deg), accuracy (m), ts (device epoch ms) }
 const { MAX_SPEED_MPS } = require('./contract');
 const { MAX_FUTURE_MS, MAX_FIX_AGE_MS } = require('./limits');
 
@@ -20,9 +20,8 @@ function validateFix(raw, now = Date.now()) {
   let heading = Number(raw.heading);
   if (!Number.isFinite(heading) || heading < 0 || heading > 360) heading = null;
   const accuracy = Number.isFinite(Number(raw.accuracy)) ? Number(raw.accuracy) : null;
-  const seq = Number.isFinite(Number(raw.seq)) ? Number(raw.seq) : null;
 
-  return { ok: true, fix: { lat, lng, speed, heading, accuracy, ts, seq } };
+  return { ok: true, fix: { lat, lng, speed, heading, accuracy, ts } };
 }
 
 module.exports = { validateFix };

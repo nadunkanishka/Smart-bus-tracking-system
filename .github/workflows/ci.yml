@@ -9,7 +9,7 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     services:
-      # the CRUD integration tests need a real MongoDB; without one they are skipped
+      # the CRUD integration tests need a real MongoDB (they fail when CI is set and it is missing)
       mongo:
         image: mongo:7
         ports: ['27017:27017']
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
@@ -35,13 +35,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: apps/admin-dashboard/package-lock.json
       - run: npm ci
       - run: npm test -- --watchAll=false
       # CI=true makes Create React App treat ESLint warnings as errors, so this is also the lint step.
       - run: npm run build
+
+  apps-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm run test:apps
 
   shared-sync:
     # The apps hold generated copies of shared/. This fails if a copy was edited by hand or the sync was not run.
@@ -50,7 +59,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
       - run: node shared/sync.js
       - run: git diff --exit-code
 
@@ -68,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
       - run: npm ci

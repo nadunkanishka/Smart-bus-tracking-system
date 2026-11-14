@@ -1,6 +1,9 @@
 // Artillery helper: gives each virtual driver a signed token and a moving position along the route.
-// Tokens are signed by the backend's own auth module, so JWT_SECRET must match the server's (same default when unset).
+// Tokens are signed by the backend's own auth module, so JWT_SECRET must match the server's (same default when unset; the backend's .env is loaded below).
+const path = require('path');
 const crypto = require('crypto');
+// Same JWT_SECRET as the server: read the backend's .env before the auth module is loaded.
+try { require('../backend/node_modules/dotenv').config({ path: path.join(__dirname, '..', 'backend', '.env') }); } catch (err) { /* no .env: the server's default secret applies */ }
 const { signToken, driverClaims } = require('../backend/lib/auth');
 const { fromLineString } = require('../backend/lib/geo');
 

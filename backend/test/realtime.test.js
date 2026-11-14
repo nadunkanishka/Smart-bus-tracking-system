@@ -32,7 +32,8 @@ const driverToken = (routeId) => signToken(driverClaims({ busId: 'BUS-7', regist
 const ask = (socket, event, payload) => new Promise((resolve) => socket.emit(event, payload, resolve));
 // Everything `event` delivers to `socket` from now on.
 const record = (socket, event) => { const got = []; socket.on(event, (m) => got.push(m)); return got; };
-const settle = () => new Promise((r) => setTimeout(r, 150));
+// Waits until `done()` is true (a broadcast has arrived) instead of sleeping a fixed time, so a slow machine cannot fail it.
+const until = async (done, ms = 3000) => { const end = Date.now() + ms; while (!done() && Date.now() < end) await new Promise((r) => setTimeout(r, 10)); };
 const fix = (ts) => ({ lat: 6.9, lng: 79.86, speed: 8, heading: 0, accuracy: 5, ts });
 
 async function passengerOn(open, routeId) {
@@ -52,7 +53,7 @@ test('a bus moved to another route leaves the old route, and its fixes go to the
 
     const first = await open({ token: driverToken('RT-A') });
     assert.equal((await ask(first, EVENTS.FIX, fix(Date.now()))).ok, true);
-    await settle();
+    await until(() => updatesA.length >= 1);
     assert.equal(updatesA.length, 1);
     first.close();
 
@@ -60,7 +61,7 @@ test('a bus moved to another route leaves the old route, and its fixes go to the
     const second = await open({ token: driverToken('RT-B') });
     const ack = await ask(second, EVENTS.FIX, fix(Date.now()));
     assert.equal(ack.ok, true);
-    await settle();
+    await until(() => offlineA.length >= 1 && updatesB.length >= 1);
     assert.deepEqual(offlineA, [{ busId: 'BUS-7' }], 'passengers on the old route are told the bus left');
     assert.equal(updatesA.length, 1, 'nothing more reaches the old route');
     assert.deepEqual(updatesB.map((u) => u.routeId), ['RT-B']);
@@ -93,7 +94,7 @@ test('going off duty tells passengers the bus is offline even when the cache can
     const driver = await open({ token: driverToken('RT-A') });
     await ask(driver, EVENTS.FIX, fix(Date.now()));
     assert.deepEqual(await ask(driver, EVENTS.DUTY, { onDuty: false }), { ok: false, error: 'Server error' });
-    await settle();
+    await until(() => offline.length >= 1);
     assert.deepEqual(offline, [{ busId: 'BUS-7' }]);
     assert.ok(errors.some((e) => e.includes('cache down')), 'the failure is logged');
   } finally {
