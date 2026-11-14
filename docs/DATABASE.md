@@ -15,7 +15,6 @@ MongoDB database `smart_bus_tracking` on a local install (the default `MONGODB_U
 | `path` | GeoJSON `LineString` | Road geometry, coordinates `[lng, lat]`. **2dsphere index** |
 | `stopPoints` | Array of `{ name, location: GeoJSON Point }` | Stops in travel order. Consecutive stops define the ETA segments. **2dsphere index** on `stopPoints.location` |
 | `stops` | [String] | Stop names, kept in step with `stopPoints` |
-| `assignedBus` | String | `"<registration> (<busId>)"` |
 | `status` | `Active` / `Inactive` / `Under Construction` | |
 
 ### buses
@@ -27,6 +26,7 @@ MongoDB database `smart_bus_tracking` on a local install (the default `MONGODB_U
 | `capacity`, `mileage` | Number | |
 | `password` | String | scrypt hash. Never returned by the API |
 | `assignedDriver` | String | `driverId` of the assigned driver |
+| `routeId` | String | The route this bus runs (`RT-001`), blank when none. One route per bus; a route has many buses |
 | `status` | `Active` / `Idle` / `Maintenance` | |
 
 ### drivers

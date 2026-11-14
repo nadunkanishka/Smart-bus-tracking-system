@@ -20,6 +20,7 @@ export const ENTITIES = {
       empty: 'No drivers registered yet. Click "Add New Driver" to add one!',
     },
     statuses: STATUS.driver,
+    searchKeys: ['id', 'name', 'license', 'phone'],
     blank: { name: '', license: '', expiry: '', phone: '', status: STATUS.driver[0] },
     fromApi: (d) => ({
       id: d.driverId || d._id || d.id,
@@ -50,6 +51,7 @@ export const ENTITIES = {
       empty: 'No buses registered yet. Click "Add New Bus" to register a bus!',
     },
     statuses: STATUS.bus,
+    searchKeys: ['id', 'registration', 'assignedDriver'],
     blank: { registration: '', capacity: '', mileage: '', password: '', assignedDriver: '', status: STATUS.bus[0] },
     fromApi: (b) => ({
       id: b.busId || b._id || b.id,
@@ -59,6 +61,7 @@ export const ENTITIES = {
       mileage: b.mileage,
       hasPassword: !!b.hasPassword,
       assignedDriver: b.assignedDriver || '',
+      routeId: b.routeId || '',
       status: b.status || STATUS.bus[0],
     }),
     toForm: (r) => ({
@@ -95,7 +98,8 @@ export const ENTITIES = {
       empty: 'No network routes created yet. Click "Create Route" to create one!',
     },
     statuses: STATUS.route,
-    blank: { name: '', routeNumber: '', start: '', end: '', distance: '', stopPoints: [], path: [], assignedBus: '', status: STATUS.route[0] },
+    searchKeys: ['id', 'name', 'routeNumber', 'start', 'end', 'stops', 'busRegistrations'],
+    blank: { name: '', routeNumber: '', start: '', end: '', distance: '', stopPoints: [], path: [], busIds: [], status: STATUS.route[0] },
     fromApi: (r) => ({
       id: r.routeId || r._id || r.id,
       rawId: r._id,
@@ -108,7 +112,8 @@ export const ENTITIES = {
       // GeoJSON [lng, lat] from the API -> [lat, lng] for the map editor
       stopPoints: (r.stopPoints || []).map((sp) => ({ name: sp.name, lat: sp.location.coordinates[1], lng: sp.location.coordinates[0] })),
       path: (r.path?.coordinates || []).map(([lng, lat]) => [lat, lng]),
-      assignedBus: r.assignedBus || '',
+      busIds: Array.isArray(r.busIds) ? r.busIds : [],
+      busRegistrations: (r.buses || []).map((b) => b.registration),
       status: r.status || STATUS.route[0],
     }),
     toForm: (r) => ({
@@ -119,7 +124,7 @@ export const ENTITIES = {
       routeNumber: r.routeNumber || '',
       stopPoints: r.stopPoints || [],
       path: r.path || [],
-      assignedBus: r.assignedBus || '',
+      busIds: r.busIds || [],
       status: r.status || STATUS.route[0],
     }),
     required: [['name', 'route name'], ['start', 'start terminal'], ['end', 'end terminal'], ['distance', 'distance']],
@@ -135,7 +140,7 @@ export const ENTITIES = {
         stopPoints,
         stops: stopPoints.map((sp) => sp.name),
         path: f.path || [],
-        assignedBus: f.assignedBus || '',
+        busIds: f.busIds || [],
         status: f.status || STATUS.route[0],
       };
     },

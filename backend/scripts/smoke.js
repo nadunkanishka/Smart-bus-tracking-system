@@ -93,7 +93,7 @@ const need = (value, what) => {
   await call('routes: create invalid', 400, 'POST', '/api/routes', { token: admin, body: { name: 'No terminals' } });
   await call('routes: create bad path', 400, 'POST', '/api/routes', { token: admin, body: { name: 'R', start: 'A', end: 'B', distance: 5, path: [[6.9, 79.86]] } });
   await call('routes: create unnamed stop', 400, 'POST', '/api/routes', { token: admin, body: { name: 'R', start: 'A', end: 'B', distance: 5, stopPoints: [{ lat: 6.9, lng: 79.86 }] } });
-  const routeId = need((await call('routes: create', 201, 'POST', '/api/routes', { token: admin, body: { name: 'Fort - Borella', start: 'Fort', end: 'Borella', distance: '6.5', routeNumber: '138', assignedBus: 'NB-4712', path, stopPoints } })).routeId, 'new route id');
+  const routeId = need((await call('routes: create', 201, 'POST', '/api/routes', { token: admin, body: { name: 'Fort - Borella', start: 'Fort', end: 'Borella', distance: '6.5', routeNumber: '138', path, stopPoints } })).routeId, 'new route id');
   await call('routes: update', 200, 'PUT', `/api/routes/${routeId}`, { token: admin, body: { distance: '7', stops: 'not-an-array' } });
   await call('routes: update unknown', 404, 'PUT', '/api/routes/RT-999', { token: admin, body: { distance: 1 } });
   await call('routes: public list', 200, 'GET', '/api/routes');

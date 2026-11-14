@@ -160,3 +160,11 @@ Added: `.nvmrc` (22). Rewrote `docs/DEPLOYMENT.md` as a short reference; stale f
 Fixed: one `IS_WEB` switch in the UI kit; iOS bundle id for the driver app; load-test token signing now reads `backend/.env`; `realtime.test.js` waits for the broadcast instead of a fixed 150 ms sleep (the likely cause of the one-off flake); CI runs `test:apps` and reads the Node version from `.nvmrc`; the unused `seq` field is gone from `validate.js` and API.md.
 
 Left for later (small, no behaviour change, not worth the risk now): stop statuses `passed`/`upcoming` into the contract; one SIM/LOAD id prefix module; `describeError`/`httpError` moved next to the error handler and the hand-written 4xx responses converted to throws; one `changePassword` and one set of admin defaults in `lib/accounts.js`; `dwellSec` and `windowM` into `lib/limits.js`; unused exports; a Redis service in CI; admin `StatusBadge` tones derived from `STATUS`; admin `@testing-library/*` to devDependencies (npm 11 rewrites the lockfile).
+
+## Buses per route, list search (Nov 2026)
+
+A route can now have many buses and a bus runs on one route only. The link moved from the route's text field `assignedBus` to `Bus.routeId`; `lib/busRef.js` (regex matching on that text) is gone. The server rejects a bus that is on another route with a 409. Existing data: run `node backend/scripts/migrate-bus-routes.js` once (it reads the old field and sets `Bus.routeId`).
+
+The admin lists have a search box, a status pill row with counts, and one extra filter (buses by route, routes with/without buses).
+
+Also found while testing: unique indexes are built in the background after connecting, so a duplicate sent right after start-up could be accepted (the earlier unreproduced test flake). The server now waits for the indexes before it creates the admin account.

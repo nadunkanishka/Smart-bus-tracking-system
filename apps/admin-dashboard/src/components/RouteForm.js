@@ -1,8 +1,31 @@
 import React from 'react';
 import Field from './Field';
 import RouteMapEditor from './RouteMapEditor';
-import { formatBusRef } from '../design/contract';
 import { seats } from '../format';
+
+// The buses that run this route. A bus can run one route only, so a bus that is on another route is not offered here;
+// the server checks it again.
+function BusChecklist({ buses, selected, onChange }) {
+  const offered = buses.filter((b) => !b.routeId || selected.includes(b.id));
+  const toggle = (id) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  return (
+    <div className="field">
+      <span className="form-label">Buses on this route ({selected.length} selected)</span>
+      {offered.length === 0 ? (
+        <span className="cell-muted">Every bus is already on a route. Add a bus first, or take one off its route.</span>
+      ) : (
+        <div className="bus-checklist" role="group" aria-label="Buses on this route">
+          {offered.map((b) => (
+            <label key={b.id} className="check-row">
+              <input type="checkbox" checked={selected.includes(b.id)} onChange={() => toggle(b.id)} />
+              <span>{b.registration} <span className="cell-muted">{b.id} · {seats(b.capacity)}</span></span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RouteForm({ formData, updateField, setFormData, buses }) {
   return (
@@ -53,21 +76,8 @@ export default function RouteForm({ formData, updateField, setFormData, buses })
             placeholder="120"
           />
         </Field>
-        <Field label="Assign Bus (From Fleet)" icon="bus">
-          <select
-            className="form-input"
-            value={formData.assignedBus}
-            onChange={(event) => updateField('assignedBus', event.target.value)}
-          >
-            <option value="">-- No Bus Assigned --</option>
-            {buses.map((b) => (
-              <option key={b.id} value={formatBusRef({ registration: b.registration, busId: b.id })}>
-                {b.registration} — {b.id} ({seats(b.capacity)})
-              </option>
-            ))}
-          </select>
-        </Field>
       </div>
+      <BusChecklist buses={buses} selected={formData.busIds || []} onChange={(ids) => updateField('busIds', ids)} />
 
       {/* Road path and stops on the map. Not wrapped in <label>: it holds many controls. */}
       <div className="field">

@@ -2,7 +2,6 @@ const express = require('express');
 const authLimiter = require('../middleware/authLimiter');
 const { driverClaims } = require('../lib/auth');
 const { signIn, issueToken } = require('../lib/accounts');
-const { routeQueriesFor } = require('../lib/busRef');
 const Admin = require('../models/Admin');
 const Bus = require('../models/Bus');
 const Driver = require('../models/Driver');
@@ -52,8 +51,7 @@ router.post('/api/auth/driver-login', authLimiter, async (req, res) => {
   }
   const driver = bus.assignedDriver ? await Driver.findOne({ driverId: bus.assignedDriver }) : null;
 
-  const [byId, byRegistration] = routeQueriesFor(bus);
-  const assignedRoute = await Route.findOne(byId) || await Route.findOne(byRegistration);
+  const assignedRoute = bus.routeId ? await Route.findOne({ routeId: bus.routeId }) : null;
 
   return res.json({
     message: 'Bus authentication successful',

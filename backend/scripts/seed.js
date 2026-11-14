@@ -11,7 +11,6 @@ const connectDB = require('../config/db');
 const Route = require('../models/Route');
 const Bus = require('../models/Bus');
 const { nextId } = require('../lib/sequence');
-const { formatBusRef } = require('../lib/busRef');
 const { STATUS } = require('../lib/contract');
 const { cumulativeDistances, toPoint, toLineString } = require('../lib/geo');
 const { OSRM_URL } = require('../config/env');
@@ -75,17 +74,18 @@ async function roadLine(stops) {
       path: { type: 'LineString', coordinates: line }, // already GeoJSON order, from roadLine()
       status: STATUS.route[0],
     });
-    if (def.number === PILOT && !route.assignedBus && bus) route.assignedBus = formatBusRef(bus);
     await route.save();
+    // The first bus in the fleet runs the pilot route, if it is not on a route already.
+    if (def.number === PILOT && bus && !bus.routeId) { bus.routeId = route.routeId; await bus.save(); }
     done += 1;
-    console.log(`Route ${def.number} ${route.routeId}: ${def.start} -> ${def.end}, ${stops.length} stops, ${route.distance} km, ${line.length} path points (${source})${route.assignedBus ? `, bus ${route.assignedBus}` : ''}`);
+    console.log(`Route ${def.number} ${route.routeId}: ${def.start} -> ${def.end}, ${stops.length} stops, ${route.distance} km, ${line.length} path points (${source})`);
     if (source === 'OSRM' && todo.length > 1) await sleep(1000); // be polite to the public demo server
   }
 
   console.log(`\nSeeded ${done} of ${todo.length} route(s).`);
   if (todo.some((r) => r.number === PILOT)) {
     const pilot = await Route.findOne({ routeNumber: PILOT });
-    if (pilot && !pilot.assignedBus) console.log('No bus registered yet: add one in the admin dashboard and assign it to Route 138.');
+    if (pilot && !(await Bus.exists({ routeId: pilot.routeId }))) console.log('No bus registered yet: add one in the admin dashboard and add it to Route 138.');
   }
   await mongoose.disconnect();
 })();

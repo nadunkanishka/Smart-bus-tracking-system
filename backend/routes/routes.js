@@ -1,7 +1,6 @@
 const express = require('express');
 const { nextId } = require('../lib/sequence');
-const { pick, withoutBlankStatus, idQuery, badRequest } = require('../lib/crud');
-const { busQueryFor } = require('../lib/busRef');
+const { pick, withoutBlankStatus, idQuery, badRequest, httpError } = require('../lib/crud');
 const { toPoint, toLineString } = require('../lib/geo');
 const Route = require('../models/Route');
 const Bus = require('../models/Bus');
@@ -32,14 +31,36 @@ function readGeometry(body) {
   return out;
 }
 
-const EDITABLE = ['name', 'start', 'end', 'distance', 'routeNumber', 'assignedBus', 'status'];
+const EDITABLE = ['name', 'start', 'end', 'distance', 'routeNumber', 'status'];
 const byId = (id) => idQuery(id, ['routeId']);
 
-// The assigned bus is a bus reference ("NB-4712 (BUS-002)", or just a registration / bus id). It must be a bus that exists.
-async function checkBus(assigned) {
-  if (!assigned) return;
-  const text = String(assigned).trim();
-  if (!(await Bus.exists(busQueryFor(text)))) throw badRequest(`Bus "${text}" does not exist`);
+// A route has many buses, a bus has one route. The link is Bus.routeId; the admin sends the route's whole list as busIds.
+// Checks first, so a rejected list changes nothing: every bus must exist and not be on another route.
+async function checkBuses(routeId, busIds) {
+  const ids = [...new Set((Array.isArray(busIds) ? busIds : []).map((id) => String(id).trim()).filter(Boolean))];
+  const found = ids.length ? await Bus.find({ busId: { $in: ids } }) : [];
+  const missing = ids.filter((id) => !found.some((b) => b.busId === id));
+  if (missing.length) throw badRequest(`Bus ${missing.join(', ')} does not exist`);
+  const taken = found.filter((b) => b.routeId && b.routeId !== routeId);
+  if (taken.length) throw httpError(409, `${taken.map((b) => `${b.registration} (${b.busId}) is on route ${b.routeId}`).join('; ')}. A bus can run on one route only.`);
+  return ids;
+}
+
+// Makes exactly `ids` the buses of the route.
+async function setBuses(routeId, ids) {
+  await Bus.updateMany({ routeId, busId: { $nin: ids } }, { routeId: '' });
+  if (ids.length) await Bus.updateMany({ busId: { $in: ids } }, { routeId });
+}
+
+// Route documents as the API shows them: plus the ids and registrations of the buses on the route.
+async function withBuses(routes) {
+  const list = Array.isArray(routes) ? routes : [routes];
+  const buses = await Bus.find({ routeId: { $in: list.map((r) => r.routeId) } }).sort({ busId: 1 });
+  const view = list.map((r) => {
+    const mine = buses.filter((b) => b.routeId === r.routeId);
+    return { ...r.toObject(), busIds: mine.map((b) => b.busId), buses: mine.map((b) => ({ busId: b.busId, registration: b.registration })) };
+  });
+  return Array.isArray(routes) ? view : view[0];
 }
 
 // services: { store, routeCache } built by index.js before the routes are mounted.
@@ -52,32 +73,34 @@ module.exports = ({ store, routeCache }) => {
   });
 
   router.get('/api/routes', async (req, res) => {
-    res.json(await Route.find().sort({ createdAt: -1 }));
+    res.json(await withBuses(await Route.find().sort({ createdAt: -1 })));
   });
 
   router.get('/api/routes/:id', async (req, res) => {
     const route = await Route.findOne(byId(req.params.id));
     if (!route) return res.status(404).json({ error: 'Route not found' });
-    return res.json(route);
+    return res.json(await withBuses(route));
   });
 
   router.post('/api/routes', async (req, res) => {
-    const { name, start, end, distance, stops, assignedBus, status, routeNumber } = req.body;
+    const { name, start, end, distance, stops, busIds, status, routeNumber } = req.body;
     const geometry = readGeometry(req.body);
-    await checkBus(assignedBus);
+    const routeId = await nextId('route');
+    const ids = await checkBuses(routeId, busIds);
     const route = new Route({
       ...withoutBlankStatus({ status }),
-      routeId: await nextId('route'),
+      routeId,
       name,
       start,
       end,
       distance: Number(distance),
       stops: Array.isArray(stops) ? stops : [],
-      assignedBus: assignedBus || '',
       routeNumber: routeNumber || '',
       ...geometry,
     });
-    res.status(201).json(await route.save());
+    await route.save();
+    await setBuses(routeId, ids);
+    res.status(201).json(await withBuses(route));
   });
 
   router.put('/api/routes/:id', async (req, res) => {
@@ -87,17 +110,21 @@ module.exports = ({ store, routeCache }) => {
     if (req.body.stops !== undefined) data.stops = Array.isArray(req.body.stops) ? req.body.stops : [];
     Object.assign(data, readGeometry(req.body));
     if (data.path === undefined && req.body.path !== undefined) { delete data.path; data.$unset = { path: 1 }; }
-    await checkBus(data.assignedBus);
+    const current = await Route.findOne(byId(req.params.id));
+    if (!current) return res.status(404).json({ error: 'Route not found' });
+    const ids = req.body.busIds !== undefined ? await checkBuses(current.routeId, req.body.busIds) : null;
 
     const updated = await Route.findOneAndUpdate(byId(req.params.id), data, { new: true, runValidators: true });
     if (!updated) return res.status(404).json({ error: 'Route not found' });
+    if (ids) await setBuses(updated.routeId, ids);
     routeCache.invalidate(updated.routeId); // new geometry takes effect on the next GPS fix
-    return res.json(updated);
+    return res.json(await withBuses(updated));
   });
 
   router.delete('/api/routes/:id', async (req, res) => {
     const deleted = await Route.findOneAndDelete(byId(req.params.id));
     if (!deleted) return res.status(404).json({ error: 'Route not found' });
+    await Bus.updateMany({ routeId: deleted.routeId }, { routeId: '' }); // its buses become free to take another route
     routeCache.invalidate(deleted.routeId);
     return res.json({ message: 'Route deleted successfully', id: req.params.id });
   });

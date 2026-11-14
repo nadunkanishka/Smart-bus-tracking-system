@@ -33,9 +33,9 @@ Protected endpoints need `Authorization: Bearer <token>`. Login endpoints are li
 | PUT | `/api/routes/:id` | admin | `:id` is the `routeId` (e.g. `RT-001`) or the Mongo `_id` |
 | DELETE | `/api/routes/:id` | admin | |
 
-`assignedBus` must name an existing bus (`NB-4712 (BUS-002)`, a registration or a bus id), otherwise the request is rejected. Only the listed fields can be changed: `routeId` and `_id` are ignored.
+`busIds` is the route's whole list of buses (`["BUS-002", "BUS-003"]`): a route can have many buses, a bus can run on one route only. An unknown bus is a 400; a bus that is already on another route is a 409 and nothing changes. Leave `busIds` out of a PUT to keep the current buses. Responses carry `busIds` and `buses` (`{ busId, registration }`). Only the listed fields can be changed: `routeId` and `_id` are ignored.
 
-Route body: `name`, `routeNumber`, `start`, `end`, `distance` (km), `assignedBus`, `status`, plus geometry as plain arrays:
+Route body: `name`, `routeNumber`, `start`, `end`, `distance` (km), `busIds`, `status`, plus geometry as plain arrays:
 
 ```json
 {
@@ -53,7 +53,7 @@ Route body: `name`, `routeNumber`, `start`, `end`, `distance` (km), `assignedBus
 | GET / POST | `/api/drivers` | `name`, `license`, `expiry`, `phone`, `status` |
 | GET / PUT / DELETE | `/api/drivers/:id` | `:id` is `driverId` or `_id`. Deleting a driver clears `assignedDriver` on their buses (`unassignedBuses` in the response) |
 | GET / POST | `/api/buses` | `registration`, `capacity`, `mileage`, `password`, `assignedDriver` (a `driverId`), `status` |
-| GET / PUT / DELETE | `/api/buses/:id` | A blank `password` keeps the current one. `assignedDriver` must be an existing driver. Renaming the registration updates the routes that point at the bus; deleting the bus clears `assignedBus` on its routes (`unassignedRoutes` in the response) |
+| GET / PUT / DELETE | `/api/buses/:id` | A blank `password` keeps the current one. `assignedDriver` must be an existing driver. `routeId` puts the bus on a route (must exist; a bus has one route, so this moves it). Deleting a bus takes it off its route. Deleting a route frees its buses |
 | GET | `/api/dashboard/summary` | Counts for the dashboard |
 
 Bus responses never include the password. They carry `hasPassword: true/false`.

@@ -32,6 +32,12 @@ const busSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    // routeId (e.g. RT-001) of the route this bus runs. One route per bus; a route can have many buses.
+    routeId: {
+      type: String,
+      default: '',
+      index: true,
+    },
     status: {
       type: String,
       enum: STATUS.bus,
