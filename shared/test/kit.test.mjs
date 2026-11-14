@@ -18,7 +18,7 @@ test('the kit carries no app-specific defaults', () => {
 });
 
 test('the ease-out curve is written once, in tokens.js', () => {
-  for (const file of ['../native/ui.js', '../native/LiveMap.js', '../sync.js']) {
+  for (const file of ['../native/ui.js', '../native/mapDocument.js', '../native/LiveMap.js', '../sync.js']) {
     assert.doesNotMatch(readFileSync(new URL(file, import.meta.url), 'utf8'), /0\.23, ?1, ?0\.32, ?1|\.23,1,\.32,1/, file);
   }
 });

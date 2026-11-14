@@ -262,6 +262,6 @@ Open `shared/buses/export.html` in a browser to preview every bus image.
 | [docs/DATABASE.md](docs/DATABASE.md) | MongoDB collections, indexes and Redis keys |
 | [docs/SETUP-MONGODB.md](docs/SETUP-MONGODB.md) | Step by step: the free Atlas database, loading the routes, backups |
 | [docs/SETUP-RAILWAY.md](docs/SETUP-RAILWAY.md) | Step by step: the backend on Railway, variables, CORS, testing with a simulated bus |
-| [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Step by step: building and installing the driver and passenger APKs, the Maps key |
+| [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Step by step: building and installing the driver and passenger APKs |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Reference: Docker, Redis, environment variables, Vercel sites, free-hosting limits, post-deploy checks |
 | [docs/EVALUATION.md](docs/EVALUATION.md) | Measuring latency, ETA accuracy and load; user study |

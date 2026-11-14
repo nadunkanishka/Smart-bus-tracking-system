@@ -19,7 +19,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 
 **Not done or never verified**
 
-- Expo Go on two phones against the hosted backend worked (driver on duty, passenger sees the bus and ETAs; reported 13 Nov 2026), and the hosted admin dashboard showed the live bus. No installed APK is in use yet (the first driver APK was built pointing at the emulator address and was thrown away; both apps need a rebuild with the Maps key), nothing has run on a road, and the smoother and baseline are not yet checked on real GPS logs. All accuracy and latency numbers so far are simulated.
+- Expo Go on two phones against the hosted backend worked (driver on duty, passenger sees the bus and ETAs; reported 13 Nov 2026), and the hosted admin dashboard showed the live bus. No installed APK is in use yet (the first driver APK was built pointing at the emulator address and was thrown away; both apps need a rebuild (the maps no longer need a key)), nothing has run on a road, and the smoother and baseline are not yet checked on real GPS logs. All accuracy and latency numbers so far are simulated.
 - Redis has never been exercised here (this machine has no Docker or WSL), so the Redis path is untested.
 - No measured latency, ETA error or load figures exist yet. The report must not claim any until they do.
 - The reports describe two things the code does not do (see section 1).
@@ -32,7 +32,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 | 2 | System design and architecture | **Done** | `docs/ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `STRUCTURE.md` |
 | 3 | Backend, real-time pipeline | **Done** (about 95%) | Socket.IO rooms per route, `gps:fix` and `gps:batch`, Redis latest-fix cache with in-memory fallback, GeoJSON `2dsphere` indexes, JWT auth, CRUD routes, validation, rate limiting |
 | 4 | Driver app | **Done** (about 90%) | 3 s GPS capture, offline queue with batch flush and ack, duty toggle, diagnostics screen. Works in Expo Go on real phones (reported). No installed APK in use yet. |
-| 5 | Passenger app | **Done** (about 90%) | Route list, per-route subscription, live map with gliding markers, per-stop ETAs. The web build uses Leaflet and OpenStreetMap, the native build `react-native-maps`. |
+| 5 | Passenger app | **Done** (about 90%) | Route list, per-route subscription, live map with gliding markers, per-stop ETAs. The web build uses Leaflet and OpenStreetMap, the phone apps the same map inside a WebView (no map key). |
 | 6 | ETA engine | **Built, not tuned** (about 70%) | `lib/eta.js` follows steps (a) to (d); `tripTracker` logs segment times, dwell and predicted-vs-actual into `SegmentLog` and `EtaLog`. Smoothing and the straight-line baseline are built and measured on simulated tracks. Tuning needs real trip data, which does not exist yet. |
 | 7 | Admin dashboard | **Done** (about 95%) | Routes with a map editor, stops, buses, drivers, passengers, admins, live monitor, trip analytics, settings, dark mode |
 | 8 | Integration and system testing | **Partly done** (about 50%) | Backend tests cover the ETA engine, GPS pipeline, CRUD, route data, smoothing and baseline. A simulator (`npm run replay`) and a smoke script exist. A two-phone Expo Go run worked (reported); no installed-build run on a road; the driver and passenger apps have no tests. |
@@ -45,8 +45,8 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 
 | Deliverable | State |
 |---|---|
-| Driver app, Android APK | Code done. **APK not built** (rebuild with the Maps key). |
-| Passenger web and mobile app | Code done. Web deployed (Vercel). Phone app: build the APK with the Maps key. |
+| Driver app, Android APK | Code done. **APK not built** (rebuild: the map no longer needs a key). |
+| Passenger web and mobile app | Code done. Web deployed (Vercel). Phone app: build the APK. |
 | Admin dashboard | Done and deployed (Vercel). |
 | Deployed backend with Redis and MongoDB, load tested | Backend on Railway, MongoDB on Atlas. **No Redis yet, not load tested.** |
 | Performance evaluation report | **Not started** (tooling only) |
@@ -67,7 +67,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
   - [ ] Update the screenshots and report text that still name Maharagama as the terminal.
   - [ ] Check the points marked approximate in `backend/scripts/data/places.json` (Kanatta Junction, Technical College Junction, Thummulla, Makumbura Multimodal Centre) and the three stops left out for lack of a reliable point (Bellanthota, Old Kelani Bridge, Ayurveda Junction).
 - [x] **D3. Pilot both passenger apps, say so in the report.**
-  - [ ] Build the native passenger app as an installable build (EAS), install it on volunteer phones alongside the web app. Config is ready (EAS project, package name, backend address and Maps key setup in `docs/SETUP-APKS.md`); the build itself is still to do.
+  - [ ] Build the native passenger app as an installable build (EAS), install it on volunteer phones alongside the web app. Config is ready (EAS project, package name, backend address in `docs/SETUP-APKS.md`); the build itself is still to do.
   - [ ] Add a paragraph to the report describing the web app and the React Native companion (one Expo codebase), as the proposal promises.
 - [x] **D4. Keep passenger and administrator accounts.**
   - [ ] Add one line to the report: these go beyond the approved proposal (self-service passenger accounts, administrator accounts), included for security and usability.
@@ -113,7 +113,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 
 ## 5. Driver app on real phones
 
-- [ ] **(you)** Expo account; `eas build --platform android --profile preview` with `EXPO_PUBLIC_API_URL` set to the cloud API; install the APK on each volunteer's Android 10+ phone (`docs/SETUP-APKS.md`). Accounts and both EAS projects exist. The backend address now lives in each `eas.json` (a terminal variable never reaches EAS) and a build stops without the Maps key. Rebuild both apps.
+- [ ] **(you)** Expo account; `eas build --platform android --profile preview` with `EXPO_PUBLIC_API_URL` set to the cloud API; install the APK on each volunteer's Android 10+ phone (`docs/SETUP-APKS.md`). Accounts and both EAS projects exist. The backend address now lives in each `eas.json` (a terminal variable never reaches EAS). The maps need no key now. Rebuild both apps.
 - [ ] On each phone: grant location "all the time" and disable battery optimisation for the app, or background tracking stops.
 - [ ] Test on a bench: sign in, go on duty, screen off for 10 minutes, positions keep arriving.
 - [ ] Test offline: airplane mode for 2 minutes while moving, then reconnect; the buffered positions arrive in order and the bus does not jump.
@@ -185,7 +185,7 @@ All three measures are explained in `docs/EVALUATION.md`.
 | Passenger app is Leaflet web only | The Expo project also builds a native app | D3 |
 | Route 138 is Colombo-Homagama | Seed data is Pettah-Maharagama | D2 |
 | Redis stores the latest fix | Verified only against the in-memory fallback | Do section 2's Redis step before claiming it |
-| Proposal says Leaflet on the passenger map | The web build uses Leaflet, the native build `react-native-maps` with OSM tiles | Say so in the report |
+| Proposal says Leaflet on the passenger map | The web build and the phone apps both use Leaflet with OSM tiles (the phone apps inside a WebView) | Say so in the report |
 | Objectives name "Leaflet.js / Google Maps API" and "React Native / Flutter" as options evaluated | The chosen stack is in the code | Add the comparison that justifies it |
 | Admin "register bus stops" | Stops are managed inside the route form | Name it that way in the report |
 | Kalman delay given as 1.5 weeks, 2 weeks and "Ext. 2 wks"; Phase 6 month given as Month 6 to 7 and Month 7 to 8 | Contradictory | Use one figure and one month range |

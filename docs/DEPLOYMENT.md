@@ -1,6 +1,6 @@
 # Deployment reference
 
-Step-by-step guides, in the order you need them: [SETUP-MONGODB.md](SETUP-MONGODB.md) (database), [SETUP-RAILWAY.md](SETUP-RAILWAY.md) (backend), [SETUP-APKS.md](SETUP-APKS.md) (phone apps, including the Google Maps key). This page holds the rest: running locally, Docker, environment variables, the Vercel sites, free-hosting limits and the post-deploy checks.
+Step-by-step guides, in the order you need them: [SETUP-MONGODB.md](SETUP-MONGODB.md) (database), [SETUP-RAILWAY.md](SETUP-RAILWAY.md) (backend), [SETUP-APKS.md](SETUP-APKS.md) (phone apps). This page holds the rest: running locally, Docker, environment variables, the Vercel sites, free-hosting limits and the post-deploy checks.
 
 ## 1. Local development
 
