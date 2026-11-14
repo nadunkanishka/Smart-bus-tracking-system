@@ -1,8 +1,12 @@
-// Light / dark mode for the admin. One small store, so the header toggle, the login page and the maps always agree.
+// Light / dark mode for the admin. One small store, so the header toggle, the login page and the settings page always agree.
 // The choice lives in localStorage; until the person picks one, the system setting decides (and is followed live).
+// apply(false) runs when this module loads, which is while App's imports load, before index.js renders anything, so
+// data-theme is always on <html> by the first paint and admin-theme.css needs only the [data-theme] selectors.
 import { useSyncExternalStore } from 'react';
 
 const KEY = 'smartbus.theme';
+// How long colours cross-fade when the mode changes. Set as --theme-switch for the html.theme-switching rule in admin-theme.css.
+const SWITCH_MS = 220;
 const listeners = new Set();
 const query = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
@@ -14,19 +18,17 @@ function apply(animate) {
   const root = document.documentElement;
   if (animate) {
     root.classList.add('theme-switching');
-    window.setTimeout(() => root.classList.remove('theme-switching'), 260);
+    window.setTimeout(() => root.classList.remove('theme-switching'), SWITCH_MS + 40); // one frame after the fade ends
   }
   root.setAttribute('data-theme', mode);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', getComputedStyle(root).getPropertyValue('--a-bg').trim() || (mode === 'dark' ? '#110C0B' : '#FF9A6E'));
 }
+document.documentElement.style.setProperty('--theme-switch', `${SWITCH_MS}ms`);
 apply(false);
 
 const emit = () => listeners.forEach((l) => l());
-if (query) {
-  const onChange = (e) => { if (!saved) { mode = e.matches ? 'dark' : 'light'; apply(true); emit(); } };
-  if (query.addEventListener) query.addEventListener('change', onChange); else if (query.addListener) query.addListener(onChange);
-}
+query?.addEventListener?.('change', (e) => { if (!saved) { mode = e.matches ? 'dark' : 'light'; apply(true); emit(); } });
 
 export function setTheme(next) {
   mode = next === 'dark' ? 'dark' : 'light';
@@ -45,11 +47,7 @@ export function setPreference(p) {
   apply(true);
   emit();
 }
-export const useThemePreference = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => saved || 'system');
-export const useThemeMode = () => useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => mode);
 
-// OpenStreetMap tiles for Leaflet; the colour comes from a CSS filter (see admin-theme.css). Route colour follows the mode.
-const OSM = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-export const TILE_URL = { light: OSM, dark: OSM };
-export const TILE_ATTRIBUTION = '&copy; OpenStreetMap contributors';
-export const routeColor = () => (typeof document !== 'undefined' && getComputedStyle(document.documentElement).getPropertyValue('--orange').trim()) || '#FF6B35';
+const subscribe = (cb) => { listeners.add(cb); return () => listeners.delete(cb); };
+export const useThemePreference = () => useSyncExternalStore(subscribe, () => saved || 'system');
+export const useThemeMode = () => useSyncExternalStore(subscribe, () => mode);

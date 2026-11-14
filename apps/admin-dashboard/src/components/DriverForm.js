@@ -1,10 +1,11 @@
 import React from 'react';
-import Field from './Field';
+import Field, { StatusOptions } from './Field';
+import { ENTITIES } from '../entities';
 
 export default function DriverForm({ formData, updateField }) {
   return (
     <div className="modal-form">
-      <Field label="Full Name *">
+      <Field label="Full Name *" icon="user">
         <input
           className="form-input"
           value={formData.name}
@@ -12,7 +13,7 @@ export default function DriverForm({ formData, updateField }) {
           placeholder="e.g. A. Bandara"
         />
       </Field>
-      <Field label="License Number *">
+      <Field label="License Number *" icon="card">
         <input
           className="form-input mono-input"
           value={formData.license}
@@ -21,7 +22,7 @@ export default function DriverForm({ formData, updateField }) {
         />
       </Field>
       <div className="form-grid">
-        <Field label="License Expiry *">
+        <Field label="License Expiry *" icon="calendar">
           <input
             type="date"
             className="form-input"
@@ -29,7 +30,7 @@ export default function DriverForm({ formData, updateField }) {
             onChange={(event) => updateField('expiry', event.target.value)}
           />
         </Field>
-        <Field label="Phone Number *">
+        <Field label="Phone Number *" icon="phone">
           <input
             className="form-input"
             value={formData.phone}
@@ -38,11 +39,9 @@ export default function DriverForm({ formData, updateField }) {
           />
         </Field>
       </div>
-      <Field label="Driver Status">
-        <select className="form-input" value={formData.status || 'Active'} onChange={(event) => updateField('status', event.target.value)}>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="On Leave">On Leave</option>
+      <Field label="Driver Status" icon="pulse">
+        <select className="form-input" value={formData.status || ENTITIES.driver.statuses[0]} onChange={(event) => updateField('status', event.target.value)}>
+          <StatusOptions statuses={ENTITIES.driver.statuses} />
         </select>
       </Field>
     </div>

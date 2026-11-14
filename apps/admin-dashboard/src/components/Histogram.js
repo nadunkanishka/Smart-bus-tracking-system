@@ -1,5 +1,5 @@
 import React from 'react';
-import { mmss } from '../utils';
+import { mmss } from '../format';
 
 const BINS = 8;
 

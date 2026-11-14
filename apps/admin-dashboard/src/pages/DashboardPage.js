@@ -1,5 +1,8 @@
 import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
+import StatusBadge from '../components/StatusBadge';
+import { routeReady } from '../entities';
+import { displayName, distanceKm } from '../format';
 import { CountUp, useEntrance, useGrowBars, useSweep } from '../motion';
 
 const MAX_BARS = 7;
@@ -11,7 +14,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
   const fleet = { active: 0, idle: 0, maintenance: 0, ...summary.fleetDistribution };
   const fleetTotal = fleet.active + fleet.idle + fleet.maintenance;
   const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
-  const readyRoutes = routes.filter((r) => r.path.length > 1 && r.stopPoints.length > 1).length;
+  const readyRoutes = routes.filter(routeReady).length;
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
   // Stops per route as bars; the tallest bar carries a small card with its details.
@@ -40,7 +43,6 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
   useSweep(donut, ringAt, `${fleet.active}-${fleet.idle}-${fleet.maintenance}`);
 
   const driverName = (id) => drivers.find((d) => d.id === id)?.name || 'No driver assigned';
-  const statusClass = (s) => (s === 'Active' ? 'badge-green' : s === 'Maintenance' ? 'badge-red' : 'badge-amber');
   const shownDrivers = drivers.filter((d) => d.status === driverFilter).slice(0, MAX_DRIVER_ROWS);
   const frontRoute = routes[0];
 
@@ -55,7 +57,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
     <section ref={root} className="page-section dash" data-page="dashboard">
       <div className="section-header">
         <div>
-          <h1 className="greeting"><b>Hello,</b> {user.name || user.username}</h1>
+          <h1 className="greeting"><b>Hello,</b> {displayName(user)}</h1>
           <p>{today} · Live data from MongoDB</p>
         </div>
       </div>
@@ -82,7 +84,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
                     <span className="bar-tip">
                       <small>{b.name}</small>
                       <b><i />{b.stops} stops</b>
-                      <b><i />{b.distance}</b>
+                      <b><i />{distanceKm(b.distance)}</b>
                     </span>
                   )}
                   <span className="bar" style={{ height: `${Math.max(14, (b.stops / topStops) * 100)}%` }} />
@@ -104,7 +106,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
             <button type="button" className="route-card-big" onClick={() => setActivePage('routes')}>
               <span className="rcb-top"><span>{frontRoute.id}</span><span>{frontRoute.stopPoints.length} STOPS</span></span>
               <span className="rcb-number">{frontRoute.routeNumber ? `Route ${frontRoute.routeNumber}` : frontRoute.name}</span>
-              <span className="rcb-name">{frontRoute.start} → {frontRoute.end} · {frontRoute.distance}</span>
+              <span className="rcb-name">{frontRoute.start} → {frontRoute.end} · {distanceKm(frontRoute.distance)}</span>
               <span className="rcb-foot">
                 <span className="rcb-bus">{frontRoute.assignedBus || 'No bus assigned'}</span>
                 <span className="rcb-brand">SmartBus</span>
@@ -145,7 +147,7 @@ export default function DashboardPage({ user, summary, drivers, buses, routes, f
                     <strong>{b.registration}</strong>
                     <small>{b.id} · {driverName(b.assignedDriver)}</small>
                   </span>
-                  <span className={`badge ${statusClass(b.status)}`}>{b.status}</span>
+                  <StatusBadge status={b.status} />
                 </li>
               ))}
             </ul>

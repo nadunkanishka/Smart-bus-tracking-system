@@ -1,207 +1,98 @@
 import React, { useEffect, useState } from 'react';
 import './design/tokens.css';
 import './styles/admin-theme.css';
-import { API_BASE, api, setAuthToken } from './api';
+import { getSession, onSignOut } from './api';
+import { recordLabel } from './entities';
 import { useAdminData } from './hooks/useAdminData';
 import { useEntityModal } from './hooks/useEntityModal';
+import { PAGES, SECTIONS } from './pages';
 import Icon from './components/Icon';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import EntityModal from './components/EntityModal';
 import ConfirmDialog from './components/ConfirmDialog';
+import { CurrentPage } from './components/PageHeader';
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import DriversPage from './pages/DriversPage';
-import BusesPage from './pages/BusesPage';
-import RoutesPage from './pages/RoutesPage';
-import LiveMonitor from './pages/LiveMonitor';
-import Analytics from './pages/Analytics';
-import PassengersPage from './pages/PassengersPage';
-import AdminsPage from './pages/AdminsPage';
-import SettingsPage from './pages/SettingsPage';
 
-// Root component: sign-in state, the page shell and the switch between pages.
+// Root: the sign-in page until an admin is signed in, then the console. Any sign-out (button or rejected token) returns here.
 function App() {
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('adminUser') || 'null');
-    } catch {
-      return null;
-    }
-  });
-  setAuthToken(user?.token || '');
-  const [loginCreds, setLoginCreds] = useState({ username: '', password: '' });
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [showPw, setShowPw] = useState(false);
+  const [user, setUser] = useState(getSession);
+  useEffect(() => onSignOut(() => setUser(null)), []);
+  return user ? <Console user={user} /> : <LoginPage onLoggedIn={setUser} />;
+}
 
+// The console shell: sidebar, header, notification banner, the current page, and the driver/bus/route dialogs.
+function Console({ user }) {
   const [activePage, setActivePage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // rail: icons only, the header button expands it
-  const [clock, setClock] = useState('');
-  const [notification, setNotification] = useState(null);
+  const [notification, showNotification] = useState(null);
 
-  const showNotification = (message) => setNotification(message);
-
-  const { drivers, buses, routes, summary, backendConnected, loading, fetchBackendData } = useAdminData({
-    user,
-    // Session expired or signed in before tokens existed: ask the admin to sign in again.
-    onSessionExpired: () => {
-      handleLogout();
-      setLoginError('Your session has expired. Please sign in again.');
-    },
-  });
-
-  const {
-    modalState, formData, setFormData, confirmState, openModal, closeModal, openConfirm, closeConfirm, updateField, handleSave, handleDelete,
-  } = useEntityModal({ showNotification, fetchBackendData });
-
-  useEffect(() => {
-    const updateClock = () => {
-      setClock(
-        new Date().toLocaleString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      );
-    };
-
-    updateClock();
-    const interval = window.setInterval(updateClock, 60000);
-    return () => window.clearInterval(interval);
-  }, []);
+  const data = useAdminData();
+  const records = useEntityModal({ showNotification, fetchBackendData: data.fetchBackendData });
+  const { modal, confirm } = records;
 
   useEffect(() => {
     if (!notification) return undefined;
-    const timer = window.setTimeout(() => setNotification(null), 4000);
+    const timer = window.setTimeout(() => showNotification(null), 4000);
     return () => window.clearTimeout(timer);
   }, [notification]);
 
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    setLoginLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginCreds),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setLoginError(data.error || 'Invalid credentials');
-        setLoginLoading(false);
-        return;
-      }
-
-      const signedIn = { ...data.user, token: data.token };
-      setUser(signedIn);
-      sessionStorage.setItem('adminUser', JSON.stringify(signedIn));
-      setLoginLoading(false);
-    } catch (err) {
-      setLoginError('Could not connect to backend server. Make sure node backend is running.');
-      setLoginLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    sessionStorage.removeItem('adminUser');
-  };
-
-  if (!user) {
-    return (
-      <LoginPage
-        loginError={loginError}
-        handleLoginSubmit={handleLoginSubmit}
-        loginCreds={loginCreds}
-        setLoginCreds={setLoginCreds}
-        showPw={showPw}
-        setShowPw={setShowPw}
-        loginLoading={loginLoading}
-      />
-    );
-  }
-
-  const currentPageTitle =
-    activePage === 'dashboard'
-      ? 'Administrator Dashboard'
-      : activePage === 'live'
-        ? 'Live Monitor'
-        : activePage === 'analytics'
-          ? 'Trip Analytics'
-      : activePage === 'settings'
-        ? 'Settings'
-      : activePage === 'passengers'
-        ? 'Passenger Accounts'
-        : activePage === 'admins'
-          ? 'Administrator Accounts'
-      : activePage === 'drivers'
-        ? 'Driver Management'
-        : activePage === 'buses'
-          ? 'Bus & Fleet Inventory'
-          : 'Create & Manage Routes';
+  const page = PAGES.find((p) => p.key === activePage);
+  const Page = page.component;
 
   return (
     <div className="admin-shell">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} sidebarCollapsed={sidebarCollapsed} handleLogout={handleLogout} />
+      <Sidebar pages={PAGES} sections={SECTIONS} activePage={activePage} setActivePage={setActivePage} sidebarCollapsed={sidebarCollapsed} />
 
       <div className="main-panel">
-        <Header
-          currentPageTitle={currentPageTitle}
-          clock={clock}
-          backendConnected={backendConnected}
-          user={user}
-          setSidebarCollapsed={setSidebarCollapsed}
-        />
+        <Header title={page.title} backendConnected={data.backendConnected} user={user} onToggleSidebar={() => setSidebarCollapsed((c) => !c)} />
 
         {notification && (
           <div className="notification-banner" role="alert">
             <div className="notification-card">
               <p className="notification-text">{notification}</p>
-              <button type="button" className="notification-close" onClick={() => setNotification(null)} aria-label="Dismiss">
+              <button type="button" className="notification-close" onClick={() => showNotification(null)} aria-label="Dismiss">
                 <Icon type="close" />
               </button>
             </div>
           </div>
         )}
 
-        <main className={`page-scroll ${activePage === 'dashboard' ? 'fit' : ''}`}>
-          {activePage === 'dashboard' && <DashboardPage api={api} user={user} summary={summary} drivers={drivers} buses={buses} routes={routes} fetchBackendData={fetchBackendData} showNotification={showNotification} openModal={openModal} setActivePage={setActivePage} />}
-
-          {activePage === 'settings' && <SettingsPage user={user} backendConnected={backendConnected} fetchBackendData={fetchBackendData} showNotification={showNotification} setActivePage={setActivePage} handleLogout={handleLogout} />}
-          {activePage === 'live' && <LiveMonitor api={api} routes={routes} />}
-          {activePage === 'analytics' && <Analytics api={api} routes={routes} />}
-
-          {activePage === 'passengers' && <PassengersPage currentPageTitle={currentPageTitle} showNotification={showNotification} />}
-          {activePage === 'admins' && <AdminsPage currentPageTitle={currentPageTitle} user={user} showNotification={showNotification} />}
-
-          {activePage === 'drivers' && <DriversPage currentPageTitle={currentPageTitle} loading={loading} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
-
-          {activePage === 'buses' && <BusesPage currentPageTitle={currentPageTitle} loading={loading} buses={buses} drivers={drivers} openModal={openModal} openConfirm={openConfirm} />}
-
-          {activePage === 'routes' && <RoutesPage currentPageTitle={currentPageTitle} loading={loading} routes={routes} openModal={openModal} openConfirm={openConfirm} />}
+        <main className={`page-scroll ${page.fit ? 'fit' : ''}`}>
+          <CurrentPage.Provider value={page}>
+            <Page
+              user={user}
+              {...data}
+              openModal={records.openModal}
+              openConfirm={records.openConfirm}
+              showNotification={showNotification}
+              setActivePage={setActivePage}
+            />
+          </CurrentPage.Provider>
         </main>
       </div>
 
-      {modalState.open && (
+      {modal.open && (
         <EntityModal
-          modalState={modalState}
-          formData={formData}
-          updateField={updateField}
-          setFormData={setFormData}
-          closeModal={closeModal}
-          handleSave={handleSave}
-          drivers={drivers}
-          buses={buses}
+          modal={modal}
+          formData={records.formData}
+          updateField={records.updateField}
+          setFormData={records.setFormData}
+          closeModal={records.closeModal}
+          handleSave={records.handleSave}
+          drivers={data.drivers}
+          buses={data.buses}
         />
       )}
 
-      {confirmState.open && <ConfirmDialog confirmState={confirmState} closeConfirm={closeConfirm} handleDelete={handleDelete} />}
+      {confirm && (
+        <ConfirmDialog
+          text="Are you sure you want to permanently remove this record from MongoDB?"
+          target={recordLabel(confirm.entity, confirm.record, ': ')}
+          onConfirm={records.handleDelete}
+          onCancel={records.closeConfirm}
+        />
+      )}
     </div>
   );
 }

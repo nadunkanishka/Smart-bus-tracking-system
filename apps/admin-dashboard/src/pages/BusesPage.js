@@ -1,71 +1,19 @@
 import React from 'react';
-import { Vehicle } from '../design/Vehicle';
-import Icon from '../components/Icon';
+import EntityList from '../components/EntityList';
 import StatusBadge from '../components/StatusBadge';
-import TableShell from '../components/TableShell';
+import { mileageKm, seats } from '../format';
 
-export default function BusesPage({ currentPageTitle, loading, buses, drivers, openModal, openConfirm }) {
+export default function BusesPage({ loading, buses, drivers, openModal, openConfirm }) {
+  const columns = [
+    { header: 'Bus ID', className: 'mono-cell', cell: (b) => b.id },
+    { header: 'Registration No.', className: 'mono-cell table-strong', cell: (b) => b.registration },
+    { header: 'Passenger Capacity', cell: (b) => seats(b.capacity) },
+    { header: 'Total Mileage', cell: (b) => mileageKm(b.mileage) },
+    { header: 'Driver', cell: (b) => drivers.find((d) => d.id === b.assignedDriver)?.name || <span className="cell-muted">Unassigned</span> },
+    { header: 'Password', cell: (b) => <span className={`badge ${b.hasPassword ? 'badge-green' : 'badge-amber'}`}>{b.hasPassword ? 'Set' : 'Not set'}</span> },
+    { header: 'Status', cell: (b) => <StatusBadge status={b.status} /> },
+  ];
   return (
-    <section className="page-section" data-page="buses">
-      <div className="section-header">
-        <div>
-          <h1>{currentPageTitle}</h1>
-          <p>Register new transit buses into MongoDB inventory</p>
-        </div>
-        <button type="button" className="btn btn-primary" onClick={() => openModal('bus')}>
-          <Icon type="plus" />
-          Add New Bus
-        </button>
-      </div>
-      <TableShell>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Bus ID</th>
-              <th>Registration No.</th>
-              <th>Passenger Capacity</th>
-              <th>Total Mileage</th>
-              <th>Driver</th>
-              <th>Password</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {buses.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="cell-empty">
-                  <div className="empty-state"><Vehicle name="bus" width={120} label="Nothing here yet" />{loading ? 'Loading buses…' : 'No buses registered yet. Click "Add New Bus" to register a bus!'}</div>
-                </td>
-              </tr>
-            ) : (
-              buses.map((bus) => (
-                <tr key={bus.id}>
-                  <td className="mono-cell">{bus.id}</td>
-                  <td className="mono-cell table-strong">{bus.registration}</td>
-                  <td>{bus.capacity}</td>
-                  <td>{bus.mileage}</td>
-                  <td>
-                    {drivers.find((d) => d.id === bus.assignedDriver)?.name || <span className="cell-muted">Unassigned</span>}
-                  </td>
-                  <td>
-                    <span className={`badge ${bus.hasPassword ? 'badge-green' : 'badge-amber'}`}>{bus.hasPassword ? 'Set' : 'Not set'}</span>
-                  </td>
-                  <td>
-                    <StatusBadge status={bus.status} />
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <button type="button" className="btn btn-edit" onClick={() => openModal('bus', 'edit', bus)}><Icon type="edit" />Edit</button>
-                      <button type="button" className="btn btn-danger" onClick={() => openConfirm('bus', bus)}><Icon type="trash" />Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </TableShell>
-    </section>
+    <EntityList entity="bus" page="buses" art={{ name: 'bus', width: 120 }} records={buses} columns={columns} loading={loading} openModal={openModal} openConfirm={openConfirm} />
   );
 }

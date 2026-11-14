@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Icon from '../components/Icon';
-import { API_BASE, api } from '../api';
+import PageHeader from '../components/PageHeader';
+import { API_BASE, api, signOut } from '../api';
+import { displayName, initials, roleLabel } from '../format';
 import { setPreference, useThemePreference } from '../theme';
 
 const THEME_OPTIONS = [
@@ -11,7 +13,7 @@ const THEME_OPTIONS = [
 
 // Settings: how the console looks, which server it talks to, who is signed in. Everything shown is real: the
 // appearance choice is saved in this browser, the health line is read from the API.
-export default function SettingsPage({ user, backendConnected, fetchBackendData, showNotification, setActivePage, handleLogout }) {
+export default function SettingsPage({ user, backendConnected, fetchBackendData, showNotification, setActivePage }) {
   const preference = useThemePreference();
   const [health, setHealth] = useState(null); // null = loading, false = unreachable
   const [checking, setChecking] = useState(false);
@@ -22,7 +24,7 @@ export default function SettingsPage({ user, backendConnected, fetchBackendData,
       const res = await api('/health');
       setHealth(res.ok ? await res.json() : false);
     } catch {
-      setHealth(false);
+      setHealth(false); // server unreachable
     }
     setChecking(false);
   };
@@ -33,12 +35,7 @@ export default function SettingsPage({ user, backendConnected, fetchBackendData,
 
   return (
     <section className="page-section settings" data-page="settings">
-      <div className="section-header">
-        <div>
-          <h1>Settings</h1>
-          <p>Appearance, connection and your account. Changes here apply to this browser only.</p>
-        </div>
-      </div>
+      <PageHeader subtitle="Appearance, connection and your account. Changes here apply to this browser only." />
 
       <div className="settings-grid">
         <div className="panel">
@@ -56,7 +53,7 @@ export default function SettingsPage({ user, backendConnected, fetchBackendData,
         <div className="panel">
           <div className="panel-head">
             <h2>Connection</h2>
-            <span className={`badge ${backendConnected ? 'badge-green' : 'badge-amber'}`}>{backendConnected ? 'Connected' : 'Local state'}</span>
+            <span className={`badge ${backendConnected ? 'badge-green' : 'badge-amber'}`}>{backendConnected ? 'Connected' : 'Not connected'}</span>
           </div>
           <ul className="kv">
             <li><span>Server</span><strong>{host}</strong></li>
@@ -73,10 +70,10 @@ export default function SettingsPage({ user, backendConnected, fetchBackendData,
         <div className="panel">
           <div className="panel-head"><h2>Your account</h2></div>
           <div className="account-line">
-            <span className="user-avatar big">{(user.name || user.username).slice(0, 2).toUpperCase()}</span>
+            <span className="user-avatar big">{initials(user)}</span>
             <span>
-              <strong>{user.name || user.username}</strong>
-              <small>@{user.username} · {user.role || 'Administrator'}</small>
+              <strong>{displayName(user)}</strong>
+              <small>@{user.username} · {roleLabel(user)}</small>
             </span>
           </div>
           <div className="setting-actions">
@@ -89,7 +86,7 @@ export default function SettingsPage({ user, backendConnected, fetchBackendData,
           <div className="panel-head"><h2>Session</h2></div>
           <p className="setting-note">Signing out clears this browser's saved session. Your colour choice stays.</p>
           <div className="setting-actions">
-            <button type="button" className="btn btn-danger-solid" onClick={handleLogout}><Icon type="logout" />Sign out</button>
+            <button type="button" className="btn btn-danger-solid" onClick={() => signOut()}><Icon type="logout" />Sign out</button>
           </div>
         </div>
       </div>

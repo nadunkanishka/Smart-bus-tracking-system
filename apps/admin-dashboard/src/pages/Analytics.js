@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Vehicle } from '../design/Vehicle';
 import Histogram from '../components/Histogram';
-import { mmss } from '../utils';
+import PageHeader from '../components/PageHeader';
+import Stat from '../components/Stat';
+import TableShell, { EmptyRow } from '../components/TableShell';
+import { api } from '../api';
+import { mmss } from '../format';
+
+// The ETA engine's fallbacks, for the explanatory text only. They mirror DEFAULTS in backend/lib/eta.js; the API does
+// not report them, so keep the two in step by hand.
+const ETA_DEFAULTS = { speedKmh: 20, dwellSec: 20 };
 
 // Historical trip analytics: the journey-time distribution of each route segment. The averages shown here are
 // the same values the ETA engine uses as its historical baseline.
-export default function Analytics({ api, routes }) {
+export default function Analytics({ routes }) {
   const trackable = routes.filter((r) => r.stopPoints.length >= 2);
-  const [routeId, setRouteId] = useState(trackable[0]?.id || '');
+  // The chosen route, or the first trackable one (also when routes arrive after this page opened).
+  const [picked, setPicked] = useState('');
+  const routeId = trackable.some((r) => r.id === picked) ? picked : trackable[0]?.id || '';
   const [data, setData] = useState(null);
   const [eta, setEta] = useState(null);
   const [state, setState] = useState('idle'); // 'idle' | 'loading' | 'error'
@@ -26,38 +36,34 @@ export default function Analytics({ api, routes }) {
       })
       .catch(() => !stop && setState('error'));
     return () => { stop = true; };
-  }, [api, routeId]);
+  }, [routeId]);
 
   const total = data ? data.segments.reduce((n, s) => n + s.samples, 0) : 0;
 
   return (
     <section className="page-section" data-page="analytics">
-      <div className="section-header">
-        <div>
-          <h1>Trip Analytics</h1>
-          <p>Journey time per route segment, from recorded trips. These averages feed the ETA prediction engine.</p>
-        </div>
+      <PageHeader subtitle="Journey time per route segment, from recorded trips. These averages feed the ETA prediction engine.">
         <label className="field inline-field">
           <span className="form-label">Route</span>
-          <select className="form-input" value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+          <select className="form-input" value={routeId} onChange={(e) => setPicked(e.target.value)}>
             {trackable.length === 0 && <option value="">No routes with stops</option>}
             {trackable.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </label>
-      </div>
+      </PageHeader>
 
       <div className="stat-grid">
-        <div className="stat-card"><p>Segment samples</p><strong>{total}</strong><span>completed segment crossings</span></div>
-        <div className="stat-card"><p>Mean absolute ETA error</p><strong>{eta?.maeSec == null ? '—' : `${eta.maeSec} s`}</strong><span>{eta?.samples || 0} predicted vs actual arrivals</span></div>
-        <div className="stat-card"><p>ETA bias</p><strong>{eta?.biasSec == null ? '—' : `${eta.biasSec > 0 ? '+' : ''}${eta.biasSec} s`}</strong><span>positive = bus arrived earlier than predicted</span></div>
-        <div className="stat-card"><p>Worst ETA error</p><strong>{eta?.maxAbsSec == null ? '—' : `${eta.maxAbsSec} s`}</strong><span>largest single miss</span></div>
+        <Stat label="Segment samples" value={total} hint="completed segment crossings" />
+        <Stat label="Mean absolute ETA error" value={eta?.maeSec == null ? '—' : `${eta.maeSec} s`} hint={`${eta?.samples || 0} predicted vs actual arrivals`} />
+        <Stat label="ETA bias" value={eta?.biasSec == null ? '—' : `${eta.biasSec > 0 ? '+' : ''}${eta.biasSec} s`} hint="positive = bus arrived earlier than predicted" />
+        <Stat label="Worst ETA error" value={eta?.maxAbsSec == null ? '—' : `${eta.maxAbsSec} s`} hint="largest single miss" />
       </div>
 
-      <div className="panel table-shell">
+      <TableShell>
         <div className="panel-head">
           <div>
             <h2>ETA engine vs a plain estimate</h2>
-            <p>The plain estimate is the straight-line distance to the stop at a fixed 20 km/h. Both are scored on the same arrivals.</p>
+            <p>The plain estimate is the straight-line distance to the stop at a fixed {ETA_DEFAULTS.speedKmh} km/h. Both are scored on the same arrivals.</p>
           </div>
         </div>
         <table className="data-table">
@@ -66,7 +72,7 @@ export default function Analytics({ api, routes }) {
           </thead>
           <tbody>
             {!eta?.compared?.samples ? (
-              <tr><td colSpan="4" className="cell-empty"><div className="empty-state">No arrivals recorded yet. Drive a bus on duty past a stop to see the comparison.</div></td></tr>
+              <EmptyRow colSpan="4">No arrivals recorded yet. Drive a bus on duty past a stop to see the comparison.</EmptyRow>
             ) : (
               <>
                 {eta.byHorizon.map((h) => (
@@ -87,9 +93,9 @@ export default function Analytics({ api, routes }) {
             )}
           </tbody>
         </table>
-      </div>
+      </TableShell>
 
-      <div className="panel table-shell">
+      <TableShell>
         <table className="data-table">
           <thead>
             <tr>
@@ -106,16 +112,11 @@ export default function Analytics({ api, routes }) {
           </thead>
           <tbody>
             {state === 'error' ? (
-              <tr><td colSpan="9" className="cell-empty"><div className="empty-state">Could not load analytics. Check that the backend is running.</div></td></tr>
+              <EmptyRow colSpan="9">Could not load analytics. Check that the backend is running.</EmptyRow>
             ) : !data || data.segments.length === 0 ? (
-              <tr>
-                <td colSpan="9" className="cell-empty">
-                  <div className="empty-state">
-                    <Vehicle name="decker" width={124} label="No analytics yet" />
-                    {state === 'loading' ? 'Loading…' : 'Choose a route that has stops on the map to see its segments.'}
-                  </div>
-                </td>
-              </tr>
+              <EmptyRow colSpan="9" art={<Vehicle name="decker" width={124} label="No analytics yet" />}>
+                {state === 'loading' ? 'Loading…' : 'Choose a route that has stops on the map to see its segments.'}
+              </EmptyRow>
             ) : data.segments.map((s) => (
               <tr key={s.segIndex}>
                 <td className="mono-cell">{s.segIndex + 1}</td>
@@ -131,9 +132,9 @@ export default function Analytics({ api, routes }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableShell>
       {data && total === 0 && (
-        <p className="cell-hint">No trips have been recorded on this route yet, so the ETA engine is using its default speed (20 km/h) and dwell (20 s). Samples appear after a bus drives a full segment while on duty.</p>
+        <p className="cell-hint">No trips have been recorded on this route yet, so the ETA engine is using its default speed ({ETA_DEFAULTS.speedKmh} km/h) and dwell ({ETA_DEFAULTS.dwellSec} s). Samples appear after a bus drives a full segment while on duty.</p>
       )}
     </section>
   );
