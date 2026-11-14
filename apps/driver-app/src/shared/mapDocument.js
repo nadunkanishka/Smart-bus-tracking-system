@@ -85,7 +85,7 @@ export const mapDocument = () => `<!DOCTYPE html>
   });
   // In the phone apps the page runs in a WebView and talks to React Native; on the web it sits in an iframe.
   if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage('sb-map-ready');
-  else parent.postMessage({ type: 'sb-map-ready' }, '*');
+  else parent.postMessage({ type: 'sb-map-ready' }, parent.location.origin); // an srcDoc page has the parent's origin but reads its own location.origin as null
 </script></body></html>`;
 
 // What the page is sent whenever something changes: the data plus the colours of the current theme.

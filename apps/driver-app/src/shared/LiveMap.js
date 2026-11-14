@@ -20,7 +20,8 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
   }, []);
 
   useEffect(() => {
-    if (ready) frame.current?.contentWindow?.postMessage(mapMessage({ path, stops, buses, highlightStop, padding }, mode), '*');
+    // An srcDoc iframe keeps its parent's origin, so the message is addressed to this page's own origin.
+    if (ready) frame.current?.contentWindow?.postMessage(mapMessage({ path, stops, buses, highlightStop, padding }, mode), window.location.origin);
   }, [ready, path, stops, buses, highlightStop, padding, mode]);
 
   return (
