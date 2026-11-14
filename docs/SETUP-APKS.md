@@ -14,23 +14,7 @@ npm install -g eas-cli
 eas login
 ```
 
-3. A **Google Maps key**, because Android draws every map with Google's Maps SDK and shows a blank map without one:
-   - Google Cloud console (console.cloud.google.com): create a project.
-   - Enable **Maps SDK for Android**.
-   - **APIs & Services -> Credentials -> Create credentials -> API key**. Copy it.
-   - Under API restrictions choose **Restrict key** and tick only **Maps SDK for Android**. Leave application restrictions as None for now.
-   - Google may ask for billing details even though this use is free.
-4. Store the key on Expo, **once in each app's folder**. EAS builds run on Expo's servers, so a variable typed in your own terminal never reaches them:
-
-```bash
-cd apps/driver-app
-eas env:create --name GOOGLE_MAPS_API_KEY --value <your key> --environment preview --visibility secret
-
-cd ../passenger-app
-eas env:create --name GOOGLE_MAPS_API_KEY --value <your key> --environment preview --visibility secret
-```
-
-Check it with `eas env:list --environment preview` (the value is hidden). A build with no key now stops with a message instead of producing an empty map.
+The maps need no key: both apps draw the route with OpenStreetMap, the same map as the web sites, so there is nothing to set up with Google. The phone needs an internet connection to load the map tiles.
 
 ## Where the backend address is set
 
@@ -42,7 +26,7 @@ Each app's `eas.json` has the backend address in the `preview` and `production` 
 
 **Do not rely on typing `$env:EXPO_PUBLIC_API_URL=...` before `eas build`.** The build runs on Expo's servers and never sees it: the app is then built with the emulator address (`10.0.2.2`) and says "cannot reach the server". If the backend address changes, edit it in both `eas.json` files and rebuild.
 
-The EAS project ids are already in each app's `app.json` (`extra.eas.projectId`). If you create new EAS projects, run `eas build:configure`, which prints a project id; put it in `app.json` under `expo.extra.eas.projectId` (EAS cannot write it into `app.config.js`).
+The EAS project ids are already in each app's `app.json` (`extra.eas.projectId`). If you create new EAS projects, run `eas build:configure`, which prints a project id; put it in `app.json` under `expo.extra.eas.projectId`.
 
 ## Build the driver app
 
@@ -82,16 +66,11 @@ Same steps. You can run both builds at the same time in two terminals.
 
 - The driver app shows **Server: Connected** and a GPS log that fills every 3 seconds.
 - The admin dashboard shows the bus as on duty; the passenger app shows it moving with an ETA for each stop.
-- The map on the driver's Route screen shows tiles and the orange route line (if it is blank, the Maps key is missing or wrong).
+- The map on the driver's Route screen shows tiles and the orange route line. If it stays grey, the phone has no internet or cannot reach tile.openstreetmap.org.
 
-## Restrict the Maps key (after the first build)
+## The two app icons
 
-The key is inside the APK and can be extracted, so restrict it. For each app run `eas credentials`, choose Android and the build profile, and read the **SHA-1 fingerprint**. In Google Cloud -> the key -> **Application restrictions -> Android apps**, add the package name and SHA-1:
-
-| App | Package name |
-|---|---|
-| Driver | `lk.smartbus.driver` |
-| Passenger | `lk.smartbus.passenger` |
+The passenger app is an orange tile with a bus; the driver app is a dark tile with an orange steering wheel, so the two are easy to tell apart on a phone. They are drawn by `python shared/icons/make_icons.py` (needs Pillow) into each app's `assets/` folder; change the drawing there and run it again.
 
 ## Testing without a build (Expo Go)
 
@@ -109,9 +88,8 @@ Scan the QR code with Expo Go. Use `--port 8082` for the passenger app if both r
 | Problem | Cause and fix |
 |---|---|
 | "Cannot reach the server" in the app | The backend address was not in `eas.json` (see above); fix it and rebuild. Or the backend is down: open `<address>/api/health`. |
-| Blank map on Android | No or wrong Maps key; the key was not stored with `eas env:create` in that app's folder; or **Maps SDK for Android** is not enabled. Rebuild. |
+| Grey or empty map | No internet on the phone, or the tile server is blocked on that network. Try mobile data. The route line and buses appear on top of the tiles once they load. |
 | `Cannot automatically write to dynamic config` | Put the project id in `app.json` under `expo.extra.eas.projectId`. |
-| Build stops with `GOOGLE_MAPS_API_KEY is not set` | Run the `eas env:create` command above in that app's folder. |
 | `The field "cli.appVersionSource" is not set` | Already set to `remote` in both `eas.json` files. |
 | Driver tracking stops with the screen off | Location is not **Allow all the time**, or battery optimisation is on. |
 | Install is blocked | Allow installing from your browser in Android settings. |
