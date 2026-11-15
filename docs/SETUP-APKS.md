@@ -14,7 +14,7 @@ npm install -g eas-cli
 eas login
 ```
 
-The maps need no key: both apps draw the route with OpenStreetMap, the same map as the web sites, so there is nothing to set up with Google. The phone needs an internet connection to load the map tiles.
+The maps need no key: both apps draw OpenStreetMap map tiles with the route, stops and buses on top, so there is nothing to set up with Google. The whole route is shown on screen; there is no pan or zoom yet. The phone needs an internet connection to load the tiles.
 
 ## Where the backend address is set
 

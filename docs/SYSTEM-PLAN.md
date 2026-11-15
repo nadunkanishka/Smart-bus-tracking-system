@@ -32,7 +32,7 @@ Boxes marked **(you)** need your hands, an account, a person or a decision; the 
 | 2 | System design and architecture | **Done** | `docs/ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `STRUCTURE.md` |
 | 3 | Backend, real-time pipeline | **Done** (about 95%) | Socket.IO rooms per route, `gps:fix` and `gps:batch`, Redis latest-fix cache with in-memory fallback, GeoJSON `2dsphere` indexes, JWT auth, CRUD routes, validation, rate limiting |
 | 4 | Driver app | **Done** (about 90%) | 3 s GPS capture, offline queue with batch flush and ack, duty toggle, diagnostics screen. Works in Expo Go on real phones (reported). No installed APK in use yet. |
-| 5 | Passenger app | **Done** (about 90%) | Route list, per-route subscription, live map with gliding markers, per-stop ETAs. The web build uses Leaflet and OpenStreetMap, the phone apps the same map inside a WebView (no map key). |
+| 5 | Passenger app | **Done** (about 90%) | Route list, per-route subscription, live map with gliding markers, per-stop ETAs. The web build uses Leaflet and OpenStreetMap, the phone apps draw OpenStreetMap-based tiles with the route on top (no map key, no WebView, no pan or zoom yet). |
 | 6 | ETA engine | **Built, not tuned** (about 70%) | `lib/eta.js` follows steps (a) to (d); `tripTracker` logs segment times, dwell and predicted-vs-actual into `SegmentLog` and `EtaLog`. Smoothing and the straight-line baseline are built and measured on simulated tracks. Tuning needs real trip data, which does not exist yet. |
 | 7 | Admin dashboard | **Done** (about 95%) | Routes with a map editor, stops, buses, drivers, passengers, admins, live monitor, trip analytics, settings, dark mode |
 | 8 | Integration and system testing | **Partly done** (about 50%) | Backend tests cover the ETA engine, GPS pipeline, CRUD, route data, smoothing and baseline. A simulator (`npm run replay`) and a smoke script exist. A two-phone Expo Go run worked (reported); no installed-build run on a road; the driver and passenger apps have no tests. |
@@ -185,7 +185,7 @@ All three measures are explained in `docs/EVALUATION.md`.
 | Passenger app is Leaflet web only | The Expo project also builds a native app | D3 |
 | Route 138 is Colombo-Homagama | Seed data is Pettah-Maharagama | D2 |
 | Redis stores the latest fix | Verified only against the in-memory fallback | Do section 2's Redis step before claiming it |
-| Proposal says Leaflet on the passenger map | The web build and the phone apps both use Leaflet with OSM tiles (the phone apps inside a WebView) | Say so in the report |
+| Proposal says Leaflet on the passenger map | The web build uses Leaflet; the phone apps draw OpenStreetMap tiles with the route, stops and buses on top, natively | Say so in the report |
 | Objectives name "Leaflet.js / Google Maps API" and "React Native / Flutter" as options evaluated | The chosen stack is in the code | Add the comparison that justifies it |
 | Admin "register bus stops" | Stops are managed inside the route form | Name it that way in the report |
 | Kalman delay given as 1.5 weeks, 2 weeks and "Ext. 2 wks"; Phase 6 month given as Month 6 to 7 and Month 7 to 8 | Contradictory | Use one figure and one month range |
