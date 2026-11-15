@@ -72,6 +72,26 @@ Same steps. You can run both builds at the same time in two terminals.
 
 The passenger app is an orange tile with a bus; the driver app is a dark tile with an orange steering wheel, so the two are easy to tell apart on a phone. They are drawn by `python shared/icons/make_icons.py` (needs Pillow) into each app's `assets/` folder; change the drawing there and run it again.
 
+## Updating without reinstalling
+
+Two things keep the installed app in place:
+
+- **Update over the old app.** Both `eas.json` files have `autoIncrement`, so every build gets a higher version code and Android installs it over the existing app, keeping its data. Do not uninstall first. (An old build with the same version code, like the first ones, has to be uninstalled once.)
+- **Send changes with no build at all.** Most changes are JavaScript (screens, map, calls to the backend). Publish them from the app's folder:
+
+```bash
+cd apps/passenger-app
+eas update --channel preview --message "what changed"
+cd ../driver-app
+eas update --channel preview --message "what changed"
+```
+
+The installed app downloads the update the next time it opens (close it fully and open it again; the second open runs the new version). It is free.
+
+A **new build** is still needed when something native changes: a new native package, a permission, the icon or other native settings in `app.json`, or an Expo SDK upgrade. Updates only reach builds with the same app `version` (`runtimeVersion` follows `version` in `app.json`), so raise `version` when you make a native change and rebuild.
+
+The first build after this setup is the one that can receive updates, so build once more and install it.
+
 ## Testing without a build (Expo Go)
 
 Good for checking screens against the hosted backend before spending a build. Both phones must be on the same Wi-Fi for this, and background tracking does not work in Expo Go:
