@@ -96,7 +96,6 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
           )}
         </Reveal>
 
-        {/* Round actions, like the dashboard's card actions */}
         <Reveal index={1}>
           <View style={S.quickRow}>
             {services.map((s) => (
@@ -108,7 +107,6 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
           </View>
         </Reveal>
 
-        {/* Two small stat cards */}
         <Reveal index={2}>
           <View style={S.statRow}>
             <NotchStat

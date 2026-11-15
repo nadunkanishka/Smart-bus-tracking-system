@@ -25,7 +25,7 @@ const native = !IS_WEB;
 export const TOP_INSET = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0, StatusBar.currentHeight ?? 0) : 0;
 const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
-export const FONT = IS_WEB ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
+const FONT = IS_WEB ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
 // A text style for one role of the type scale, in the kit's font: { ...type('small'), color }.
 export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 if (IS_WEB && typeof document !== 'undefined' && !document.getElementById('sb-font')) {

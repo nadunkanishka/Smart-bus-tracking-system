@@ -30,16 +30,6 @@ function formatId(kind, n) {
   return `${ID_PREFIX[kind]}-${String(n).padStart(3, '0')}`;
 }
 
-// How a route names its bus: "NB-4712 (BUS-002)".
-function formatBusRef(bus) {
-  return `${bus.registration} (${bus.busId})`;
-}
-function parseBusRef(text) {
-  const raw = String(text || '').trim();
-  const m = /^(.*?)\s*\(([^()]+)\)$/.exec(raw);
-  return m ? { registration: m[1], busId: m[2] } : { registration: raw, busId: null };
-}
-
 // How often positions arrive and how long they stay meaningful. Order that must hold:
 // FIX_INTERVAL_MS < LIVE_WINDOW_MS < GONE_AFTER_MS, and CLIENT_BATCH <= MAX_BATCH.
 const FIX_INTERVAL_MS = 3000; // a driver phone sends a position this often
@@ -51,4 +41,4 @@ const MAX_QUEUE = 2000; // the driver app keeps at most this many unsent positio
 const MAX_SPEED_MPS = 45; // the server rejects faster than this (162 km/h)
 const CLIENT_SPEED_CAP_MPS = 40; // the driver app never reports more than this
 
-module.exports = { EVENTS, STATUS, ID_PREFIX, formatId, formatBusRef, parseBusRef, FIX_INTERVAL_MS, LIVE_WINDOW_MS, GONE_AFTER_MS, MAX_BATCH, CLIENT_BATCH, MAX_QUEUE, MAX_SPEED_MPS, CLIENT_SPEED_CAP_MPS };
+module.exports = { EVENTS, STATUS, ID_PREFIX, formatId, FIX_INTERVAL_MS, LIVE_WINDOW_MS, GONE_AFTER_MS, MAX_BATCH, CLIENT_BATCH, MAX_QUEUE, MAX_SPEED_MPS, CLIENT_SPEED_CAP_MPS };

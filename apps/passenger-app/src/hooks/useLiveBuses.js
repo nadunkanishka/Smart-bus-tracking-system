@@ -23,7 +23,6 @@ export function useLiveBuses({ session, selectedRouteId, selectedRoute, boarding
     [liveBuses],
   );
 
-  // One socket per session
   useEffect(() => {
     if (!session) return undefined;
     const socket = io(API_URL, { auth: { token: session.token }, transports: ['websocket'] });

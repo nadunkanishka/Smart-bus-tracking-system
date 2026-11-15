@@ -179,7 +179,6 @@ html.theme-switching *, html.theme-switching *::before, html.theme-switching *::
 .table-strong { font-weight: 700; color: var(--a-ink); }
 .cell-muted { color: var(--a-muted); }
 .cell-hint { font-size: 13px; color: var(--a-muted); margin-top: 2px; }
-.cell-bus { font-weight: 700; color: var(--a-ink); }
 .cell-empty { text-align: center; padding: var(--space-8) var(--space-4) !important; }
 .empty-state {
   position: sticky; left: 0; width: min(100%, calc(100vw - 96px)); margin-inline: auto; text-align: center;

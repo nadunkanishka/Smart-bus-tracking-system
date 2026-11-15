@@ -30,7 +30,7 @@ apply(false);
 const emit = () => listeners.forEach((l) => l());
 query?.addEventListener?.('change', (e) => { if (!saved) { mode = e.matches ? 'dark' : 'light'; apply(true); emit(); } });
 
-export function setTheme(next) {
+function setTheme(next) {
   mode = next === 'dark' ? 'dark' : 'light';
   saved = mode;
   try { localStorage.setItem(KEY, mode); } catch { /* ignore */ }

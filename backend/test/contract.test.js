@@ -8,14 +8,6 @@ test('timing windows keep their order: fix interval, live window, cache lifetime
   assert.ok(c.CLIENT_SPEED_CAP_MPS < c.MAX_SPEED_MPS, 'the phone never reports a speed the server would reject');
 });
 
-test('a bus reference survives a round trip and a plain registration has no id', () => {
-  const ref = c.formatBusRef({ registration: 'NB-4712', busId: 'BUS-002' });
-  assert.equal(ref, 'NB-4712 (BUS-002)');
-  assert.deepEqual(c.parseBusRef(ref), { registration: 'NB-4712', busId: 'BUS-002' });
-  assert.deepEqual(c.parseBusRef('NB-1'), { registration: 'NB-1', busId: null });
-  assert.deepEqual(c.parseBusRef(''), { registration: '', busId: null });
-});
-
 test('ids are zero padded to three digits and each kind has a prefix', () => {
   assert.equal(c.formatId('bus', 7), 'BUS-007');
   assert.equal(c.formatId('route', 1234), 'RT-1234');

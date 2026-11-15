@@ -21,7 +21,6 @@ export function DiagnosticsScreen({ duty }) {
       </OverlapHeader>
 
       <OverlapSheet>
-        {/* Metrics Grid */}
         <View style={D.metricsRow}>
           <View style={[D.metricCard, D.ringCard]}>
             <RingGauge value={isOnShift ? busSpeed : 0} max={80} size={116} stroke={10} color={COLORS.orange}>
@@ -39,7 +38,6 @@ export function DiagnosticsScreen({ duty }) {
           </View>
         </View>
 
-        {/* Coordinates */}
         <View style={D.coordCard}>
           <Text style={D.sectionLabelFlat}>Current coordinates</Text>
           <Text style={D.coordText}>
@@ -47,7 +45,6 @@ export function DiagnosticsScreen({ duty }) {
           </Text>
         </View>
 
-        {/* Logs */}
         <Text style={D.sectionLabel}>GPS transmission log</Text>
         <View style={D.logCard}>
           {logs.length === 0 ? (
