@@ -11,7 +11,7 @@ Run it after every change in this folder, and commit the copies together with th
 | Path | Contents | Copied to |
 |---|---|---|
 | `tokens.js` | The phone apps' flat skin: black and orange on white (a light and a dark set), type scale, radii, spacing, and no shadows, no gradients, no glow | mobile `src/shared/theme.js` |
-| `adminTokens.js` | The admin dashboard's own tokens (the glass-on-ember look), turned into CSS variables by sync.js | admin `src/design/tokens.css` (generated: light `:root` plus a dark block) |
+| `adminTokens.json` | The admin dashboard's own tokens (the glass-on-ember look), turned into CSS variables by sync.js | admin `src/design/tokens.css` (generated: light `:root` plus a dark block) |
 | `native/themeRuntime.js` | Mobile light/dark mode: `ThemeProvider`, `useTheme()`, `createStyles()` | mobile `src/shared/` |
 | `native/ui.js` and `native/kit/` | Mobile UI kit, split by concern in `kit/` (`core`, `vehicle`, `controls`, `layout`, `motion`, `settings`) behind one import path: buttons, fields, layouts, dock; `TOP_INSET` (the one top inset) and `type()` | mobile `src/shared/` |
 | `native/shell.js` | Mobile app shell: `AppFrame` (safe area, backdrop, status bar, toast), `AppColumn`, `useToast`, `ProfileRow`, `SettingsPage` (header, Appearance, About, sign out around the app's own sections), `COMMON_STYLES` | mobile `src/shared/` |

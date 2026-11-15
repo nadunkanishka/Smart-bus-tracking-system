@@ -1,6 +1,6 @@
 // SmartBus mobile design tokens: a flat, two-colour skin (black and orange on white), no gradients, no glow, no shadows.
 // `npm run sync` copies this into both phone apps (src/shared/theme.js). The admin dashboard has its own tokens in
-// adminTokens.js, which sync.js turns into CSS variables.
+// adminTokens.json, which sync.js turns into CSS variables.
 
 // Orange is the one action colour, black the one strong colour. Green marks anything active or live (a running bus, a
 // connected server): a status colour, not a brand colour. Red is only for destructive actions.

@@ -20,7 +20,7 @@ Every prediction is stored with what a plain estimate (straight-line distance at
 
 ## Two skins, one contract
 
-The phone apps and the admin dashboard share the contract and the component logic but not the look. The phone apps are flat: black and orange on white, filled grey cards, pill buttons and chips, large bold headings, no gradients, no glow and no shadows, so a card is separated from the page by colour, not depth (`shared/tokens.js`). The admin keeps its own tokens (`shared/adminTokens.js`) and its glass-on-dark look. Splitting the tokens meant the phone redesign touched no admin file.
+The phone apps and the admin dashboard share the contract and the component logic but not the look. The phone apps are flat: black and orange on white, filled grey cards, pill buttons and chips, large bold headings, no gradients, no glow and no shadows, so a card is separated from the page by colour, not depth (`shared/tokens.js`). The admin keeps its own tokens (`shared/adminTokens.json`) and its glass-on-dark look. Splitting the tokens meant the phone redesign touched no admin file.
 
 ## Smooth the GPS before anything uses it
 
