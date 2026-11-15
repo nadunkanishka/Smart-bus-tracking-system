@@ -1,7 +1,7 @@
 // The phone map's maths (shared/native/mapMath.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, fitView, project, tilesFor, toWorld } from '../native/mapMath.js';
+import { TILE_SHOWN, fitView, project, tilesFor, toWorld } from '../native/mapMath.js';
 
 const PAD = { left: 32, right: 32, top: 40, bottom: 40 };
 
@@ -43,8 +43,14 @@ test('no points shows Colombo', () => {
 test('the tiles cover the whole screen, no more than needed', () => {
   const view = fitView([[6.93, 79.85], [6.84, 80.0]], 400, 800, PAD);
   const tiles = tilesFor(view, 400, 800);
-  assert.ok(tiles.length > 0 && tiles.length < 40);
-  assert.ok(Math.min(...tiles.map((t) => t.left)) <= 0 && Math.max(...tiles.map((t) => t.left)) + TILE >= 400);
-  assert.ok(Math.min(...tiles.map((t) => t.top)) <= 0 && Math.max(...tiles.map((t) => t.top)) + TILE >= 800);
+  assert.ok(tiles.length > 0 && tiles.length < 100);
+  assert.ok(Math.min(...tiles.map((t) => t.left)) <= 0 && Math.max(...tiles.map((t) => t.left)) + TILE_SHOWN >= 400);
+  assert.ok(Math.min(...tiles.map((t) => t.top)) <= 0 && Math.max(...tiles.map((t) => t.top)) + TILE_SHOWN >= 800);
   assert.equal(new Set(tiles.map((t) => t.key)).size, tiles.length);
+});
+
+test('tiles are fetched one zoom finer than the view, never finer than the server has', () => {
+  const view = fitView([[6.9344, 79.8506], [6.9345, 79.8507]], 400, 800, PAD);
+  assert.equal(tilesFor(view, 400, 800)[0].zoom, view.zoom + 1);
+  assert.ok(view.zoom + 1 <= 16);
 });
