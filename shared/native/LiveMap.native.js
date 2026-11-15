@@ -1,6 +1,7 @@
 // Live route map (Android / iOS build), drawn by the app itself: map tiles as ordinary images, then the route line, the stops
 // and the buses on top. No WebView and no Google Maps key. It fits the whole route on screen (no pan or zoom yet).
-// Tiles: CARTO basemaps (built from OpenStreetMap data), light or dark to match the app's mode.
+// Tiles: OpenStreetMap's own server, which asks apps to identify themselves in the User-Agent. Dark mode dims the same tiles
+// over the dark background. shortcut: fine for a pilot; before heavy use switch to a tile provider with a key or host tiles.
 // Source of truth: /shared/native/LiveMap.native.js (copied into each app by `node shared/sync.js`).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
@@ -11,9 +12,10 @@ import { useTheme } from './themeRuntime';
 import { TILE, fitView, project, tilesFor } from './mapMath';
 
 const TILE_HEADERS = { 'User-Agent': 'SmartBusTracker/1.0 (student project)' };
+const DARK_TILE_OPACITY = 0.42;
 const GLIDE_MS = 2800; // a bus moves to its new position over about the time between two GPS fixes
 
-const tileUrl = (t, dark) => `https://${'abcd'[(t.x + t.y) % 4]}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/${t.zoom}/${t.x}/${t.y}@2x.png`;
+const tileUrl = (t) => `https://tile.openstreetmap.org/${t.zoom}/${t.x}/${t.y}.png`;
 
 function BusMarker({ bus, view }) {
   const at = project(bus.lat, bus.lng, view);
@@ -44,7 +46,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
   return (
     <View style={[styles.fill, { backgroundColor: COLORS.bg }]} onLayout={(e) => setSize(e.nativeEvent.layout)}>
       {tiles.map((t) => (
-        <Image key={t.key} source={{ uri: tileUrl(t, dark), headers: TILE_HEADERS }} style={{ position: 'absolute', left: t.left, top: t.top, width: TILE, height: TILE }} />
+        <Image key={t.key} source={{ uri: tileUrl(t), headers: TILE_HEADERS }} style={{ position: 'absolute', left: t.left, top: t.top, width: TILE, height: TILE, opacity: dark ? DARK_TILE_OPACITY : 1 }} />
       ))}
       {view ? (
         <Svg style={styles.fill} pointerEvents="none">
@@ -57,7 +59,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
         </Svg>
       ) : null}
       {view ? (buses || []).map((bus) => <BusMarker key={bus.id} bus={bus} view={view} />) : null}
-      <Text style={[styles.credit, { bottom: Math.max(4, bottom - 18) }]}>© OpenStreetMap contributors © CARTO</Text>
+      <Text style={[styles.credit, { bottom: Math.max(4, bottom - 18) }]}>© OpenStreetMap contributors</Text>
     </View>
   );
 }

@@ -185,7 +185,7 @@ All three measures are explained in `docs/EVALUATION.md`.
 | Passenger app is Leaflet web only | The Expo project also builds a native app | D3 |
 | Route 138 is Colombo-Homagama | Seed data is Pettah-Maharagama | D2 |
 | Redis stores the latest fix | Verified only against the in-memory fallback | Do section 2's Redis step before claiming it |
-| Proposal says Leaflet on the passenger map | The web build uses Leaflet; the phone apps draw OSM-based tiles (CARTO) with the route, stops and buses on top, natively | Say so in the report |
+| Proposal says Leaflet on the passenger map | The web build uses Leaflet; the phone apps draw OpenStreetMap tiles with the route, stops and buses on top, natively | Say so in the report |
 | Objectives name "Leaflet.js / Google Maps API" and "React Native / Flutter" as options evaluated | The chosen stack is in the code | Add the comparison that justifies it |
 | Admin "register bus stops" | Stops are managed inside the route form | Name it that way in the report |
 | Kalman delay given as 1.5 weeks, 2 weeks and "Ext. 2 wks"; Phase 6 month given as Month 6 to 7 and Month 7 to 8 | Contradictory | Use one figure and one month range |
