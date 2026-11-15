@@ -14,7 +14,7 @@ npm install -g eas-cli
 eas login
 ```
 
-The maps need no key: both apps draw the route with OpenStreetMap, the same map as the web sites, so there is nothing to set up with Google. The phone needs an internet connection to load the map tiles.
+The maps need no key: both apps draw map tiles (OpenStreetMap data, served by CARTO) with the route, stops and buses on top, so there is nothing to set up with Google. The whole route is shown on screen; there is no pan or zoom yet. The phone needs an internet connection to load the tiles.
 
 ## Where the backend address is set
 
@@ -66,7 +66,7 @@ Same steps. You can run both builds at the same time in two terminals.
 
 - The driver app shows **Server: Connected** and a GPS log that fills every 3 seconds.
 - The admin dashboard shows the bus as on duty; the passenger app shows it moving with an ETA for each stop.
-- The map on the driver's Route screen shows tiles and the orange route line. If it stays grey, the phone has no internet or cannot reach tile.openstreetmap.org.
+- The map on the driver's Route screen shows tiles and the orange route line. If it stays grey, the phone has no internet or cannot reach basemaps.cartocdn.com.
 
 ## The two app icons
 

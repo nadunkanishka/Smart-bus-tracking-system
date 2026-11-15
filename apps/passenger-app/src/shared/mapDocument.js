@@ -1,4 +1,4 @@
-// The live route map page, shared by the web build (inside an iframe) and the phone apps (inside a WebView): Leaflet +
+// The live route map page, used by the web build (inside an iframe): Leaflet +
 // OpenStreetMap, no map key. The page is created once; route, stops and bus positions are sent to it as messages, and each
 // bus marker glides from its last position to the new one so movement between 3-second GPS fixes is smooth.
 // Source of truth: /shared/native/mapDocument.js (copied into each app by `node shared/sync.js`).
@@ -14,13 +14,8 @@ const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const mapDocument = () => `<!DOCTYPE html>
 <html style="width:100%;height:100%;margin:0"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<script>
-  // In the phone apps a map problem is sent to React Native, which shows it on screen (the web has the browser console).
-  function sbTell(text) { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(text); }
-  window.onerror = function (message, src, line) { sbTell('sb-map-error: ' + message + ' (' + String(src || '').split('/').pop() + ':' + line + ')'); };
-</script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" onerror="sbTell('sb-map-error: could not load leaflet.css')" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="sbTell('sb-map-error: could not load leaflet.js (no internet?)')"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   html, body, #map { width: 100%; height: 100%; margin: 0; background: var(--bg, #F5E9E2); }
   .leaflet-tile-pane { filter: grayscale(1) brightness(1.08) contrast(0.8); transition: filter 200ms; }
@@ -36,10 +31,7 @@ export const mapDocument = () => `<!DOCTYPE html>
   .leaflet-control-attribution a { color: inherit; }
 </style></head><body><div id="map"></div><script>
   var map = L.map('map', { zoomControl: false }).setView([6.9, 79.87], 12);
-  var tileFailed = false;
-  L.tileLayer('${TILE_URL}', { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' })
-    .on('tileerror', function () { if (!tileFailed) { tileFailed = true; sbTell('sb-map-error: map tiles did not load'); } })
-    .addTo(map);
+  L.tileLayer('${TILE_URL}', { subdomains: 'abc', maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
   var busSvgs = ${JSON.stringify(BUS_SVGS)};
   function busSvg(h) { return busSvgs[h == null || isNaN(h) ? 3 : ((Math.round(Number(h) / 45) % 8) + 8) % 8]; }
   var routeLine = null, routeKey = '', stopLayer = L.layerGroup().addTo(map), buses = {}, pad = { top: 40, bottom: 40 };
@@ -91,9 +83,7 @@ export const mapDocument = () => `<!DOCTYPE html>
     });
     Object.keys(buses).forEach(function (id) { if (!seen[id]) { map.removeLayer(buses[id].marker); delete buses[id]; } });
   });
-  // In the phone apps the page runs in a WebView and talks to React Native; on the web it sits in an iframe.
-  if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage('sb-map-ready');
-  else parent.postMessage({ type: 'sb-map-ready' }, parent.location.origin); // an srcDoc page has the parent's origin but reads its own location.origin as null
+  parent.postMessage({ type: 'sb-map-ready' }, parent.location.origin); // an srcDoc page has the parent's origin but reads its own location.origin as null
 </script></body></html>`;
 
 // What the page is sent whenever something changes: the data plus the colours of the current theme.

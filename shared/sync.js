@@ -29,6 +29,7 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('native/shell.js', join(dest, 'shell.js'));
   put('native/icons.js', join(dest, 'icons.js'));
   put('native/mapDocument.js', join(dest, 'mapDocument.js'));
+  put('native/mapMath.js', join(dest, 'mapMath.js'));
   put('native/LiveMap.js', join(dest, 'LiveMap.js'));
   put('native/LiveMap.native.js', join(dest, 'LiveMap.native.js'));
   put('native/api.js', join(dest, 'api.js'));

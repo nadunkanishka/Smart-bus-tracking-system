@@ -1,75 +1,70 @@
-// Live route map (Android / iOS build): the shared map page (mapDocument.js) inside a WebView. Leaflet + OpenStreetMap, so
-// there is no Google Maps key to set up, restrict or pay for, and the map looks the same as the web one.
+// Live route map (Android / iOS build), drawn by the app itself: map tiles as ordinary images, then the route line, the stops
+// and the buses on top. No WebView and no Google Maps key. It fits the whole route on screen (no pan or zoom yet).
+// Tiles: CARTO basemaps (built from OpenStreetMap data), light or dark to match the app's mode.
 // Source of truth: /shared/native/LiveMap.native.js (copied into each app by `node shared/sync.js`).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { WebView } from 'react-native-webview';
-import { mapDocument, mapMessage } from './mapDocument';
-import { API_URL } from './api';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Polyline } from 'react-native-svg';
+import { Vehicle, type } from './ui';
 import { COLORS } from './theme';
 import { useTheme } from './themeRuntime';
-import { type } from './ui';
+import { TILE, fitView, project, tilesFor } from './mapMath';
 
-const START_TIMEOUT_MS = 12000;
+const TILE_HEADERS = { 'User-Agent': 'SmartBusTracker/1.0 (student project)' };
+const GLIDE_MS = 2800; // a bus moves to its new position over about the time between two GPS fixes
+
+const tileUrl = (t, dark) => `https://${'abcd'[(t.x + t.y) % 4]}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/${t.zoom}/${t.x}/${t.y}@2x.png`;
+
+function BusMarker({ bus, view }) {
+  const at = project(bus.lat, bus.lng, view);
+  const position = useRef(new Animated.ValueXY(at)).current;
+  useEffect(() => {
+    Animated.timing(position, { toValue: { x: at.x, y: at.y }, duration: GLIDE_MS, useNativeDriver: false }).start();
+  }, [at.x, at.y, position]);
+  return (
+    <Animated.View pointerEvents="none" style={[styles.bus, bus.stale && styles.stale, { transform: position.getTranslateTransform() }]}>
+      <Vehicle name="bus" marker heading={bus.heading} width={52} label="Bus" />
+    </Animated.View>
+  );
+}
 
 export default function LiveMap({ path, stops, buses, highlightStop = -1, padding }) {
   const { mode } = useTheme();
-  const web = useRef(null);
-  const [ready, setReady] = useState(false);
-  const [problem, setProblem] = useState('');
-  // baseUrl gives the page an origin, so the tile server sees a referrer that names this app's backend.
-  const source = useMemo(() => ({ html: mapDocument(), baseUrl: `${API_URL}/` }), []);
+  const dark = mode === 'dark';
+  const [size, setSize] = useState(null);
+  const top = padding?.top ?? 40;
+  const bottom = padding?.bottom ?? 40;
 
-  // The page is ready when it says so, or when the WebView reports it finished loading (whichever comes first).
-  useEffect(() => {
-    if (ready) return undefined;
-    const timer = setTimeout(() => setProblem((p) => p || 'The map page did not start. Check the phone has internet.'), START_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [ready]);
-
-  useEffect(() => {
-    if (!ready) return;
-    const message = JSON.stringify(mapMessage({ path, stops, buses, highlightStop, padding }, mode));
-    web.current?.injectJavaScript(`window.dispatchEvent(new MessageEvent('message', { data: ${message} })); true;`);
-  }, [ready, path, stops, buses, highlightStop, padding, mode]);
-
-  const restart = () => { setReady(false); web.current?.reload(); };
+  // The route decides the view; a route with no road line yet falls back to its stops.
+  const points = useMemo(() => (path && path.length > 1 ? path : (stops || []).map((s) => [s.lat, s.lng])), [path, stops]);
+  const view = useMemo(() => (size ? fitView(points, size.width, size.height, { left: 32, right: 32, top, bottom }) : null), [points, size, top, bottom]);
+  const tiles = useMemo(() => (view ? tilesFor(view, size.width, size.height) : []), [view, size]);
+  const line = useMemo(() => (view && path?.length > 1 ? path.map(([lat, lng]) => { const p = project(lat, lng, view); return `${p.x.toFixed(1)},${p.y.toFixed(1)}`; }).join(' ') : ''), [view, path]);
 
   return (
-    <View style={[styles.fill, { backgroundColor: COLORS.bg }]}>
-      <WebView
-        ref={web}
-        source={source}
-        style={[styles.fill, { backgroundColor: COLORS.bg }]}
-        originWhitelist={['*']}
-        javaScriptEnabled
-        domStorageEnabled
-        scrollEnabled={false}
-        overScrollMode="never"
-        setSupportMultipleWindows={false}
-        onLoadEnd={() => setReady(true)}
-        onMessage={(e) => {
-          const text = e.nativeEvent.data;
-          if (text === 'sb-map-ready') setReady(true);
-          else if (String(text).startsWith('sb-map-error')) setProblem(String(text).replace('sb-map-error: ', ''));
-        }}
-        onError={(e) => setProblem(`WebView error: ${e.nativeEvent.description}`)}
-        onHttpError={(e) => setProblem(`WebView error: HTTP ${e.nativeEvent.statusCode}`)}
-        // If the page's process is killed (low memory), start it again.
-        onRenderProcessGone={restart}
-        onContentProcessDidTerminate={restart}
-      />
-      {problem ? (
-        <View style={styles.problem} pointerEvents="none">
-          <Text style={styles.problemText}>Map problem: {problem}</Text>
-        </View>
+    <View style={[styles.fill, { backgroundColor: COLORS.bg }]} onLayout={(e) => setSize(e.nativeEvent.layout)}>
+      {tiles.map((t) => (
+        <Image key={t.key} source={{ uri: tileUrl(t, dark), headers: TILE_HEADERS }} style={{ position: 'absolute', left: t.left, top: t.top, width: TILE, height: TILE }} />
+      ))}
+      {view ? (
+        <Svg style={styles.fill} pointerEvents="none">
+          {line ? <Polyline points={line} fill="none" stroke={COLORS.orange} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" /> : null}
+          {(stops || []).map((s, i) => {
+            const p = project(s.lat, s.lng, view);
+            const on = i === highlightStop;
+            return <Circle key={`${s.name}-${i}`} cx={p.x} cy={p.y} r={on ? 9 : 6} fill={on ? COLORS.violet : dark ? COLORS.orange : COLORS.ink} stroke={dark ? '#110C0B' : '#FFFFFF'} strokeWidth={3} />;
+          })}
+        </Svg>
       ) : null}
+      {view ? (buses || []).map((bus) => <BusMarker key={bus.id} bus={bus} view={view} />) : null}
+      <Text style={[styles.credit, { bottom: Math.max(4, bottom - 18) }]}>© OpenStreetMap contributors © CARTO</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { ...StyleSheet.absoluteFillObject },
-  problem: { position: 'absolute', left: 16, right: 16, top: '45%', padding: 12, borderRadius: 12, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine },
-  problemText: { ...type('small'), color: COLORS.ink, textAlign: 'center' },
+  bus: { position: 'absolute', left: -26, top: -26, width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+  stale: { opacity: 0.55 },
+  credit: { ...type('caption'), position: 'absolute', left: 8, fontSize: 9, color: COLORS.muted },
 });
