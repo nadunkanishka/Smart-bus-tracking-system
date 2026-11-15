@@ -84,11 +84,64 @@ Without `REDIS_URL`, or if Redis cannot be reached at startup, the same data is 
 
 ```mermaid
 erDiagram
+  ROUTE ||--o{ BUS : "has many (Bus.routeId)"
+  DRIVER |o--o| BUS : "assigned to (Bus.assignedDriver)"
   ROUTE ||--o{ TRIP : "is run as"
   BUS ||--o{ TRIP : "makes"
-  DRIVER |o--o| BUS : "assigned to"
-  BUS }o--o| ROUTE : "assigned to"
   TRIP ||--o{ SEGMENTLOG : "produces"
   TRIP ||--o{ ETALOG : "produces"
   TRIP ||--o{ GPSLOG : "produces"
+  ROUTE ||--o{ SEGMENTLOG : "measured on"
+  ROUTE ||--o{ ETALOG : "predicted on"
+  COUNTER ||--|| ROUTE : "issues routeId"
+  COUNTER ||--|| BUS : "issues busId"
+  COUNTER ||--|| DRIVER : "issues driverId"
+  ADMIN
+  PASSENGER
+
+  ROUTE {
+    string routeId PK
+    string routeNumber
+    geojson path "LineString, 2dsphere"
+    array stopPoints "name and Point, in travel order"
+    string status
+  }
+  BUS {
+    string busId PK
+    string registration UK
+    string password "scrypt hash"
+    string assignedDriver FK
+    string routeId FK
+    string status
+  }
+  DRIVER {
+    string driverId PK
+    string license UK
+    string status
+  }
+  TRIP {
+    string tripId PK
+    string busId FK
+    string routeId FK
+    bool completed
+  }
+  SEGMENTLOG {
+    string routeId FK
+    int segIndex
+    int traversalSec
+    int dwellSec
+  }
+  ETALOG {
+    string routeId FK
+    int stopIndex
+    int horizonSec
+    int errorSec
+    int baselineErrorSec
+  }
+  GPSLOG {
+    string busId FK
+    geojson location "raw, 2dsphere"
+    geojson smoothed
+    date serverTs "TTL 14 days"
+  }
 ```

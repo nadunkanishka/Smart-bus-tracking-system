@@ -20,7 +20,7 @@ The backend must be running, and a bus must exist and be assigned to a route (cr
 | `src/hooks/useDuty.js` | Telemetry subscription, the transmission log, the duty switch |
 | `src/screens/` | Login, Shift (duty toggle), Route, Diagnostics (telemetry), Profile, Settings (appearance, tracking, this bus, dispatch, about) |
 | `src/components/` | DispatchModal, DriverDock |
-| `src/services/telemetry.js` | Thin shell: GPS capture, background task, persisted offline queue, socket |
+| `src/services/telemetry.js` | Thin shell: GPS capture while the app is open (the background task is switched off by `BACKGROUND_TRACKING`), persisted offline queue, socket |
 | `src/services/telemetryCore.js` | Pure decisions: speed from two fixes, the fix shape, queue cap, batches; all waits in `TIMING` |
 | `src/constants.js`, `src/utils.js` | Dispatch phone, log length, map padding, `TABS`; `formatCoord`, `toKmh` |
 | `src/styles/` | Styles shared between screens |

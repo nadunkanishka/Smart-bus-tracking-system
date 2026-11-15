@@ -18,7 +18,7 @@ Check it at <http://localhost:5000/api/health>.
 | Command | What it does |
 |---|---|
 | `npm start` / `npm run dev` | Start the server (plain / with auto-restart) |
-| `npm test` | Unit tests for the ETA engine, GPS validation, trip tracker, store and auth |
+| `npm test` | Unit tests (ETA engine, GPS pipeline, smoothing, trip tracker, store, auth) and API tests that start the real server on a throwaway MongoDB database. MongoDB must be running; set `REDIS_URL` to also run the Redis store test |
 | `npm run seed` | Add the Colombo routes from `scripts/data/` (safe to repeat; list route numbers to add only those) |
 | `npm run replay -- --route RT-001 --buses 3 --duration 120` | Simulated buses driving a route |
 | `npm run clear-sim` | Remove simulated data |
@@ -30,10 +30,10 @@ Check it at <http://localhost:5000/api/health>.
 |---|---|
 | `index.js` | Server start-up; mounts the route files |
 | `routes/` | REST endpoints, one file per resource |
-| `middleware/` | Sign-in rate limiter, admin guards |
-| `realtime.js` | Socket.IO handlers and the live GPS pipeline |
-| `lib/` | ETA engine, validation, trip tracker, geometry, auth, latest-fix store |
+| `middleware/` | The role table (`access.js`), the one error handler, the sign-in rate limiter |
+| `realtime.js` | Socket.IO handlers and per-bus live state (the fix pipeline itself is `lib/fixPipeline.js`) |
+| `lib/` | Fix pipeline, ETA engine, Kalman smoothing, validation, trip tracker and recorder, geometry, auth, accounts, latest-fix store |
 | `models/` | Mongoose schemas |
-| `scripts/`, `test/` | Tools and unit tests |
+| `scripts/`, `test/` | Seed, replay and smoke tools; unit and API tests |
 
 Environment variables are listed in [docs/STRUCTURE.md](../docs/STRUCTURE.md#environment-variables). Endpoints and socket events are in [docs/API.md](../docs/API.md).

@@ -79,7 +79,7 @@ The full table, with defaults and the optional variables, is in [STRUCTURE.md](S
 
 ## 3. Hosting
 
-Database, backend and APKs: follow the three setup guides above. Render (web service plus Key Value) or any Docker host also works for the backend: it needs only the variables in section 2. This project runs on Railway.
+Database, backend and APKs: follow the three setup guides above. Any Docker host also works for the backend: it needs only the variables in section 2. This project runs on Railway.
 
 ## 4. Vercel: admin dashboard and passenger web app
 
@@ -88,7 +88,7 @@ Both are static sites, free on Vercel's Hobby plan. Each has a `vercel.json` in 
 1. Vercel: **Add New, Project**, import this GitHub repository.
 2. **Root Directory**: `apps/admin-dashboard`. Leave the build settings as `vercel.json` sets them. Under **Environment Variables** add `REACT_APP_API_URL` = the backend address (for example `https://...up.railway.app`, no trailing slash). Name the project `smartbusadmin`. Deploy.
 3. Repeat for the passenger web app: a second project (`smartbuspassenger`) with Root Directory `apps/passenger-app` and the variable `EXPO_PUBLIC_API_URL` (same address).
-4. In each project: **Settings, Git, Production Branch** = `dev` (the branch this project deploys). **Settings, General, Node.js Version** = 22.x (the lock files are written for npm 10, the same as CI).
+4. In each project: **Settings, Git, Production Branch** = `main` (the branch this project deploys). **Settings, General, Node.js Version** = 22.x (the lock files are written for npm 10, the same as CI).
 5. On the backend host, set `CORS_ORIGIN` to the two Vercel addresses, comma separated and without trailing slashes: `https://smartbusadmin.vercel.app,https://smartbuspassenger.vercel.app` (use the addresses Vercel shows you if the names were taken). The service restarts.
 6. Open the admin site, sign in with `ADMIN_USERNAME` and `ADMIN_PASSWORD`, and check Live Monitor loads.
 
@@ -100,7 +100,7 @@ To build the passenger web app by hand instead: `cd apps/passenger-app && EXPO_P
 
 Everything runs on free plans or a trial: Railway trial, MongoDB Atlas M0, Vercel, Expo/EAS free builds. Because of it:
 
-- A free web service may sleep when idle (Render's free plan sleeps after about 15 minutes and takes up to a minute to wake). Where that applies, add a free uptime monitor (for example UptimeRobot) that requests `<api url>/api/health` every 5 minutes, and open the app a minute before a shift.
+- Some free web services sleep when idle (an idle service can take up to a minute to wake). Where that applies, add a free uptime monitor (for example UptimeRobot) that requests `<api url>/api/health` every 5 minutes, and open the app a minute before a shift.
 - Free tiers have no backups. Export the collections before and after every pilot day (`mongoexport`, see [SETUP-MONGODB.md](SETUP-MONGODB.md)).
 - Free instances are small. Do not run the 500-driver, 2,000-passenger stress test (`loadtest/artillery.yml`) against them: run it from a separate machine against a temporary larger instance, or locally, and say in the report where it ran.
 - Watch the free limits (monthly hours or credit, Redis size, Atlas storage) while the pilot runs. When the system is ready for real use, move to paid plans; nothing else changes.
