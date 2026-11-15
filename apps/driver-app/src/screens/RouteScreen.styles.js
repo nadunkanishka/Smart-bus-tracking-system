@@ -25,7 +25,7 @@ export const useD = createStyles(() => ({
     timelineRow: { flexDirection: 'row', minHeight: 56 },
     timelineLeft: { alignItems: 'center', width: 24, marginRight: SPACE[3] },
     timelineDot: {
-      width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: COLORS.mutedLight,
+      width: 16, height: 16, borderRadius: 8,
       backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, alignItems: 'center', justifyContent: 'center',
     },
     dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },

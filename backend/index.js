@@ -3,6 +3,7 @@
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const dotenv = require('dotenv');
 const { Server } = require('socket.io');
 
@@ -35,6 +36,7 @@ connectDB().then(async (connected) => {
 
 async function start() {
   const app = express();
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // security headers; the API is called from other origins
   app.use(cors({ origin: env.CORS_ORIGIN }));
   app.use(express.json({ limit: '1mb' }));
 

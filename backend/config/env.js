@@ -27,6 +27,8 @@ Object.defineProperty(env, 'JWT_SECRET', {
   enumerable: true,
   get() {
     if (e.JWT_SECRET) return e.JWT_SECRET;
+    // A production server signing tokens with a public development secret would let anyone forge an admin token: refuse to start.
+    if (e.NODE_ENV === 'production') throw new Error('JWT_SECRET must be set when NODE_ENV=production.');
     if (!warned) { warned = true; console.warn('[auth] JWT_SECRET not set: using an insecure development secret.'); }
     return DEV_JWT_SECRET;
   },

@@ -57,7 +57,7 @@ const kebab = (s) => s.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 const shadow = (s, rgb, boost) => `0 ${s.shadowOffset.height}px ${s.shadowRadius}px rgba(${rgb}, ${Math.min(1, +(s.shadowOpacity * boost).toFixed(2))})`;
 // The colour variables for one mode (strings and the tint pairs).
 const colourVars = (c) => [
-  ...Object.entries(c).filter(([k, v]) => typeof v === 'string').map(([k, v]) => `  --${kebab(k)}: ${v};`),
+  ...Object.entries(c).filter(([, v]) => typeof v === 'string').map(([k, v]) => `  --${kebab(k)}: ${v};`),
   ...Object.entries(c.tints).flatMap(([k, [a, b]]) => [`  --tint-${k}-from: ${a};`, `  --tint-${k}-to: ${b};`]),
   ...Object.entries(c.tintLines).map(([k, v]) => `  --tint-line-${k}: ${v};`),
 ];

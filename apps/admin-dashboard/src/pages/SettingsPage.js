@@ -28,7 +28,7 @@ export default function SettingsPage({ user, backendConnected, fetchBackendData,
     }
     setChecking(false);
   };
-  useEffect(() => { check(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { check(); }, []);  
 
   const host = API_BASE.replace(/\/api$/, '');
   const index = THEME_OPTIONS.findIndex((o) => o.value === preference);

@@ -37,7 +37,7 @@ export function useAdminData() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchBackendData(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchBackendData(); }, []);  
 
   return { drivers, buses, routes, summary, backendConnected, loading, fetchBackendData };
 }

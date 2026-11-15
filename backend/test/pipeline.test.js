@@ -115,14 +115,14 @@ test('a batch re-sent after a lost ack only counts duplicates', async () => {
 test('smoothing off: passengers get the fix as reported', async () => {
   const s = setup({ smoothing: false });
   const fixes = [at(0, 100), at(3, 130, { lng: 0.0002 }), at(6, 160)];
-  for (const f of fixes) await s.live(f); // eslint-disable-line no-await-in-loop
+  for (const f of fixes) await s.live(f);  
   assert.deepEqual(s.published.map((p) => [p.lat, p.lng]), fixes.map((f) => [f.lat, f.lng]));
 });
 
 test('smoothing on: passengers get the smoothed point, the log keeps the raw fix beside it', async () => {
   const s = setup({ smoothing: true });
   const spike = at(6, 160, { lng: 0.0003, accuracy: 15 }); // ~33 m off the road
-  for (const f of [at(0, 100, { accuracy: 15 }), at(3, 130, { accuracy: 15 }), spike]) await s.live(f); // eslint-disable-line no-await-in-loop
+  for (const f of [at(0, 100, { accuracy: 15 }), at(3, 130, { accuracy: 15 }), spike]) await s.live(f);  
   const shown = s.published[2];
   assert.ok(Math.abs(shown.lng) < Math.abs(spike.lng), 'the shown point is pulled back towards the road');
   assert.deepEqual([s.logged[2].raw.lat, s.logged[2].raw.lng], [spike.lat, spike.lng]);
