@@ -22,7 +22,8 @@ export function ringBackground(segments, total, p) {
     at += (s.n / total) * 100;
     return `${s.color} ${from}% ${at * p}%`;
   });
-  return `conic-gradient(${parts.join(', ')}${p < 1 ? `, var(--a-line) ${p * 100}% 100%` : ''})`;
+  if (p < 1) parts.push(`var(--a-line) ${p * 100}% 100%`); // the part not swept yet is the track colour
+  return `conic-gradient(${parts.join(', ')})`;
 }
 
 // Stops per route as bars (the first `max` routes). `top` is the index of the tallest bar, the one that gets the detail card.
