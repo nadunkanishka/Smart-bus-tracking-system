@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import StatusBadge from '../components/StatusBadge';
 import { routeReady } from '../entities';
 import { displayName, distanceKm } from '../format';
+import { fleetOf, fleetSegments, ringBackground, stopBars } from '../dashboardData';
 import { CountUp, useEntrance, useGrowBars, useSweep } from '../motion';
 
 const MAX_BARS = 7;
@@ -11,31 +12,18 @@ const MAX_DRIVER_ROWS = 1;
 
 export default function DashboardPage({ user, summary, drivers, buses, routes, fetchBackendData, showNotification, openModal, setActivePage }) {
   const [driverFilter, setDriverFilter] = useState('Active'); // 'Active' | 'On Leave'
-  const fleet = { active: 0, idle: 0, maintenance: 0, ...summary.fleetDistribution };
-  const fleetTotal = fleet.active + fleet.idle + fleet.maintenance;
+  const fleet = fleetOf(summary);
+  const fleetTotal = fleet.total;
   const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
   const readyRoutes = routes.filter(routeReady).length;
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
   // Stops per route as bars; the tallest bar carries a small card with its details.
-  const bars = routes.slice(0, MAX_BARS).map((r) => ({ id: r.id, label: r.routeNumber || r.id, name: r.name, stops: r.stopPoints.length, distance: r.distance }));
-  const topStops = Math.max(1, ...bars.map((b) => b.stops));
-  const topIndex = bars.findIndex((b) => b.stops === topStops);
+  const { bars, tallest: topStops, top: topIndex } = stopBars(routes, MAX_BARS);
   const totalStops = routes.reduce((n, r) => n + r.stopPoints.length, 0);
 
-  // Fleet split: green = running, violet = idle, red = maintenance. The ring is a conic gradient built from the shares.
-  const split = [
-    { key: 'active', label: 'Running', color: 'var(--green)', n: fleet.active },
-    { key: 'idle', label: 'Idle', color: 'var(--violet)', n: fleet.idle },
-    { key: 'maintenance', label: 'Service', color: 'var(--danger)', n: fleet.maintenance },
-  ];
-  // The ring is drawn for a progress p from 0 to 1 (the motion hook sweeps it round once); p = 1 is the finished ring.
-  const ringAt = (p) => {
-    if (!fleetTotal) return 'conic-gradient(var(--a-line) 0 100%)';
-    let at = 0;
-    const parts = split.filter((x) => x.n > 0).map((x) => { const from = at * p; at += (x.n / fleetTotal) * 100; return `${x.color} ${from}% ${at * p}%`; });
-    return `conic-gradient(${parts.join(', ')}${p < 1 ? `, var(--a-line) ${p * 100}% 100%` : ''})`;
-  };
+  const split = fleetSegments(fleet);
+  const ringAt = (p) => ringBackground(split, fleetTotal, p);
   const root = useRef(null);
   const donut = useRef(null);
   useEntrance(root);

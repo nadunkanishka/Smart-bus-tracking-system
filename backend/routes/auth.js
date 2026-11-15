@@ -1,4 +1,5 @@
 const express = require('express');
+const { httpError } = require('../lib/crud');
 const authLimiter = require('../middleware/authLimiter');
 const { driverClaims } = require('../lib/auth');
 const { signIn, issueToken } = require('../lib/accounts');
@@ -12,12 +13,12 @@ const router = express.Router();
 router.post('/api/auth/login', authLimiter, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+    throw httpError(400, 'Username and password are required');
   }
 
   const admin = await Admin.findOne({ username: String(username) });
   if (!(await signIn(admin, password))) {
-    return res.status(401).json({ error: 'Invalid username or password' });
+    throw httpError(401, 'Invalid username or password');
   }
 
   return res.json({
@@ -35,7 +36,7 @@ router.post('/api/auth/login', authLimiter, async (req, res) => {
 router.post('/api/auth/driver-login', authLimiter, async (req, res) => {
   const { registration, busId, password } = req.body;
   if ((!registration && !busId) || !password) {
-    return res.status(400).json({ error: 'Bus registration number and password are required.' });
+    throw httpError(400, 'Bus registration number and password are required.');
   }
 
   const query = registration
@@ -44,10 +45,10 @@ router.post('/api/auth/driver-login', authLimiter, async (req, res) => {
 
   const bus = await Bus.findOne(query);
   if (!bus) {
-    return res.status(404).json({ error: 'Bus not found in database. Check registration no.' });
+    throw httpError(404, 'Bus not found in database. Check registration no.');
   }
   if (!(await signIn(bus, password))) {
-    return res.status(401).json({ error: 'Invalid password for this bus.' });
+    throw httpError(401, 'Invalid password for this bus.');
   }
   const driver = bus.assignedDriver ? await Driver.findOne({ driverId: bus.assignedDriver }) : null;
 

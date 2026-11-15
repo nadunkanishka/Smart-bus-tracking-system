@@ -7,3 +7,11 @@ export const MAP_PADDING = { top: 24, bottom: 24 };
 // Tab ids for the dock and the screen switch in App.js. Settings is not in the dock: it opens from Profile,
 // so the dock shows Profile while it is open.
 export const TABS = { shift: 'shift', route: 'route', diagnostics: 'diagnostics', profile: 'profile', settings: 'settings' };
+
+// The dock: tab, label and NavIcon glyph.
+export const DOCK_TABS = [
+  { id: TABS.shift, label: 'Duty', glyph: 'arrow' },
+  { id: TABS.route, label: 'Route', glyph: 'route' },
+  { id: TABS.diagnostics, label: 'Telemetry', glyph: 'gauge' },
+  { id: TABS.profile, label: 'Profile', glyph: 'user' },
+];

@@ -26,6 +26,7 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('vehicleShapes.js', join(dest, 'vehicleShapes.js'));
   put('native/themeRuntime.js', join(dest, 'themeRuntime.js'));
   put('native/ui.js', join(dest, 'ui.js'));
+  for (const part of ['core', 'vehicle', 'controls', 'layout', 'motion', 'settings']) put(`native/kit/${part}.js`, join(dest, 'kit', `${part}.js`));
   put('native/shell.js', join(dest, 'shell.js'));
   put('native/icons.js', join(dest, 'icons.js'));
   put('native/mapDocument.js', join(dest, 'mapDocument.js'));
