@@ -42,7 +42,9 @@ export const useS = createStyles(() => ({
     sheetBookingId: { ...type('h2'), color: COLORS.ink },
     transitBadge: { paddingHorizontal: SPACE[3], paddingVertical: SPACE[2], borderRadius: RADII.pill, backgroundColor: COLORS.successSoft },
     transitBadgeText: { ...type('caption'), color: COLORS.success },
-    progressBlock: { marginBottom: SPACE[4] },
+    progressBlock: { marginBottom: SPACE[2] },
+    moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACE[3] },
+    moreText: { ...type('smallBold'), color: COLORS.accent },
     // Driver Card
     driverCard: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
