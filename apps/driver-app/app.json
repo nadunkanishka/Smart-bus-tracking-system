@@ -47,6 +47,7 @@
         {
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
+          "androidForegroundServiceIcon": "./assets/notification-icon.png",
           "locationAlwaysAndWhenInUsePermission": "Allow SmartBus Driver to share the live bus location while on duty."
         }
       ]
