@@ -8,7 +8,7 @@ const connectDB = require('../config/db');
   if (!(await connectDB())) process.exit(1);
   const sim = { busId: /^(SIM|LOAD)-/ };
   for (const name of ['Trip', 'SegmentLog', 'EtaLog', 'GpsLog']) {
-    const { deletedCount } = await require(`../models/${name}`).deleteMany(sim); // eslint-disable-line global-require
+    const { deletedCount } = await require(`../models/${name}`).deleteMany(sim);  
     console.log(`${name}: removed ${deletedCount}`);
   }
   await mongoose.disconnect();

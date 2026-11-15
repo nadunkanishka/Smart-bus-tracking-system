@@ -6,6 +6,17 @@ on:
     branches: [dev, main]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
   backend:
     runs-on: ubuntu-latest
     services:
@@ -13,6 +24,10 @@ jobs:
       mongo:
         image: mongo:7
         ports: ['27017:27017']
+      # the Redis latest-fix store contract (test/store.test.js) runs against a real Redis
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
     defaults:
       run:
         working-directory: backend
@@ -24,7 +39,9 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npm test
+      - run: npm test -- --experimental-test-coverage
+        env:
+          REDIS_URL: redis://localhost:6379
 
   admin:
     runs-on: ubuntu-latest
@@ -40,7 +57,7 @@ jobs:
           cache-dependency-path: apps/admin-dashboard/package-lock.json
       - run: npm ci
       - run: npm test -- --watchAll=false
-      # CI=true makes Create React App treat ESLint warnings as errors, so this is also the lint step.
+      # CI=true makes Create React App treat its own ESLint warnings as errors too.
       - run: npm run build
 
   apps-tests:

@@ -105,7 +105,7 @@ function createFixPipeline({ getRoute, track, recordFix, publish, metrics, smoot
 
     const ordered = usable.sort((a, b) => Number(a.ts) - Number(b.ts));
     for (let i = 0; i < ordered.length; i += 1) {
-      // eslint-disable-next-line no-await-in-loop
+       
       const result = await handleFix(bus, ordered[i], { receivedAt, fromOfflineQueue: true, mayBroadcast: i === ordered.length - 1 });
       counts[OK_RESULTS.has(result) ? result : 'rejected'] += 1;
     }

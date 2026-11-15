@@ -54,14 +54,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitForAdmin() {
   for (let i = 0; i < 80 && proc.exitCode === null; i += 1) {
     try { if ((await fetch(`${URL}/api/health`)).ok) break; } catch { /* not listening yet */ }
-    await sleep(250); // eslint-disable-line no-await-in-loop
+    await sleep(250);  
   }
   for (let i = 0; i < 15 && proc.exitCode === null; i += 1) {
     try {
-      const login = await call('POST', '/api/auth/login', { body: { username: 'admin', password: ADMIN_PW } }); // eslint-disable-line no-await-in-loop
+      const login = await call('POST', '/api/auth/login', { body: { username: 'admin', password: ADMIN_PW } });  
       if (login.status === 200) return login.data.token;
     } catch { /* not listening yet */ }
-    await sleep(400); // eslint-disable-line no-await-in-loop
+    await sleep(400);  
   }
   return null;
 }
