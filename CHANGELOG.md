@@ -13,6 +13,7 @@ Notable changes, newest first, grouped by milestone. Pull request numbers refer 
 - Documentation rewritten, with architecture, sequence, ETA, hosting and ER diagrams and design decisions
 
 ### Mobile apps
+- A flat black-and-orange redesign of both apps: no gradients, borders or shadows, filled grey cards with a black and an orange card for emphasis, pill controls, bold headings, light and dark; the admin dashboard keeps its own look (#101)
 - Updates without reinstalling: EAS Update for JavaScript changes, version codes that rise by themselves (#67)
 - A short tracking card so the map and the bus stay visible; a Bus button that centres the map (#65)
 - Map drag, pinch and zoom buttons (#63); tiles from Esri's gray basemaps (#61)

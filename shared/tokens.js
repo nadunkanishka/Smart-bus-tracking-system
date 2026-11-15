@@ -1,116 +1,123 @@
-// SmartBus design tokens — single source of truth. `npm run sync` copies this into every app
-// (RN apps: src/shared/theme.js, admin: src/design/tokens.css generated from these values).
+// SmartBus mobile design tokens: a flat, two-colour skin (black and orange on white), no gradients, no glow, no shadows.
+// `npm run sync` copies this into both phone apps (src/shared/theme.js). The admin dashboard has its own tokens in
+// adminTokens.json, which sync.js turns into CSS variables.
 
-// ── Palette: "Ember" ─────────────────────────────────────────────────────────
-// Night (warm brown-black), Cream (warm off-white), Orange (the one action colour) and Violet (the second voice:
-// negative bars, secondary chips). Peach is a tint of orange; red is only for destructive actions.
-// Green marks anything active or live (a running bus, a connected server, a driver on duty): it is a status colour, not a brand colour.
-// Cards are glass on a glowing dark page: a faint white fill with a hairline border. Light mode is the same set on cream.
-export const PALETTE = { night: '#130E0D', cream: '#FFF3EB', orange: '#FF6B35', violet: '#A25BE0', peach: '#FFB59A', red: '#FF5A6E', green: '#34D17A' };
+// Orange is the one action colour, black the one strong colour. Green marks anything active or live (a running bus, a
+// connected server): a status colour, not a brand colour. Red is only for destructive actions.
+export const PALETTE = { night: '#0E0E0F', orange: '#FF7A00', red: '#D92D20', green: '#1FA95B' };
 
-// Semantic names stay the same in both modes. Two rules the apps rely on:
+// Semantic names stay the same in both modes. Rules the apps rely on:
 //   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
-//   onBright is always night: use it for text on orange, peach or violet fills, never `ink` or `white`.
+//   onBright is always night: text on orange, never `ink` or `white` (white on this orange is 2.7:1, night is 8:1).
+//   card / onCard: the black card (a hero, a stat) and its text; in dark mode the card is a lighter grey than the page.
 const LIGHT = {
-  bg: '#F5E9E2',
-  surface: '#FFFAF6',
-  surfaceSoft: '#EBDCD3',
-  line: '#E2D2C8',
-  outline: '#CDB9AC', // input borders
-  ring: 'rgba(19, 14, 13, 0.5)', // keyboard focus ring
-  glass: 'rgba(255, 255, 255, 0.7)',
-  scrim: 'rgba(19, 14, 13, 0.45)', // behind sheets and dialogs
-  mapChrome: 'rgba(255, 255, 255, 0.7)', // the map's attribution strip
-  glassLine: 'rgba(19, 14, 13, 0.08)',
-  glowA: 'rgba(255, 107, 53, 0.26)', // page backdrop glows (orange top-left, violet bottom-right)
-  glowB: 'rgba(162, 91, 224, 0.14)',
+  bg: '#FFFFFF',
+  surface: '#F5F5F6', // cards and rows
+  surfaceSoft: '#ECECEE', // inactive pills, inputs, tracks
+  line: '#E6E6E9',
+  outline: '#CFCFD4', // input borders
+  ring: 'rgba(14, 14, 15, 0.45)', // keyboard focus ring
+  glass: '#F5F5F6', // kept as the card fill name used across the screens: flat, not translucent
+  scrim: 'rgba(14, 14, 15, 0.4)', // behind sheets and dialogs
+  mapChrome: 'rgba(255, 255, 255, 0.8)',
+  glassLine: 'rgba(14, 14, 15, 0)', // no card borders
+  glowA: 'rgba(0, 0, 0, 0)',
+  glowB: 'rgba(0, 0, 0, 0)',
   orange: PALETTE.orange,
-  violet: PALETTE.violet,
-  heroFrom: '#FF7B4A', // the orange hero card
-  heroTo: '#FF5D2A',
-  heroShape: '#FFB59A', // its light shapes
-  backdrop: '#FF9A6E', // hero and header blocks on mobile (night text)
+  violet: PALETTE.night, // the "second voice" of the old skin is black now: destination dots, highlights
+  heroFrom: PALETTE.orange,
+  heroTo: PALETTE.orange,
+  heroShape: PALETTE.orange,
+  backdrop: PALETTE.orange,
 
-  primary: PALETTE.orange, // orange carries the main action in both modes; text on it is onBright
-  primaryLight: '#FFD9C9', // pale orange: night text only
-  primaryDeep: '#8A2F0A',
+  primary: PALETTE.orange,
+  primaryLight: '#FFE5CC',
+  primaryDeep: '#A64B00',
   primaryStrong: PALETTE.orange,
-  primarySoft: '#FFE6DA',
-  accent: PALETTE.violet, // fills and highlights. Text on it must be onBright.
-  accentText: '#7B32B8', // violet darkened for text on cream (6:1)
-  accentSoft: '#EBD9F8',
+  primarySoft: '#FFF0E0',
+  accent: PALETTE.night,
+  accentText: '#0E0E0F',
+  accentSoft: '#ECECEE',
 
   ink: PALETTE.night,
-  inkSoft: '#2E2321',
-  muted: '#76665F', // 4.9:1 on bg
-  mutedLight: '#A8998F', // decorative only
+  inkSoft: '#2A2A2C',
+  muted: '#76767C', // 4.6:1 on white
+  mutedLight: '#B1B1B7', // decorative only
 
-  green: '#2FBF71', // fills and dots (night text on it)
-  greenSoft: '#D6F3E1',
+  card: PALETTE.night,
+  onCard: '#FFFFFF',
+  cardMuted: '#A6A6AC',
+
+  green: PALETTE.green,
+  greenSoft: '#DDF3E6',
   success: '#0E7A3F',
-  successSoft: '#D6F3E1',
-  warning: '#7B32B8',
-  warningSoft: '#EBD9F8',
-  danger: '#C8283F',
-  dangerSoft: '#FDDDE1',
+  successSoft: '#DDF3E6',
+  warning: '#A64B00',
+  warningSoft: '#FFE5CC',
+  danger: PALETTE.red,
+  dangerSoft: '#FDE4E1',
 
   onBright: PALETTE.night,
-  glow: 'rgba(255, 107, 53, 0.45)',
+  glow: 'rgba(0, 0, 0, 0)',
 
-  tints: { bus: ['#FFD9C9', '#FFE8DD'] },
-  tintLines: { bus: '#FFC4A8' },
+  tints: { bus: ['#F5F5F6', '#F5F5F6'] },
+  tintLines: { bus: '#F5F5F6' },
 
   white: '#FFFFFF',
 };
 
 const DARK = {
-  bg: '#110C0B',
-  surface: '#1E1614',
-  surfaceSoft: '#2B201D',
-  line: '#35292A',
-  outline: '#4A3A36',
-  ring: 'rgba(255, 107, 53, 0.65)',
-  glass: 'rgba(255, 255, 255, 0.045)',
+  bg: '#0B0B0C',
+  surface: '#161618',
+  surfaceSoft: '#232326',
+  line: '#2B2B2F',
+  outline: '#3C3C42',
+  ring: 'rgba(255, 122, 0, 0.7)',
+  glass: '#161618',
   scrim: 'rgba(0, 0, 0, 0.6)',
-  mapChrome: 'rgba(17, 12, 11, 0.75)',
-  glassLine: 'rgba(255, 255, 255, 0.08)',
-  glowA: 'rgba(255, 107, 53, 0.2)',
-  glowB: 'rgba(70, 90, 160, 0.22)', // the page fades to a cool blue-black at the bottom
+  mapChrome: 'rgba(11, 11, 12, 0.8)',
+  glassLine: 'rgba(255, 255, 255, 0)',
+  glowA: 'rgba(0, 0, 0, 0)',
+  glowB: 'rgba(0, 0, 0, 0)',
   orange: PALETTE.orange,
-  violet: PALETTE.violet,
-  heroFrom: '#FF7B4A',
-  heroTo: '#FF5D2A',
-  heroShape: '#FFB59A',
-  backdrop: '#1E1614',
+  violet: '#F4F4F5',
+  heroFrom: PALETTE.orange,
+  heroTo: PALETTE.orange,
+  heroShape: PALETTE.orange,
+  backdrop: PALETTE.orange,
 
   primary: PALETTE.orange,
-  primaryLight: '#3A2016',
-  primaryDeep: '#FF8A5C',
+  primaryLight: '#3A2410',
+  primaryDeep: '#FFA24D',
   primaryStrong: PALETTE.orange,
-  primarySoft: '#2D1A13',
-  accent: PALETTE.violet,
-  accentText: '#C58BF0',
-  accentSoft: '#2E1B40',
+  primarySoft: '#2A1A0C',
+  accent: '#F4F4F5',
+  accentText: '#F4F4F5',
+  accentSoft: '#232326',
 
-  ink: '#F7EEE8',
-  inkSoft: '#E0D2CA',
-  muted: '#A89A93', // 6.6:1 on surface
-  mutedLight: '#6F625C',
+  ink: '#F4F4F5',
+  inkSoft: '#D8D8DC',
+  muted: '#9E9EA6', // 6.6:1 on surface
+  mutedLight: '#5F5F66',
 
-  green: '#3DDC84',
+  card: '#2A2A2E',
+  onCard: '#FFFFFF',
+  cardMuted: '#A6A6AC',
+
+  green: '#35D07F',
   greenSoft: '#12301F',
   success: '#5BE39A',
   successSoft: '#12301F',
-  warning: '#C58BF0',
-  warningSoft: '#2E1B40',
-  danger: '#FF7A8A',
-  dangerSoft: '#3F1C26',
+  warning: '#FFA24D',
+  warningSoft: '#3A2410',
+  danger: '#FF7A6E',
+  dangerSoft: '#3F1C1A',
 
   onBright: PALETTE.night,
-  glow: 'rgba(255, 107, 53, 0.35)',
+  glow: 'rgba(0, 0, 0, 0)',
 
-  tints: { bus: ['#3A2014', '#2A180F'] },
-  tintLines: { bus: '#5A3321' },
+  tints: { bus: ['#161618', '#161618'] },
+  tintLines: { bus: '#161618' },
 
   white: PALETTE.night, // "text on ink": night on the near-white fills
 };
@@ -126,20 +133,20 @@ export function applyTheme(mode) {
   return mode in THEMES ? mode : 'light';
 }
 
-export const RADII = { sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
+// Rounder than before: cards 28, big blocks 32, controls are pills.
+export const RADII = { sm: 16, md: 20, lg: 28, xl: 32, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
 
 // The strong ease-out every press, toast and switch uses: cubic-bezier control points.
-// Mobile: Easing.bezier(...EASE_OUT); admin: the --ease-out CSS variable written by sync.js.
 export const EASE_OUT = [0.23, 1, 0.32, 1];
 
-// Type scale: one fixed size + line-height + weight per role.
+// Type scale: one fixed size + line-height + weight per role. Headings are large and tight, like the reference.
 export const TYPE = {
-  display: { fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.6 },
-  h1: { fontSize: 24, lineHeight: 30, fontWeight: '800', letterSpacing: -0.4 },
-  h2: { fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.2 },
-  h3: { fontSize: 18, lineHeight: 25, fontWeight: '700' },
+  display: { fontSize: 36, lineHeight: 40, fontWeight: '800', letterSpacing: -1.2 },
+  h1: { fontSize: 28, lineHeight: 33, fontWeight: '800', letterSpacing: -0.8 },
+  h2: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.4 },
+  h3: { fontSize: 18, lineHeight: 24, fontWeight: '700', letterSpacing: -0.2 },
   body: { fontSize: 16, lineHeight: 24, fontWeight: '500' },
   bodyBold: { fontSize: 16, lineHeight: 24, fontWeight: '700' },
   small: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
@@ -148,10 +155,6 @@ export const TYPE = {
   overline: { fontSize: 12, lineHeight: 16, fontWeight: '700', letterSpacing: 0.8 },
 };
 
-// Soft, diffuse shadows only.
-// elevation stays 0: on Android an elevation shadow shows as a solid rectangle behind translucent cards.
-export const SHADOWS = {
-  sm: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 0 },
-  md: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 24, elevation: 0 },
-  lg: { shadowColor: '#130E0D', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.16, shadowRadius: 40, elevation: 0 },
-};
+// Flat: no shadows. Cards separate from the page by colour, not by depth. (The keys stay so style code does not change.)
+const NONE = { shadowColor: '#000000', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0, shadowRadius: 0, elevation: 0 };
+export const SHADOWS = { sm: NONE, md: NONE, lg: NONE };

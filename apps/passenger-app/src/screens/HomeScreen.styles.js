@@ -11,10 +11,11 @@ export const useS = createStyles(() => ({
     homeHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingTop: TOP_INSET },
     homeHeaderText: { flex: 1 },
     homeGreeting: { ...type('small'), color: COLORS.muted },
-    homeUserName: { ...type('display'), fontWeight: '500', color: COLORS.ink, marginTop: 2 },
+    homeUserName: { ...type('display'), color: COLORS.ink, marginTop: 2 },
     homeHello: { fontWeight: '800' },
     statRow: { flexDirection: 'row', gap: SPACE[3], marginBottom: SPACE[4] },
-    statValue: { ...type('display'), color: COLORS.ink, letterSpacing: -0.5 },
+    statValue: { ...type('display'), color: COLORS.ink },
+    statValueOnCard: { color: COLORS.orange },
     livePill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: SPACE[2], backgroundColor: 'rgba(19, 14, 13, 0.14)', borderRadius: RADII.pill, paddingHorizontal: SPACE[3], paddingVertical: SPACE[1], marginBottom: SPACE[2] },
     livePillText: { ...type('caption'), color: COLORS.onBright, letterSpacing: 0.6 },
     travelCard: {

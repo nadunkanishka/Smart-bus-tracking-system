@@ -1,0 +1,141 @@
+{
+  "_about": "The admin dashboard's design tokens (the glass-on-ember look). sync.js turns them into apps/admin-dashboard/src/design/tokens.css. The phone apps use their own flat skin in tokens.js.",
+  "themes": {
+    "light": {
+      "bg": "#F5E9E2",
+      "surface": "#FFFAF6",
+      "surfaceSoft": "#EBDCD3",
+      "line": "#E2D2C8",
+      "outline": "#CDB9AC",
+      "ring": "rgba(19, 14, 13, 0.5)",
+      "glass": "rgba(255, 255, 255, 0.7)",
+      "scrim": "rgba(19, 14, 13, 0.45)",
+      "mapChrome": "rgba(255, 255, 255, 0.7)",
+      "glassLine": "rgba(19, 14, 13, 0.08)",
+      "glowA": "rgba(255, 107, 53, 0.26)",
+      "glowB": "rgba(162, 91, 224, 0.14)",
+      "orange": "#FF6B35",
+      "violet": "#A25BE0",
+      "heroFrom": "#FF7B4A",
+      "heroTo": "#FF5D2A",
+      "heroShape": "#FFB59A",
+      "backdrop": "#FF9A6E",
+      "primary": "#FF6B35",
+      "primaryLight": "#FFD9C9",
+      "primaryDeep": "#8A2F0A",
+      "primaryStrong": "#FF6B35",
+      "primarySoft": "#FFE6DA",
+      "accent": "#A25BE0",
+      "accentText": "#7B32B8",
+      "accentSoft": "#EBD9F8",
+      "ink": "#130E0D",
+      "inkSoft": "#2E2321",
+      "muted": "#76665F",
+      "mutedLight": "#A8998F",
+      "green": "#2FBF71",
+      "greenSoft": "#D6F3E1",
+      "success": "#0E7A3F",
+      "successSoft": "#D6F3E1",
+      "warning": "#7B32B8",
+      "warningSoft": "#EBD9F8",
+      "danger": "#C8283F",
+      "dangerSoft": "#FDDDE1",
+      "onBright": "#130E0D",
+      "glow": "rgba(255, 107, 53, 0.45)",
+      "white": "#FFFFFF"
+    },
+    "dark": {
+      "bg": "#110C0B",
+      "surface": "#1E1614",
+      "surfaceSoft": "#2B201D",
+      "line": "#35292A",
+      "outline": "#4A3A36",
+      "ring": "rgba(255, 107, 53, 0.65)",
+      "glass": "rgba(255, 255, 255, 0.045)",
+      "scrim": "rgba(0, 0, 0, 0.6)",
+      "mapChrome": "rgba(17, 12, 11, 0.75)",
+      "glassLine": "rgba(255, 255, 255, 0.08)",
+      "glowA": "rgba(255, 107, 53, 0.2)",
+      "glowB": "rgba(70, 90, 160, 0.22)",
+      "orange": "#FF6B35",
+      "violet": "#A25BE0",
+      "heroFrom": "#FF7B4A",
+      "heroTo": "#FF5D2A",
+      "heroShape": "#FFB59A",
+      "backdrop": "#1E1614",
+      "primary": "#FF6B35",
+      "primaryLight": "#3A2016",
+      "primaryDeep": "#FF8A5C",
+      "primaryStrong": "#FF6B35",
+      "primarySoft": "#2D1A13",
+      "accent": "#A25BE0",
+      "accentText": "#C58BF0",
+      "accentSoft": "#2E1B40",
+      "ink": "#F7EEE8",
+      "inkSoft": "#E0D2CA",
+      "muted": "#A89A93",
+      "mutedLight": "#6F625C",
+      "green": "#3DDC84",
+      "greenSoft": "#12301F",
+      "success": "#5BE39A",
+      "successSoft": "#12301F",
+      "warning": "#C58BF0",
+      "warningSoft": "#2E1B40",
+      "danger": "#FF7A8A",
+      "dangerSoft": "#3F1C26",
+      "onBright": "#130E0D",
+      "glow": "rgba(255, 107, 53, 0.35)",
+      "white": "#130E0D"
+    }
+  },
+  "radii": {
+    "sm": 16,
+    "md": 22,
+    "lg": 30,
+    "xl": 38,
+    "pill": 999
+  },
+  "space": {
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "5": 20,
+    "6": 24,
+    "8": 32,
+    "10": 40,
+    "12": 48
+  },
+  "shadows": {
+    "sm": {
+      "shadowColor": "#130E0D",
+      "shadowOffset": {
+        "width": 0,
+        "height": 4
+      },
+      "shadowOpacity": 0.07,
+      "shadowRadius": 12,
+      "elevation": 0
+    },
+    "md": {
+      "shadowColor": "#130E0D",
+      "shadowOffset": {
+        "width": 0,
+        "height": 8
+      },
+      "shadowOpacity": 0.1,
+      "shadowRadius": 24,
+      "elevation": 0
+    },
+    "lg": {
+      "shadowColor": "#130E0D",
+      "shadowOffset": {
+        "width": 0,
+        "height": 16
+      },
+      "shadowOpacity": 0.16,
+      "shadowRadius": 40,
+      "elevation": 0
+    }
+  }
+}

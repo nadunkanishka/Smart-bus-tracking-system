@@ -8,7 +8,7 @@ export const useS = createStyles(() => ({
   ...buildCommon(),
   ...StyleSheet.create({
     routesScroll: { paddingBottom: 120 },
-    screenTitle: { ...type('display'), fontWeight: '500', color: COLORS.ink, paddingTop: TOP_INSET },
+    screenTitle: { ...type('display'), color: COLORS.ink, paddingTop: TOP_INSET },
     screenSubtitle: { ...type('small'), color: COLORS.ink, marginTop: SPACE[1], marginBottom: SPACE[4] },
     searchBar: {
       flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine,

@@ -49,7 +49,7 @@ export function ShiftScreen({ session, duty }) {
         </Pressable>
 
         <View style={D.specsRow}>
-          <NotchStat label="Server" tone="orange" value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
+          <NotchStat label="Server" tone="orange" value={connected ? 'Online' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
           <NotchStat label="GPS" tone="purple" value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
           <NotchStat label="Buffered" tone="orange" value={String(queued)} valueColor={queued ? COLORS.warning : COLORS.ink} />
         </View>
