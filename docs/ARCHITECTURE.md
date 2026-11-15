@@ -22,7 +22,7 @@ flowchart LR
   end
 
   subgraph Tier2[Tier 2: Passenger app, web + mobile]
-    PS[Socket.IO client] --> MAP[Map: Leaflet / OSM on web,<br/>Leaflet in a WebView on phones<br/>markers glide between fixes]
+    PS[Socket.IO client] --> MAP[Map: Leaflet / OSM on web,<br/>route, stops and buses drawn natively on map tiles on phones<br/>markers glide between fixes]
     PS --> LIST[ETA per stop]
   end
 
