@@ -59,11 +59,13 @@ flowchart LR
 
 ## Results so far
 
-Measured with the replay simulator on one machine (simulated buses, not real traffic), so they show the system's behaviour, not field accuracy. A real pilot ride has not been run yet.
+Measured with the replay simulator on one machine (simulated buses, not real traffic), so they show the system's behaviour, not field accuracy. Simulated buses drive at a constant speed, so once a route has history the ETA error is close to zero: that is an upper bound on what history can do, not a promise for real traffic. A real pilot ride has not been run yet.
 
 | Measure | Result | How to reproduce |
 |---|---|---|
 | Delivery, phone to passenger | 10 buses, 500 fixes sent, 500 received; **average 4 ms, p95 3 ms, peak 130 ms** | `npm run replay -- --route RT-001 --buses 10 --duration 150 --quiet` |
+| ETA error, first trip on a route (no history yet) | Mean absolute error **208 s, against 249 s** for a straight-line estimate. Under 2 minutes ahead: **3 s against 83 s**. Over 5 minutes ahead it is no better (355 s against 351 s): with no history the engine falls back to a default speed | `npm run replay -- --route RT-010 --buses 3 --speed 14 --duration 700 --quiet` on a fresh database |
+| ETA error, after one earlier trip | **3 s, against 242 s** for the straight-line estimate | the same command run again |
 | GPS smoothing, 15 m noise (Route 141, simulated track) | Position error **15.6 m to 11.9 m**; at a stop **18.8 m to 7.4 m** | `node scripts/smoothing-eval.js 141` |
 
 Method, caveats and the load test are in [docs/EVALUATION.md](docs/EVALUATION.md).
