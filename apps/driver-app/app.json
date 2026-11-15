@@ -35,11 +35,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "1cb5c985-7cb1-48bf-82f8-860c46e1450e"
-      }
-    },
     "plugins": [
       "expo-status-bar",
       [
@@ -55,8 +50,14 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "owner": "nadunkanishka",
+    "extra": {
+      "eas": {
+        "projectId": "29e7f2a7-a96a-498c-a2ac-6c38ec75b27e"
+      }
+    },
     "updates": {
-      "url": "https://u.expo.dev/1cb5c985-7cb1-48bf-82f8-860c46e1450e"
+      "url": "https://u.expo.dev/29e7f2a7-a96a-498c-a2ac-6c38ec75b27e"
     }
   }
 }
