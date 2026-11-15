@@ -18,6 +18,10 @@ A route is a road polyline with ordered stops; consecutive stops are segments. T
 
 Every prediction is stored with what a plain estimate (straight-line distance at a fixed 5.5 m/s) said at the same moment, so the engine's value is measured, not assumed (`/api/analytics/eta`).
 
+## Two skins, one contract
+
+The phone apps and the admin dashboard share the contract and the component logic but not the look. The phone apps are flat: black and orange on white, filled grey cards, pill buttons and chips, large bold headings, no gradients, no glow and no shadows, so a card is separated from the page by colour, not depth (`shared/tokens.js`). The admin keeps its own tokens (`shared/adminTokens.js`) and its glass-on-dark look. Splitting the tokens meant the phone redesign touched no admin file.
+
 ## Smooth the GPS before anything uses it
 
 Phones report positions that wander 10 to 25 m. A constant-velocity Kalman filter (`backend/lib/smooth.js`) trusts a fix less when its accuracy is poor, holds position at a stop, skips a one-fix spike but accepts a real jump after two, and restarts after a long gap. The raw fix is kept next to the smoothed one in `GpsLog`, so the comparison can be repeated on real data. The price is a short lag after a sharp corner, capped by a unit test.

@@ -7,7 +7,7 @@ import { COMMON_STYLES } from '../shared/shell';
 export const buildCommon = () => StyleSheet.create({
   ...COMMON_STYLES,
   routeScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('display'), fontWeight: '500', color: COLORS.ink, paddingTop: TOP_INSET },
+  screenTitle: { ...type('display'), color: COLORS.ink, paddingTop: TOP_INSET },
   screenSubHeader: { ...type('small'), color: COLORS.muted, marginTop: SPACE[1] },
   sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: SPACE[6], marginBottom: SPACE[3] },
   emptyLogBox: { alignItems: 'center', paddingVertical: SPACE[6], gap: SPACE[2] },

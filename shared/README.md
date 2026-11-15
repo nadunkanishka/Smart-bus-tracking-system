@@ -10,7 +10,8 @@ Run it after every change in this folder, and commit the copies together with th
 
 | Path | Contents | Copied to |
 |---|---|---|
-| `tokens.js` | The "Ember" palette (night, cream, orange, violet; red only for alerts) in a light and a dark set, plus type scale, radii, spacing, shadows | mobile `src/shared/theme.js`; admin `src/design/tokens.css` (generated CSS variables, light `:root` plus a dark block) |
+| `tokens.js` | The phone apps' flat skin: black and orange on white (a light and a dark set), type scale, radii, spacing, and no shadows, no gradients, no glow | mobile `src/shared/theme.js` |
+| `adminTokens.js` | The admin dashboard's own tokens (the glass-on-ember look), turned into CSS variables by sync.js | admin `src/design/tokens.css` (generated: light `:root` plus a dark block) |
 | `native/themeRuntime.js` | Mobile light/dark mode: `ThemeProvider`, `useTheme()`, `createStyles()` | mobile `src/shared/` |
 | `native/ui.js` and `native/kit/` | Mobile UI kit, split by concern in `kit/` (`core`, `vehicle`, `controls`, `layout`, `motion`, `settings`) behind one import path: buttons, fields, layouts, dock; `TOP_INSET` (the one top inset) and `type()` | mobile `src/shared/` |
 | `native/shell.js` | Mobile app shell: `AppFrame` (safe area, backdrop, status bar, toast), `AppColumn`, `useToast`, `ProfileRow`, `SettingsPage` (header, Appearance, About, sign out around the app's own sections), `COMMON_STYLES` | mobile `src/shared/` |
@@ -33,7 +34,7 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 - Mobile: wrap the app in `<ThemeProvider>`. Build styles with `createStyles(() => StyleSheet.create({ ... }))` and call the returned hook in the component (a plain `StyleSheet.create` at import time would freeze the first mode). Every component `native/ui.js` exports is declared through `themed()`, which subscribes it to the theme so it re-renders on a switch; `shared/test/kit.test.mjs` fails on a plain `export function` there. The choice is saved through AsyncStorage (on the web that is `localStorage`, read synchronously for the first paint); until one is made the phone's setting is followed.
 - The ease-out curve is `EASE_OUT` in `tokens.js`: the kit, the web map and the admin's `--ease-out` variable all read it.
 - Admin: `src/theme.js` sets `data-theme` on `<html>` and saves the choice; the generated `tokens.css` carries the dark values. Without a saved choice, `prefers-color-scheme` decides.
-- Two rules: `ink` and `white` swap in dark mode (so ink-filled buttons keep their contrast), and text on an orange or violet fill must use `onBright`, never `ink` or `white`.
+- Rules the apps rely on: `ink` and `white` swap in dark mode (so ink-filled buttons keep their contrast); text on an orange fill must use `onBright` (night), never `ink` or `white` (white on this orange is 2.7:1); the black card (`card`) carries `onCard` text and `cardMuted` secondary text, and is a lighter grey than the page in dark mode.
 - Map tiles: the web maps use OpenStreetMap and recolour it with a CSS filter (grey, or inverted dark). The phone map is drawn by the app (`native/LiveMap.native.js`, maths in `native/mapMath.js`) on Esri's light and dark gray basemaps, which need no key (OpenStreetMap's tile server blocks the app's requests, and Carto's basemaps need a key). The route line is orange.
 - Bus colours: `shared/buses/clay.js` defines the liveries in palette colours. After changing them run `node shared/buses/export.mjs`, then `node shared/sync.js`.
 - Icons are Lucide everywhere: `lucide-react` in the admin (`src/components/Icon.js` maps the page icon names to Lucide components) and `lucide-react-native` on mobile (`native/icons.js`, and the dock's `NavIcon` in `native/ui.js`).
@@ -51,8 +52,8 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 `npm run test:apps` (repository root, Node 22+) runs `shared/test/*.test.mjs` with `node:test`. `shared/test/register.mjs` adds module hooks so Node can load the Metro-style app source (extensionless imports, a `react-native` stub with only `Platform`). The tests cover `pickBus`/`trackedSummary`, `toRoute`/`request`, the driver's `telemetryCore` and `utils`, and the kit rules above. `npm test` runs them after the backend and admin tests.
 - The admin dashboard (`pages/DashboardPage.js`) fits the window with no scrolling (`.page-scroll.fit`); on windows shorter than 760px or narrower than 1100px it falls back to scrolling.
 
-## Mobile screens follow the dashboard
+## The phone screens
 
-- `AppBackdrop` (first child of each app) draws the dashboard's page: base colour with an orange glow top-left and a cool glow bottom-right. `OverlapHeader` and `OverlapSheet` are plain containers (no coloured block, no curved sheet), so titles sit on the glowing page. Cards use `COLORS.glass` with a hairline border; cards that sit over a map stay opaque (`COLORS.surface`).
-- `NotchStat` is the dashboard's small stat card (label, big number, coloured pill). `GradientCard tint="hero"` is the orange card.
+- The phone skin is flat: `AppBackdrop` is one plain colour, cards are filled (`COLORS.surface`, light grey) with no border and no shadow, the black card (`GradientCard tint="ink"`, `NotchStat tone="ink"`) and the orange card (`tint="hero"`) carry the emphasis, chips and buttons are pills, and headings are large and bold. `OverlapHeader` and `OverlapSheet` are plain containers. Colour, not depth, separates a card from the page.
+- `NotchStat` is the small stat tile (label, big number, a quiet pill): light grey by default, black with an orange number for the one that matters. `GradientCard` keeps its old name but is a flat card.
 - Animated pieces (all react-native `Animated`, no extra dependency, all still with reduced motion): `FloatingDock` (the orange circle slides between tabs), `CountUp`, `RingGauge`, `LiveDot`, `ProgressTrack`, plus `Reveal` for staggered entrances.

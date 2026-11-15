@@ -2,9 +2,7 @@
 // Part of shared/native/ui.js; the app imports everything from '../shared/ui'.
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions, ScrollView, KeyboardAvoidingView, Keyboard } from 'react-native';
-import Svg, { Defs, Path, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { COLORS, RADII, SHADOWS, TYPE } from '../theme';
-import { useTheme } from '../themeRuntime';
+import { COLORS, RADII, TYPE } from '../theme';
 import { Activity, ChartColumn, Gauge, House, Navigation, Route as RouteGlyph, User, Users, Bus as BusGlyph } from 'lucide-react-native';
 import { ThemeToggle } from './controls';
 import { EASE_DRAWER, FONT, PRESS_WEB, SAFE_BOTTOM, TOP_INSET, native, themed, useReducedMotion, webRing } from './core';
@@ -21,38 +19,32 @@ export const AuthLayout = themed(function AuthLayout({ scene = 'login', brand, t
     return () => sub.remove();
   }, []);
   const hero = (
-    <View style={[{ backgroundColor: COLORS.backdrop, paddingTop: 24 + TOP_INSET, overflow: 'hidden' }, wide && { flex: 1, justifyContent: 'space-between', padding: 48 }]}>
-      <Svg pointerEvents="none" style={StyleSheet.absoluteFill} viewBox="0 0 400 300" preserveAspectRatio="xMaxYMid slice">
-        <Path d="M230 330C240 230 310 140 430 96" fill="none" stroke={COLORS.ink} strokeOpacity="0.22" strokeWidth="1.2" strokeDasharray="5 7" />
-        <Path d="M150 -20C165 70 235 118 340 104" fill="none" stroke={COLORS.ink} strokeOpacity="0.16" strokeWidth="1.2" strokeDasharray="5 7" />
-        <Polygon points="350,36 356,54 374,60 356,66 350,84 344,66 326,60 344,54" fill={COLORS.accent} />
-        <Polygon points="60,150 64,161 75,165 64,169 60,180 56,169 45,165 56,161" fill={COLORS.ink} fillOpacity="0.5" />
-      </Svg>
+    <View style={[{ backgroundColor: COLORS.bg, paddingTop: 24 + TOP_INSET }, wide && { flex: 1, backgroundColor: COLORS.surface, justifyContent: 'space-between', padding: 48 }]}>
       <View style={{ position: 'absolute', top: 16 + TOP_INSET, right: wide ? 24 : 16, zIndex: 2 }}>
         <ThemeToggle />
       </View>
       <View style={[{ paddingHorizontal: 24 }, wide && { paddingHorizontal: 0 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center' }}>
             <Vehicle name="bus" width={34} label="SmartBus logo" />
           </View>
           <Text style={{ ...TYPE.h1, ...FONT, color: COLORS.ink }}>{brand}</Text>
         </View>
         {tagline ? (
-          <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.primary, borderRadius: RADII.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <Text style={{ ...TYPE.small, ...FONT, color: COLORS.onBright }}>{tagline}</Text>
+          <View style={{ alignSelf: 'flex-start', marginTop: 16, backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.pill, paddingHorizontal: 14, paddingVertical: 8 }}>
+            <Text style={{ ...TYPE.small, ...FONT, color: COLORS.ink }}>{tagline}</Text>
           </View>
         ) : null}
       </View>
-      <View style={{ marginTop: wide ? 0 : 4, marginBottom: wide ? 0 : 36, paddingHorizontal: wide ? 0 : 8 }}>
-        <RoadScene scene={scene} width={wide ? Math.round(width / 2) - 96 : Math.min(width, 560) - 16} />
+      <View style={{ marginTop: wide ? 0 : 20, marginBottom: wide ? 0 : 8, marginHorizontal: wide ? 0 : 24, borderRadius: RADII.xl, backgroundColor: wide ? COLORS.bg : COLORS.surface, paddingVertical: 12, overflow: 'hidden', alignItems: 'center' }}>
+        <RoadScene scene={scene} width={wide ? Math.round(width / 2) - 96 : Math.min(width, 560) - 64} />
       </View>
     </View>
   );
   const panel = (
     <View
       style={[
-        { backgroundColor: COLORS.surface, borderTopLeftRadius: RADII.xl, borderTopRightRadius: RADII.xl, marginTop: -28, paddingHorizontal: 24, paddingTop: 32, paddingBottom: 40, flexGrow: 1 },
+        { backgroundColor: COLORS.bg, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, flexGrow: 1 },
         wide && { marginTop: 0, borderRadius: 0, flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 48 },
       ]}
     >
@@ -67,7 +59,7 @@ export const AuthLayout = themed(function AuthLayout({ scene = 'login', brand, t
   // Edge-to-edge Android ignores adjustResize, so lift the form above the keyboard ourselves.
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" enabled={native}>
-    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: wide ? COLORS.surface : COLORS.backdrop }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scroller} style={{ flex: 1, backgroundColor: COLORS.bg }} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={[{ flexGrow: 1 }, wide ? { flexDirection: 'row', minHeight: 640 } : { width: '100%', maxWidth: 560, alignSelf: 'center' }]}>
         {hero}
         {panel}
@@ -87,27 +79,9 @@ export const OverlapSheet = themed(function OverlapSheet({ children, style }) {
   return <View style={[{ paddingHorizontal: 20, paddingTop: 4 }, style]}>{children}</View>;
 });
 
-// The dashboard's page background: an orange glow top-left and a cool glow bottom-right over the base colour.
+// The page background: one flat colour.
 export const AppBackdrop = themed(function AppBackdrop() {
-  const { mode } = useTheme();
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.bg }]}>
-      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <Defs>
-          <RadialGradient id={`bd-a-${mode}`} cx="6" cy="-4" rx="78" ry="42" gradientUnits="userSpaceOnUse">
-            <Stop offset="0" stopColor={COLORS.glowA} />
-            <Stop offset="1" stopColor={COLORS.glowA} stopOpacity="0" />
-          </RadialGradient>
-          <RadialGradient id={`bd-b-${mode}`} cx="100" cy="106" rx="80" ry="40" gradientUnits="userSpaceOnUse">
-            <Stop offset="0" stopColor={COLORS.glowB} />
-            <Stop offset="1" stopColor={COLORS.glowB} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100" height="100" fill={`url(#bd-a-${mode})`} />
-        <Rect width="100" height="100" fill={`url(#bd-b-${mode})`} />
-      </Svg>
-    </View>
-  );
+  return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.bg }]} />;
 });
 
 // Navigation icon: Lucide outline. The current item sits on an orange circle, so it is drawn in night; idle items are muted.
@@ -136,7 +110,7 @@ export const FloatingDock = themed(function FloatingDock({ items, active, onChan
     >
       <View
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between', ...SHADOWS.md }}
+        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.line, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between' }}
       >
         {itemW ? (
           <Animated.View
@@ -170,18 +144,22 @@ export const FloatingDock = themed(function FloatingDock({ items, active, onChan
 // Stat card: white card with a round tinted icon, a muted label and a bold value (the admin's KPI card in small).
 // icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue).
 export const NotchStat = themed(function NotchStat({ label, value, tone = 'orange', icon, valueColor, style, pill, pillTone = 'green' }) {
-  const [wash, ink] = tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];
-  const pillBg = pillTone === 'red' ? COLORS.danger : pillTone === 'violet' ? COLORS.violet : COLORS.green;
+  const dark = tone === 'ink';
+  const [wash, ink] = dark ? [COLORS.orange, COLORS.onBright] : tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];
+  // The pill: green for live, red for a problem, otherwise a quiet neutral one (readable on both card colours).
+  const neutral = pillTone !== 'red' && pillTone !== 'green';
+  const pillBg = pillTone === 'red' ? COLORS.danger : neutral ? (dark ? 'rgba(255, 255, 255, 0.14)' : COLORS.surfaceSoft) : COLORS.green;
+  const pillFg = neutral ? (dark ? COLORS.onCard : COLORS.muted) : COLORS.onBright;
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 112, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 14, gap: 2, justifyContent: 'space-between', ...SHADOWS.sm }, style]}>
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 112, backgroundColor: dark ? COLORS.card : COLORS.surface, borderRadius: RADII.lg, padding: 16, gap: 2, justifyContent: 'space-between' }, style]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ ...TYPE.small, ...FONT, color: COLORS.muted, flexShrink: 1 }} numberOfLines={1}>{label}</Text>
+        <Text style={{ ...TYPE.small, ...FONT, color: dark ? COLORS.cardMuted : COLORS.muted, flexShrink: 1 }} numberOfLines={1}>{label}</Text>
         {icon ? <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: wash, alignItems: 'center', justifyContent: 'center' }}>{icon(ink)}</View> : null}
       </View>
       {typeof value === 'string' || typeof value === 'number'
-        ? <Text style={{ ...TYPE.bodyBold, fontSize: 14, ...FONT, color: valueColor || COLORS.ink, letterSpacing: -0.2 }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+        ? <Text style={{ ...(String(value).length > 7 ? TYPE.bodyBold : TYPE.h2), ...FONT, color: valueColor || (dark ? COLORS.orange : COLORS.ink) }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
         : value}
-      {pill ? <View style={{ alignSelf: 'flex-start', backgroundColor: pillBg, borderRadius: RADII.pill, paddingHorizontal: 10, paddingVertical: 3 }}><Text style={{ ...TYPE.caption, ...FONT, color: COLORS.onBright }}>{pill}</Text></View> : null}
+      {pill ? <View style={{ alignSelf: 'flex-start', backgroundColor: pillBg, borderRadius: RADII.pill, paddingHorizontal: 10, paddingVertical: 3 }}><Text style={{ ...TYPE.caption, ...FONT, color: pillFg }}>{pill}</Text></View> : null}
     </View>
   );
 });
