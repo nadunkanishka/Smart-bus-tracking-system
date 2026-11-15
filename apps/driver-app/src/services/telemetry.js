@@ -5,6 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Platform } from 'react-native';
 import { io } from 'socket.io-client';
 import { API_URL } from '../shared/api';
@@ -12,6 +13,10 @@ import { EVENTS, FIX_INTERVAL_MS } from '../shared/contract';
 import { TIMING, buildFix, enqueueFix, removeAcked, takeBatch } from './telemetryCore';
 
 const TASK = 'smartbus-gps';
+// Tracking with the screen off needs Expo's Android foreground service, and the installed APK crashed and would not open
+// again after location was granted. Until that is fixed, positions come from the open app and the screen is kept awake.
+// shortcut: no tracking with the screen off or the app closed; set true once background tracking is verified on a phone.
+const BACKGROUND_TRACKING = false;
 const QUEUE_KEY = 'smartbus:gps-queue';
 
 let socket = null;
@@ -120,7 +125,7 @@ export async function startDuty({ notificationColor } = {}) {
   socket?.emit(EVENTS.DUTY, { onDuty: true });
 
   let background = false;
-  if (Platform.OS !== 'web') {
+  if (BACKGROUND_TRACKING && Platform.OS !== 'web') {
     try {
       const bg = await Location.requestBackgroundPermissionsAsync();
       if (bg.status === 'granted') {
@@ -148,6 +153,7 @@ export async function startDuty({ notificationColor } = {}) {
     );
   }
   status.mode = background ? 'background' : 'foreground';
+  activateKeepAwakeAsync(TASK).catch(() => {}); // the phone must not sleep while the app is the only source of positions
   notify();
 }
 
@@ -156,6 +162,7 @@ export async function stopDuty() {
   status.mode = null;
   foregroundWatch?.remove();
   foregroundWatch = null;
+  deactivateKeepAwake(TASK).catch(() => {});
   if (Platform.OS !== 'web') {
     try {
       if (await Location.hasStartedLocationUpdatesAsync(TASK)) await Location.stopLocationUpdatesAsync(TASK);

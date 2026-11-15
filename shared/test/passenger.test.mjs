@@ -1,7 +1,7 @@
 // Which bus a passenger is shown, and the one line that explains it (apps/passenger-app/src/utils.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickBus, trackedSummary } from '../../apps/passenger-app/src/utils.js';
+import { pickBus, restoreJourney, trackedSummary } from '../../apps/passenger-app/src/utils.js';
 
 const stop = (name, status, etaMin) => ({ name, status, etaMin, etaSec: etaMin == null ? null : etaMin * 60 });
 const bus = (busId, stops, extra = {}) => ({ busId, stops, ...extra });
@@ -69,4 +69,23 @@ test('a stop name the bus does not know falls back to the index', () => {
   const t = pickBus([b], 2, 3, 'Renamed stop', 'Nugegoda');
   assert.equal(t.phase, 'coming');
   assert.equal(t.etaMin, 7);
+});
+
+const ROUTES = [{ id: 'RT-1', stops: ['A', 'B', 'C', 'D'] }, { id: 'RT-2', stops: ['X', 'Y'] }];
+
+test('the saved journey comes back with its route and stops', () => {
+  const j = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'B', destination: 'C' });
+  assert.deepEqual([j.route.id, j.boarding, j.destination], ['RT-1', 'B', 'C']);
+});
+
+test('a saved stop that no longer exists, or a trip that goes backwards, falls back to the terminals', () => {
+  const gone = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'Z', destination: 'C' });
+  assert.deepEqual([gone.boarding, gone.destination], ['A', 'D']);
+  const back = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'C', destination: 'B' });
+  assert.deepEqual([back.boarding, back.destination], ['A', 'D']);
+});
+
+test('no journey is restored when nothing is saved or its route is gone', () => {
+  assert.equal(restoreJourney(ROUTES, null), null);
+  assert.equal(restoreJourney(ROUTES, { routeId: 'RT-9', boarding: 'A', destination: 'B' }), null);
 });

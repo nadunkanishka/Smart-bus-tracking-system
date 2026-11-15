@@ -25,3 +25,15 @@ export function trackedSummary(tracked, boardingStop, destinationStop) {
   if (tracked.phase === 'passed') return `Passed ${boardingStop}. ${tracked.etaMin} min to ${destinationStop}`;
   return 'This bus has passed your stops.';
 }
+
+// The saved journey, if its route is still listed: the route and the two stops. A stop that no longer exists, or a trip that
+// would go backwards, falls back to the route's terminals.
+export function restoreJourney(routes, saved) {
+  const route = routes.find((r) => r.id === saved?.routeId);
+  if (!route) return null;
+  const { stops } = route;
+  const b = stops.indexOf(saved.boarding);
+  const d = stops.indexOf(saved.destination);
+  const keep = b >= 0 && d >= b;
+  return { route, boarding: keep ? saved.boarding : stops[0] || null, destination: keep ? saved.destination : stops[stops.length - 1] || null };
+}

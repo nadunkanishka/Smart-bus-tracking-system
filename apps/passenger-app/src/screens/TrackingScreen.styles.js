@@ -17,11 +17,13 @@ export const useS = createStyles(() => ({
       backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, paddingLeft: SPACE[4], paddingRight: SPACE[2], paddingVertical: SPACE[2],
       ...SHADOWS.md,
     },
-    mapHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3] },
+    mapHeaderLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACE[3] },
+    mapHeaderText: { flex: 1 },
     mapHeaderTitle: { ...type('h3'), color: COLORS.ink },
+    mapHeaderStatus: { ...type('small'), color: COLORS.muted },
     // Floating stop selector card
     stopSelectorBar: {
-      position: 'absolute', top: TOP_INSET + 8 + 60 + 8, left: 16, right: 16, zIndex: 20,
+      position: 'absolute', top: TOP_INSET + 8 + 72 + 8, left: 16, right: 16, zIndex: 20,
       flexDirection: 'row', alignItems: 'flex-start',
       backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[3],
       ...SHADOWS.md,
