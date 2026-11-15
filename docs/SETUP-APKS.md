@@ -14,7 +14,7 @@ npm install -g eas-cli
 eas login
 ```
 
-The maps need no key: both apps draw Esri light and dark gray map tiles with the route, stops and buses on top, so there is nothing to set up with Google. The whole route is shown on screen; there is no pan or zoom yet. The phone needs an internet connection to load the tiles.
+The maps need no key: both apps draw Esri light and dark gray map tiles with the route, stops and buses on top, so there is nothing to set up with Google. The route is fitted on screen to start with; drag to move the map, pinch or use + and - to zoom, and Fit brings the whole route back. The phone needs an internet connection to load the tiles.
 
 ## Where the backend address is set
 
