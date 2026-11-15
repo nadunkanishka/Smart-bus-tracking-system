@@ -153,6 +153,10 @@ flowchart LR
 
 A change goes to `dev` through a pull request; CI must be green. `main` is what gets built and shipped. A JavaScript-only change reaches installed phone apps with `eas update` (no rebuild, the app is kept); a native change (a new native package, a permission, the icon) needs a new build, and its version code rises by itself so it installs over the old app. See [SETUP-APKS.md](SETUP-APKS.md).
 
+## Design
+
+The two phone apps share one flat skin, and the admin dashboard has its own; both read the same contract and component logic. The reasoning is in [DESIGN-DECISIONS.md](DESIGN-DECISIONS.md#two-skins-one-contract) and the token files are described in [shared/README.md](../shared/README.md).
+
 ## Known limits
 
 - The in-process bus state (trip progress, last fix) lives in one server process. Running several API instances would need that state moved into Redis and the Socket.IO Redis adapter.
