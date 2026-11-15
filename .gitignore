@@ -15,10 +15,9 @@ coverage
 .expo
 *.local
 
-# Editor directories and files (the shared VS Code setup is committed)
+# Editor directories and files (the shared VS Code setup is committed; settings.json is personal)
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 .idea
@@ -33,3 +32,15 @@ coverage
 .env
 .env.*
 !.env.example
+
+# Builds, uploads, and local tool state
+*.apk
+*.aab
+.uploads/
+.claude/
+# Expo/EAS commands run at the repository root by mistake; the real ones live in apps/*/
+/eas.json
+/app.json
+# Expo scaffold notes for coding agents, per app
+apps/*/AGENTS.md
+apps/*/CLAUDE.md

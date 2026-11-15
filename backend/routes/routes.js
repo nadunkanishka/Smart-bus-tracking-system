@@ -78,7 +78,7 @@ module.exports = ({ store, routeCache }) => {
 
   router.get('/api/routes/:id', async (req, res) => {
     const route = await Route.findOne(byId(req.params.id));
-    if (!route) return res.status(404).json({ error: 'Route not found' });
+    if (!route) throw httpError(404, 'Route not found');
     return res.json(await withBuses(route));
   });
 
@@ -111,11 +111,11 @@ module.exports = ({ store, routeCache }) => {
     Object.assign(data, readGeometry(req.body));
     if (data.path === undefined && req.body.path !== undefined) { delete data.path; data.$unset = { path: 1 }; }
     const current = await Route.findOne(byId(req.params.id));
-    if (!current) return res.status(404).json({ error: 'Route not found' });
+    if (!current) throw httpError(404, 'Route not found');
     const ids = req.body.busIds !== undefined ? await checkBuses(current.routeId, req.body.busIds) : null;
 
     const updated = await Route.findOneAndUpdate(byId(req.params.id), data, { new: true, runValidators: true });
-    if (!updated) return res.status(404).json({ error: 'Route not found' });
+    if (!updated) throw httpError(404, 'Route not found');
     if (ids) await setBuses(updated.routeId, ids);
     routeCache.invalidate(updated.routeId); // new geometry takes effect on the next GPS fix
     return res.json(await withBuses(updated));
@@ -123,7 +123,7 @@ module.exports = ({ store, routeCache }) => {
 
   router.delete('/api/routes/:id', async (req, res) => {
     const deleted = await Route.findOneAndDelete(byId(req.params.id));
-    if (!deleted) return res.status(404).json({ error: 'Route not found' });
+    if (!deleted) throw httpError(404, 'Route not found');
     await Bus.updateMany({ routeId: deleted.routeId }, { routeId: '' }); // its buses become free to take another route
     routeCache.invalidate(deleted.routeId);
     return res.json({ message: 'Route deleted successfully', id: req.params.id });

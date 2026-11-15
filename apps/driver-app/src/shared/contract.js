@@ -29,16 +29,6 @@ export function formatId(kind, n) {
   return `${ID_PREFIX[kind]}-${String(n).padStart(3, '0')}`;
 }
 
-// How a route names its bus: "NB-4712 (BUS-002)".
-export function formatBusRef(bus) {
-  return `${bus.registration} (${bus.busId})`;
-}
-export function parseBusRef(text) {
-  const raw = String(text || '').trim();
-  const m = /^(.*?)\s*\(([^()]+)\)$/.exec(raw);
-  return m ? { registration: m[1], busId: m[2] } : { registration: raw, busId: null };
-}
-
 // How often positions arrive and how long they stay meaningful. Order that must hold:
 // FIX_INTERVAL_MS < LIVE_WINDOW_MS < GONE_AFTER_MS, and CLIENT_BATCH <= MAX_BATCH.
 export const FIX_INTERVAL_MS = 3000; // a driver phone sends a position this often

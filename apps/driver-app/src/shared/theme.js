@@ -15,7 +15,6 @@ const LIGHT = {
   bg: '#F5E9E2',
   surface: '#FFFAF6',
   surfaceSoft: '#EBDCD3',
-  surfaceTint: '#FDE6DA',
   line: '#E2D2C8',
   outline: '#CDB9AC', // input borders
   ring: 'rgba(19, 14, 13, 0.5)', // keyboard focus ring
@@ -27,7 +26,6 @@ const LIGHT = {
   glowB: 'rgba(162, 91, 224, 0.14)',
   orange: PALETTE.orange,
   violet: PALETTE.violet,
-  peach: PALETTE.peach,
   heroFrom: '#FF7B4A', // the orange hero card
   heroTo: '#FF5D2A',
   heroShape: '#FFB59A', // its light shapes
@@ -48,7 +46,6 @@ const LIGHT = {
   mutedLight: '#A8998F', // decorative only
 
   green: '#2FBF71', // fills and dots (night text on it)
-  greenText: '#0E7A3F', // text on cream (5.3:1)
   greenSoft: '#D6F3E1',
   success: '#0E7A3F',
   successSoft: '#D6F3E1',
@@ -59,19 +56,9 @@ const LIGHT = {
 
   onBright: PALETTE.night,
   glow: 'rgba(255, 107, 53, 0.45)',
-  taxi: PALETTE.violet,
-  headlight: '#FFE2B8',
-  window: '#2E2321',
-  tire: PALETTE.night,
 
-  tints: {
-    bus: ['#FFD9C9', '#FFE8DD'],
-    train: ['#E9D6F8', '#F2E6FB'],
-    delivery: ['#E9D6F8', '#F2E6FB'],
-    taxi: ['#EBDCD3', '#F5EBE4'],
-    green: ['#D3F2DF', '#E6F8EE'],
-  },
-  tintLines: { bus: '#FFC4A8', train: '#D9BDF0', delivery: '#D9BDF0', taxi: '#DCCABF', green: '#B5E6C8' },
+  tints: { bus: ['#FFD9C9', '#FFE8DD'] },
+  tintLines: { bus: '#FFC4A8' },
 
   white: '#FFFFFF',
 };
@@ -80,7 +67,6 @@ const DARK = {
   bg: '#110C0B',
   surface: '#1E1614',
   surfaceSoft: '#2B201D',
-  surfaceTint: '#2A1B16',
   line: '#35292A',
   outline: '#4A3A36',
   ring: 'rgba(255, 107, 53, 0.65)',
@@ -92,7 +78,6 @@ const DARK = {
   glowB: 'rgba(70, 90, 160, 0.22)', // the page fades to a cool blue-black at the bottom
   orange: PALETTE.orange,
   violet: PALETTE.violet,
-  peach: PALETTE.peach,
   heroFrom: '#FF7B4A',
   heroTo: '#FF5D2A',
   heroShape: '#FFB59A',
@@ -113,7 +98,6 @@ const DARK = {
   mutedLight: '#6F625C',
 
   green: '#3DDC84',
-  greenText: '#5BE39A',
   greenSoft: '#12301F',
   success: '#5BE39A',
   successSoft: '#12301F',
@@ -124,19 +108,9 @@ const DARK = {
 
   onBright: PALETTE.night,
   glow: 'rgba(255, 107, 53, 0.35)',
-  taxi: PALETTE.violet,
-  headlight: '#FFE2B8',
-  window: '#110C0B',
-  tire: PALETTE.night,
 
-  tints: {
-    bus: ['#3A2014', '#2A180F'],
-    train: ['#2E1B40', '#231532'],
-    delivery: ['#2E1B40', '#231532'],
-    taxi: ['#2B201D', '#201815'],
-    green: ['#12331F', '#0E281A'],
-  },
-  tintLines: { bus: '#5A3321', train: '#4A2D66', delivery: '#4A2D66', taxi: '#3F312D', green: '#1F5A36' },
+  tints: { bus: ['#3A2014', '#2A180F'] },
+  tintLines: { bus: '#5A3321' },
 
   white: PALETTE.night, // "text on ink": night on the near-white fills
 };
@@ -152,7 +126,7 @@ export function applyTheme(mode) {
   return mode in THEMES ? mode : 'light';
 }
 
-export const RADII = { xs: 10, sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
+export const RADII = { sm: 16, md: 22, lg: 30, xl: 38, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
 

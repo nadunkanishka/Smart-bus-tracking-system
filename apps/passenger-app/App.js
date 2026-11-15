@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View } from 'react-native';
 import { ThemeProvider } from './src/shared/themeRuntime';
 import { ScreenFade, VehicleLoader } from './src/shared/ui';
-import { AppColumn, AppFrame, useToast } from './src/shared/shell';
-import { TABS } from './src/constants';
+import { AppColumn, AppFrame, NavDock, useToast } from './src/shared/shell';
+import { DOCK_TABS, TABS } from './src/constants';
 import { useAuth } from './src/hooks/useAuth';
 import { useRoutes } from './src/hooks/useRoutes';
 import { useLiveBuses } from './src/hooks/useLiveBuses';
@@ -14,7 +14,6 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { RoutesScreen } from './src/screens/RoutesScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { BottomDock } from './src/components/BottomDock';
 import { useS } from './src/styles/app';
 
 // Root component: wires the hooks together, holds navigation state and switches between the tab screens.
@@ -153,7 +152,7 @@ function AppShell() {
             )}
           </ScreenFade>
 
-          <BottomDock activeTab={activeTab === TABS.settings ? TABS.profile : activeTab} setActiveTab={setActiveTab} />
+          <NavDock tabs={DOCK_TABS} active={activeTab === TABS.settings ? TABS.profile : activeTab} onChange={setActiveTab} />
 
           <StopSelectorModal visible={isStopModalOpen} onClose={() => setIsStopModalOpen(false)} trip={trip} tracked={tracked} />
         </AppColumn>

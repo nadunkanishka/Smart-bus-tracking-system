@@ -54,7 +54,7 @@ async function flush() {
     while (socket?.connected && queue.length) {
       const batch = takeBatch(queue);
       // Batches go one at a time on purpose: the next one waits for this one's ack.
-      const ack = await socket.timeout(TIMING.BATCH_ACK_MS).emitWithAck(EVENTS.BATCH, batch); // eslint-disable-line no-await-in-loop
+      const ack = await socket.timeout(TIMING.BATCH_ACK_MS).emitWithAck(EVENTS.BATCH, batch);  
       if (!ack?.ok) { status.error = ack?.error || 'Server rejected buffered fixes'; break; }
       queue = removeAcked(queue, batch.length);
       status.sent += batch.length;
@@ -68,7 +68,7 @@ async function flush() {
   }
 }
 
-export function submitFix(coords, timestamp) {
+function submitFix(coords, timestamp) {
   const fix = buildFix(coords, timestamp, status.lastFix);
   status.lastFix = fix;
   status.error = null;

@@ -38,6 +38,15 @@ To show the engine is worth its complexity, every prediction is stored next to w
 
 Arrival is detected when a fix first lands past the stop, so each arrival time has up to 3 seconds of resolution error.
 
+Figures from the replay simulator (route 119, RT-010 in the demo database, 9.2 km, 6 stops, three buses at 14 m/s, a fix every 3 s, about 12 minutes each; the same command run twice on a fresh database, so the second run has the first run's segment history):
+
+| Run | Predictions | Engine error (mean, s) | Straight-line baseline (s) | Under 2 min ahead (engine / baseline) | 2 to 5 min ahead | Over 5 min ahead |
+|---|---|---|---|---|---|---|
+| First trip, no history | 49 | 208 | 249 | 3 / 83 | 18 / 133 | 355 / 351 |
+| After one earlier trip | 37 | 3 | 242 | 3 / 88 | 2 / 157 | 3 / 421 |
+
+Reading it: close to a stop the engine is already far better than the plain estimate, because it uses the bus's own speed and the road distance. Far ahead it can only be as good as its history: with none it assumes 20 km/h and a 20 s dwell, which is why the first run is no better than the baseline beyond 5 minutes. After one trip the history makes the prediction almost exact, but only because simulated buses never speed up or slow down, so this is the best case, not a real-traffic result.
+
 Simulated buses move at a constant speed, so their ETA error says little about real accuracy. Meaningful figures need pilot trips with real traffic. Until a segment has recorded trips the engine uses 20 km/h and a 20 s dwell, so expect larger errors on the first runs of a route and compare first-day error with later days.
 
 ## 2b. GPS smoothing

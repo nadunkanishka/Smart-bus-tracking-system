@@ -1,7 +1,7 @@
 // Which bus a passenger is shown, and the one line that explains it (apps/passenger-app/src/utils.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickBus, restoreJourney, trackedSummary } from '../../apps/passenger-app/src/utils.js';
+import { busesFromSnapshot, pickBus, restoreJourney, searchRoutes, trackedSummary, visibleBuses } from '../../apps/passenger-app/src/utils.js';
 
 const stop = (name, status, etaMin) => ({ name, status, etaMin, etaSec: etaMin == null ? null : etaMin * 60 });
 const bus = (busId, stops, extra = {}) => ({ busId, stops, ...extra });
@@ -88,4 +88,37 @@ test('a saved stop that no longer exists, or a trip that goes backwards, falls b
 test('no journey is restored when nothing is saved or its route is gone', () => {
   assert.equal(restoreJourney(ROUTES, null), null);
   assert.equal(restoreJourney(ROUTES, { routeId: 'RT-9', boarding: 'A', destination: 'B' }), null);
+});
+
+const BUS = (id, routeId, recvAt) => ({ busId: id, routeId, recvAt });
+
+test('a bus on the route is shown; one not heard from for 15 s is flagged stale, one gone for 60 s disappears', () => {
+  const now = 1_000_000;
+  const buses = { fresh: BUS('fresh', 'RT-1', now - 2_000), quiet: BUS('quiet', 'RT-1', now - 20_000), gone: BUS('gone', 'RT-1', now - 61_000) };
+  const shown = visibleBuses(buses, 'RT-1', now);
+  assert.deepEqual(shown.map((b) => [b.busId, b.stale]), [['fresh', false], ['quiet', true]]);
+});
+
+test('buses on another route are never shown', () => {
+  assert.deepEqual(visibleBuses({ a: BUS('a', 'RT-2', 0) }, 'RT-1', 1_000), []);
+});
+
+test('a snapshot keeps the real age of each cached fix, so an old one is stale at once', () => {
+  const now = 5_000_000;
+  const out = busesFromSnapshot([{ busId: 'old', serverEmitTs: 1_000_000 - 30_000 }, { busId: 'new', serverEmitTs: 1_000_000 }], 1_000_000, now);
+  assert.equal(out.old.recvAt, now - 30_000);
+  assert.equal(out.new.recvAt, now);
+  assert.equal(visibleBuses({ old: { ...out.old, routeId: 'R' } }, 'R', now)[0].stale, true);
+});
+
+test('route search matches number, name or any stop, and lists the tracked route first', () => {
+  const routes = [
+    { id: 'RT-1', number: '138', name: 'Pettah to Homagama', stops: ['Pettah', 'Maharagama'] },
+    { id: 'RT-2', number: '112', name: 'Maharagama to Kotahena', stops: ['Maharagama', 'Kotahena'] },
+    { id: 'RT-3', number: '100', name: 'Panadura', stops: ['Panadura'] },
+  ];
+  assert.deepEqual(searchRoutes(routes, 'mahara', null).map((r) => r.id), ['RT-1', 'RT-2']);
+  assert.deepEqual(searchRoutes(routes, '', 'RT-3').map((r) => r.id), ['RT-3', 'RT-1', 'RT-2']);
+  assert.deepEqual(searchRoutes(routes, '  KOTAHENA ', null).map((r) => r.id), ['RT-2']);
+  assert.deepEqual(searchRoutes(routes, 'zzz', 'RT-1'), []);
 });

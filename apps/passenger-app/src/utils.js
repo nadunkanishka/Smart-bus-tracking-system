@@ -1,5 +1,7 @@
 
 
+import { GONE_AFTER_MS, LIVE_WINDOW_MS } from './shared/contract';
+
 // Which bus matters to this passenger: the next one still coming to the boarding stop; otherwise one that has
 // passed it and is heading to the destination; otherwise any live bus on the route.
 export function pickBus(all, boardingIndex, destinationIndex, boardingStop, destinationStop) {
@@ -36,4 +38,25 @@ export function restoreJourney(routes, saved) {
   const d = stops.indexOf(saved.destination);
   const keep = b >= 0 && d >= b;
   return { route, boarding: keep ? saved.boarding : stops[0] || null, destination: keep ? saved.destination : stops[stops.length - 1] || null };
+}
+
+// The buses on the passenger's route that are still worth showing: a bus not heard from for GONE_AFTER_MS is dropped, one not heard
+// from for LIVE_WINDOW_MS is shown as "signal lost" (stale). `buses` maps busId to the last update plus recvAt (when it arrived).
+export function visibleBuses(buses, routeId, now) {
+  return Object.values(buses)
+    .filter((b) => b.routeId === routeId && now - b.recvAt < GONE_AFTER_MS)
+    .map((b) => ({ ...b, stale: now - b.recvAt > LIVE_WINDOW_MS }));
+}
+
+// The first message after subscribing: the latest cached fix of every bus on the route. A cached fix may already be a while old,
+// so each keeps its real age (serverTs - serverEmitTs) and a stale bus is flagged straight away.
+export function busesFromSnapshot(list, serverTs, now) {
+  return Object.fromEntries(list.map((b) => [b.busId, { ...b, recvAt: now - Math.max(0, serverTs - b.serverEmitTs) }]));
+}
+
+// The route list for the search box: a route matches on its number, its name or any stop; the route being tracked comes first.
+export function searchRoutes(routes, query, selectedId) {
+  const q = query.trim().toLowerCase();
+  const found = q ? routes.filter((r) => String(r.number).toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.stops.some((s) => s.toLowerCase().includes(q))) : routes;
+  return [...found.filter((r) => r.id === selectedId), ...found.filter((r) => r.id !== selectedId)];
 }

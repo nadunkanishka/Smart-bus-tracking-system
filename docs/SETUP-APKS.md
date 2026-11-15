@@ -2,7 +2,7 @@
 
 This turns the driver app and the passenger app into installable Android apps (`.apk`). They talk to the backend over the internet, so the phones do not need to share your Wi-Fi. You need the backend online first: [SETUP-RAILWAY.md](SETUP-RAILWAY.md).
 
-Background tracking (the driver's phone keeps sending positions with the screen off) only works in an installed build, not in Expo Go.
+The driver app tracks while it is open, with the screen kept awake. Tracking with the screen off is switched off for now (`BACKGROUND_TRACKING` in `apps/driver-app/src/services/telemetry.js`): the Android background service crashed an installed build and has not been verified on a phone yet.
 
 ## Before you build (once)
 
@@ -52,13 +52,12 @@ Same steps. You can run both builds at the same time in two terminals.
 
 1. Open the build page on the phone (from the link, or the QR code) and download the APK.
 2. Android asks to allow installing from your browser: allow it.
-3. If an older copy of the app is installed, uninstall it first.
+3. A build made before the version code started rising (the first ones were all version code 1) has to be uninstalled once. Newer builds install over the old app and keep its data.
 
 **Driver phone:**
-1. Sign in with the bus registration and the bus password set in the admin dashboard (Buses). The bus must be assigned to a driver and to a route (Routes -> edit -> Assign bus).
-2. Choose **Allow all the time** for location. If it only offers "while using the app", open the phone's Settings -> Apps -> SmartBus Driver -> Permissions -> Location -> **Allow all the time**.
-3. Turn off battery optimisation for the app (Settings -> Apps -> SmartBus Driver -> Battery -> Unrestricted), or tracking stops when the screen is off.
-4. Press **On duty**.
+1. Sign in with the bus registration and the bus password set in the admin dashboard (Buses). The bus must be assigned to a driver and to a route (Routes -> edit -> tick the bus under "Buses on this route", or Buses -> edit).
+2. Allow location while using the app, and keep the app open on the duty screen (the screen stays on while you are on duty).
+3. Press **On duty**.
 
 **Passenger phone:** create an account, pick the route and watch the bus move.
 
@@ -94,7 +93,7 @@ The first build after this setup is the one that can receive updates, so build o
 
 ## Testing without a build (Expo Go)
 
-Good for checking screens against the hosted backend before spending a build. Both phones must be on the same Wi-Fi for this, and background tracking does not work in Expo Go:
+Good for checking screens against the hosted backend before spending a build. Both phones must be on the same Wi-Fi for this, and the phone must stay awake:
 
 ```bash
 cd apps/driver-app
@@ -111,7 +110,7 @@ Scan the QR code with Expo Go. Use `--port 8082` for the passenger app if both r
 | Grey or empty map | No internet on the phone, or the tile server is blocked on that network. Try mobile data. The route line and buses appear on top of the tiles once they load. |
 | `Cannot automatically write to dynamic config` | Put the project id in `app.json` under `expo.extra.eas.projectId`. |
 | `The field "cli.appVersionSource" is not set` | Already set to `remote` in both `eas.json` files. |
-| Driver tracking stops with the screen off | Location is not **Allow all the time**, or battery optimisation is on. |
+| Tracking stops when the phone is locked or the app is closed | Expected for now: positions are taken while the app is open. Keep it open on the duty screen (a phone holder and a charger help). |
 | Install is blocked | Allow installing from your browser in Android settings. |
 | Wrong data in the app after changing the backend | The address is baked in: edit `eas.json` and rebuild. |
 

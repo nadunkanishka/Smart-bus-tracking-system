@@ -51,4 +51,4 @@ async function ensureFirstAdmin(Admin, { username, password, passwordFromEnv }) 
   return true;
 }
 
-module.exports = { RULES, usernameError, passwordError, signIn, issueToken, ensureFirstAdmin };
+module.exports = { usernameError, passwordError, signIn, issueToken, ensureFirstAdmin };

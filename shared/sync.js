@@ -2,7 +2,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { THEMES, RADII, SPACE, TYPE, SHADOWS, EASE_OUT } from './tokens.js';
+import { THEMES, RADII, SPACE, SHADOWS, EASE_OUT } from './tokens.js';
 import { LIVERIES, SCENES, VEHICLES, pick } from './vehicleShapes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +26,7 @@ for (const app of ['passenger-app', 'driver-app']) {
   put('vehicleShapes.js', join(dest, 'vehicleShapes.js'));
   put('native/themeRuntime.js', join(dest, 'themeRuntime.js'));
   put('native/ui.js', join(dest, 'ui.js'));
+  for (const part of ['core', 'vehicle', 'controls', 'layout', 'motion', 'settings']) put(`native/kit/${part}.js`, join(dest, 'kit', `${part}.js`));
   put('native/shell.js', join(dest, 'shell.js'));
   put('native/icons.js', join(dest, 'icons.js'));
   put('native/mapDocument.js', join(dest, 'mapDocument.js'));
@@ -55,12 +56,8 @@ console.log('→ backend/lib/contract.js');
 
 const kebab = (s) => s.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 const shadow = (s, rgb, boost) => `0 ${s.shadowOffset.height}px ${s.shadowRadius}px rgba(${rgb}, ${Math.min(1, +(s.shadowOpacity * boost).toFixed(2))})`;
-// The colour variables for one mode (strings and the tint pairs).
-const colourVars = (c) => [
-  ...Object.entries(c).filter(([k, v]) => typeof v === 'string').map(([k, v]) => `  --${kebab(k)}: ${v};`),
-  ...Object.entries(c.tints).flatMap(([k, [a, b]]) => [`  --tint-${k}-from: ${a};`, `  --tint-${k}-to: ${b};`]),
-  ...Object.entries(c.tintLines).map(([k, v]) => `  --tint-line-${k}: ${v};`),
-];
+// The colour variables for one mode. (The gradient tints and the type scale are for the phone apps; the admin has its own.)
+const colourVars = (c) => Object.entries(c).filter(([, v]) => typeof v === 'string').map(([k, v]) => `  --${kebab(k)}: ${v};`);
 const shadowVars = (rgb, boost) => Object.entries(SHADOWS).map(([k, v]) => `  --shadow-${k}: ${shadow(v, rgb, boost)};`);
 const darkBlock = [...colourVars(THEMES.dark), ...shadowVars('0, 0, 0', 3), '  color-scheme: dark;'];
 const lines = [
@@ -70,11 +67,7 @@ const lines = [
   ...Object.entries(RADII).map(([k, v]) => `  --radius-${k}: ${v}px;`),
   ...Object.entries(SPACE).map(([k, v]) => `  --space-${k}: ${v}px;`),
   ...shadowVars('19, 14, 13', 1),
-  ...Object.entries(TYPE).flatMap(([k, t]) => [
-    `  --fs-${kebab(k)}: ${t.fontSize}px;`, `  --lh-${kebab(k)}: ${t.lineHeight}px;`, `  --fw-${kebab(k)}: ${t.fontWeight};`,
-  ]),
   `  --ease-out: cubic-bezier(${EASE_OUT.join(', ')});`,
-  '  --touch: 44px;',
   '  color-scheme: light;',
   '}',
   // Dark follows the system unless the app sets data-theme; data-theme always wins.

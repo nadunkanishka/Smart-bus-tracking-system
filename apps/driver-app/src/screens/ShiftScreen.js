@@ -48,7 +48,6 @@ export function ShiftScreen({ session, duty }) {
           <Text style={[D.dutyHint, isOnShift && D.dutyTextOn]}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>
         </Pressable>
 
-        {/* Three-column status panel */}
         <View style={D.specsRow}>
           <NotchStat label="Server" tone="orange" value={connected ? 'Connected' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
           <NotchStat label="GPS" tone="purple" value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />

@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react-native';
 import { Banner, Button, SettingsRow, SettingsSection, TextField } from '../shared/ui';
 import { LockIcon, UserIcon } from '../shared/icons';
 import { COLORS, TYPE } from '../shared/theme';
-import { useS } from '../screens/ProfileScreen.styles';
+import { useS } from './AccountActions.styles';
 
 // Edit details, change password and delete account, one form open at a time.
 // onSaveProfile / onChangePassword / onDelete throw Error(message) on failure; showToast reports success.

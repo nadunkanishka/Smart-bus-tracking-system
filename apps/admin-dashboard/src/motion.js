@@ -10,7 +10,7 @@ import { animate, cubicBezier, stagger, utils } from 'animejs';
 //  - A strong ease-out (starts fast, settles slowly) and under 1 s.
 //  - With "reduce motion" on, nothing moves: the final state is simply shown.
 
-export const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
+const EASE_OUT = cubicBezier(0.23, 1, 0.32, 1);
 
 // What each animation moves and for how long (ms). `stagger` is the gap between items, `start` the first item's delay.
 const ENTRANCE = {
@@ -24,7 +24,7 @@ const COUNT_MS = 800;
 // things half faded in.
 const SAFETY_MS = 2600;
 
-export const prefersReducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const prefersReducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // The page arrives: cards rise and fade in one after another, then the rows inside them.
 export function useEntrance(rootRef) {

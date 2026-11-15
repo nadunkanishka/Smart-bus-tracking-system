@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { API_URL } from '../shared/api';
-import { EVENTS, GONE_AFTER_MS, LIVE_WINDOW_MS } from '../shared/contract';
-import { pickBus } from '../utils';
+import { EVENTS } from '../shared/contract';
+import { busesFromSnapshot, pickBus, visibleBuses } from '../utils';
 
 // Live bus positions for the selected route, pushed over Socket.IO, plus the bus that matters to this passenger.
 export function useLiveBuses({ session, selectedRouteId, selectedRoute, boardingIndex, destinationIndex, boardingStop, destinationStop }) {
@@ -11,19 +11,13 @@ export function useLiveBuses({ session, selectedRouteId, selectedRoute, boarding
   const [now, setNow] = useState(Date.now());
   const socketRef = useRef(null);
 
-  const liveBuses = useMemo(
-    () => Object.values(buses)
-      .filter((b) => b.routeId === selectedRoute.id && now - b.recvAt < GONE_AFTER_MS)
-      .map((b) => ({ ...b, stale: now - b.recvAt > LIVE_WINDOW_MS })),
-    [buses, now, selectedRoute.id],
-  );
+  const liveBuses = useMemo(() => visibleBuses(buses, selectedRoute.id, now), [buses, now, selectedRoute.id]);
   const tracked = useMemo(() => pickBus(liveBuses, boardingIndex, destinationIndex, boardingStop, destinationStop), [liveBuses, boardingIndex, destinationIndex, boardingStop, destinationStop]);
   const mapBuses = useMemo(
     () => liveBuses.map((b) => ({ id: b.busId, lat: b.lat, lng: b.lng, label: b.registration, stale: b.stale, heading: b.heading })),
     [liveBuses],
   );
 
-  // One socket per session
   useEffect(() => {
     if (!session) return undefined;
     const socket = io(API_URL, { auth: { token: session.token }, transports: ['websocket'] });
@@ -32,11 +26,7 @@ export function useLiveBuses({ session, selectedRouteId, selectedRoute, boarding
     socket.on('connect', () => setConn('connected'));
     socket.on('disconnect', () => setConn('disconnected'));
     socket.on('connect_error', () => setConn('disconnected'));
-    socket.on(EVENTS.SNAPSHOT, ({ buses: list, serverTs }) => {
-      // Cached fixes may already be a while old: keep their real age so stale buses are flagged straight away.
-      const at = Date.now();
-      setBuses(Object.fromEntries(list.map((b) => [b.busId, { ...b, recvAt: at - Math.max(0, serverTs - b.serverEmitTs) }])));
-    });
+    socket.on(EVENTS.SNAPSHOT, ({ buses: list, serverTs }) => setBuses(busesFromSnapshot(list, serverTs, Date.now())));
     socket.on(EVENTS.UPDATE, (b) => setBuses((prev) => ({ ...prev, [b.busId]: { ...b, recvAt: Date.now() } })));
     socket.on(EVENTS.OFFLINE, ({ busId }) => setBuses((prev) => {
       const next = { ...prev };

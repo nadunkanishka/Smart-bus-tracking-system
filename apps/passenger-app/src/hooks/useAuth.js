@@ -22,7 +22,6 @@ export function useAuth() {
   const [regTerms, setRegTerms] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Restore a remembered session
   useEffect(() => {
     AsyncStorage.getItem(SESSION_KEY)
       .then((raw) => { if (raw) setSession(JSON.parse(raw)); })

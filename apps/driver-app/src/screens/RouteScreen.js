@@ -23,7 +23,6 @@ export function RouteScreen({ session, duty }) {
       </OverlapHeader>
 
       <OverlapSheet>
-        {/* Route Badge Card: pastel gradient */}
         <GradientCard tint="bus" style={D.routeHeaderCardWrap}>
           <View style={D.routeHeaderCard}>
             <View style={D.routeHeaderLeft}>
@@ -49,7 +48,6 @@ export function RouteScreen({ session, duty }) {
           </View>
         ) : null}
 
-        {/* Stop Timeline */}
         <Text style={D.sectionLabel}>Stop timeline</Text>
         <View style={D.timelineCard}>
           {routeStops.length === 0 ? (

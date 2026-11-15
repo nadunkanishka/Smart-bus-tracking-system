@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from './src/shared/themeRuntime';
 import { ScreenFade } from './src/shared/ui';
-import { AppColumn, AppFrame, useToast } from './src/shared/shell';
-import { TABS } from './src/constants';
+import { AppColumn, AppFrame, NavDock, useToast } from './src/shared/shell';
+import { DOCK_TABS, TABS } from './src/constants';
 import { useDriverSession } from './src/hooks/useDriverSession';
 import { useDuty } from './src/hooks/useDuty';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -12,7 +12,6 @@ import { RouteScreen } from './src/screens/RouteScreen';
 import { DiagnosticsScreen } from './src/screens/DiagnosticsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { DriverDock } from './src/components/DriverDock';
 
 // Wires the session and duty hooks to the tab screens. Every screen gets the same two objects:
 // `session` (the bus, its route and driver, sign-out) and `duty` (live telemetry and the duty switch).
@@ -65,7 +64,7 @@ function AppShell() {
             )}
           </ScreenFade>
 
-          <DriverDock activeTab={activeTab === TABS.settings ? TABS.profile : activeTab} setActiveTab={setActiveTab} />
+          <NavDock tabs={DOCK_TABS} active={activeTab === TABS.settings ? TABS.profile : activeTab} onChange={setActiveTab} />
 
           <DispatchModal
             isDispatchModalOpen={isDispatchModalOpen}
