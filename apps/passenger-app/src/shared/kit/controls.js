@@ -1,38 +1,18 @@
 // SmartBus UI kit: Surfaces, buttons and form controls.
 // Part of shared/native/ui.js; the app imports everything from '../shared/ui'.
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Rect, Stop } from 'react-native-svg';
+import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { COLORS, RADII, SHADOWS, SPACE, TYPE } from '../theme';
 import { useTheme } from '../themeRuntime';
 import { EASE_OUT, FONT, IS_WEB, PRESS_WEB, native, themed, useReducedMotion, webRing } from './core';
 
 // ─── Surfaces ───────────────────────────────────────────────────────────────
-export const GradientCard = themed(function GradientCard({ tint = 'bus', style, children, id }) {
-  const { mode } = useTheme();
-  const hero = tint === 'hero'; // the orange card: night text, two light shapes on the right
-  const [a, b] = hero ? [COLORS.heroFrom, COLORS.heroTo] : COLORS.tints[tint];
-  const gid = `${id || `g-${tint}`}-${mode}`;
-  return (
-    <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', borderWidth: hero ? 0 : 1.5, borderColor: hero ? 'transparent' : COLORS.tintLines[tint], ...SHADOWS.sm }, style]}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <Defs>
-          <LinearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={a} />
-            <Stop offset="1" stopColor={b} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100" height="100" fill={`url(#${gid})`} />
-        {hero ? (
-          <>
-            <Polygon points="66,-5 108,-5 108,105 50,105" fill={COLORS.heroShape} fillOpacity="0.5" />
-            <Polygon points="84,38 108,38 108,105 70,105" fill={COLORS.heroShape} fillOpacity="0.35" />
-          </>
-        ) : null}
-      </Svg>
-      {children}
-    </View>
-  );
+// A flat card. tint 'bus' (the default) is the light grey card, 'hero' the orange card, 'ink' the black card whose text is
+// white (onCard). No gradient, no border, no shadow: the colour is the separation. (The name is from the old skin.)
+export const GradientCard = themed(function GradientCard({ tint = 'bus', style, children }) {
+  const fill = tint === 'hero' ? COLORS.orange : tint === 'ink' ? COLORS.card : COLORS.surface;
+  return <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', backgroundColor: fill }, style]}>{children}</View>;
 });
 
 export const Banner = themed(function Banner({ tone = 'danger', children }) {
@@ -68,7 +48,7 @@ export const Button = themed(function Button({ title, onPress, tone = 'primary',
       accessibilityState={{ disabled: !!off, busy: !!loading }}
       style={({ pressed, hovered, focused }) => [
         {
-          minHeight: size === 'lg' ? 52 : 44, paddingHorizontal: size === 'lg' ? 24 : 18, borderRadius: RADII.pill,
+          minHeight: size === 'lg' ? 56 : 44, paddingHorizontal: size === 'lg' ? 24 : 18, borderRadius: RADII.pill,
           backgroundColor: t.bg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
           alignSelf: full ? 'stretch' : 'flex-start', opacity: off ? 0.55 : hovered ? 0.92 : 1,
           transform: [{ scale: pressed ? 0.97 : 1 }],
@@ -137,7 +117,7 @@ export const ThemeToggle = themed(function ThemeToggle({ size = 44, style }) {
   );
 });
 
-export const Chip = themed(function Chip({ label, selected, onPress, tone = 'primary', style }) {
+export const Chip = themed(function Chip({ label, selected, onPress, style }) {
   const on = selected;
   return (
     <Pressable
@@ -146,13 +126,13 @@ export const Chip = themed(function Chip({ label, selected, onPress, tone = 'pri
       accessibilityRole={onPress ? 'button' : 'text'}
       accessibilityState={{ selected: !!on }}
       style={({ pressed, focused }) => [
-        { minHeight: 36, paddingHorizontal: 14, borderRadius: RADII.pill, justifyContent: 'center', backgroundColor: on ? (tone === 'primary' ? COLORS.primaryStrong : COLORS.ink) : COLORS.surfaceSoft, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        { minHeight: 40, paddingHorizontal: 18, borderRadius: RADII.pill, justifyContent: 'center', backgroundColor: on ? COLORS.ink : COLORS.surfaceSoft, transform: [{ scale: pressed ? 0.97 : 1 }] },
         PRESS_WEB,
         webRing(focused),
         style,
       ]}
     >
-      <Text style={{ ...TYPE.smallBold, ...FONT, color: on ? (tone === 'primary' ? COLORS.onBright : COLORS.white) : COLORS.ink }}>{label}</Text>
+      <Text style={{ ...TYPE.smallBold, ...FONT, color: on ? COLORS.white : COLORS.ink }}>{label}</Text>
     </Pressable>
   );
 });
@@ -177,9 +157,9 @@ export const TextField = themed(function TextField({ label, icon, error, hint, s
       {label ? <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.ink, marginBottom: 8, marginLeft: 8 }}>{label}</Text> : null}
       <View
         style={{
-          minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[4], borderRadius: RADII.sm,
+          minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[4], borderRadius: RADII.md,
           backgroundColor: COLORS.surface, borderWidth: 1.5,
-          borderColor: error ? COLORS.danger : focused ? COLORS.primary : COLORS.outline,
+          borderColor: error ? COLORS.danger : focused ? COLORS.ink : 'transparent',
           ...(IS_WEB && focused ? { boxShadow: error ? `0 0 0 4px ${COLORS.dangerSoft}` : `0 0 0 4px ${COLORS.primaryLight}` } : null),
         }}
       >

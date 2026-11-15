@@ -28,7 +28,7 @@ export const useS = createStyles(() => StyleSheet.create({
   timelineLeft: { alignItems: 'center', width: 24, marginRight: SPACE[3] },
   timelineDot: {
     width: 16, height: 16, borderRadius: 8,
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.bg, borderWidth: 2, borderColor: COLORS.outline, alignItems: 'center', justifyContent: 'center',
   },
   dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
   dotBoarding: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },

@@ -114,15 +114,15 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
               icon={(c) => <BusIcon color={c} size={14} />}
               value={<CountUp value={liveCount} style={S.statValue} />}
               pill={liveCount ? 'on this route' : 'none yet'}
-              pillTone={liveCount ? 'green' : 'violet'}
+              pillTone={liveCount ? 'green' : 'neutral'}
             />
             <NotchStat
               label="Arriving in"
-              tone="purple"
+              tone="ink"
               icon={(c) => <ClockIcon color={c} size={14} />}
-              value={eta != null ? <CountUp value={eta} suffix=" min" style={S.statValue} /> : <Text style={S.statValue}>—</Text>}
+              value={eta != null ? <CountUp value={eta} suffix=" min" style={[S.statValue, S.statValueOnCard]} /> : <Text style={[S.statValue, S.statValueOnCard]}>—</Text>}
               pill={tracked ? (tracked.phase === 'coming' ? 'to your stop' : 'to destination') : 'no live bus'}
-              pillTone={tracked ? 'green' : 'violet'}
+              pillTone={tracked ? 'green' : 'neutral'}
             />
           </View>
         </Reveal>
