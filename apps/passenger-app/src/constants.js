@@ -14,3 +14,11 @@ export const NO_ROUTE = {
   id: null, number: '–', name: 'No routes yet', shortName: '—', startTerminal: '—', endTerminal: '—',
   distanceKm: 0, stops: [], stopPoints: [], path: [], trackable: false,
 };
+
+// The dock: tab, label and NavIcon glyph.
+export const DOCK_TABS = [
+  { id: TABS.home, label: 'Home', glyph: 'home' },
+  { id: TABS.tracking, label: 'Track', glyph: 'arrow' },
+  { id: TABS.routes, label: 'Routes', glyph: 'route' },
+  { id: TABS.profile, label: 'Profile', glyph: 'user' },
+];

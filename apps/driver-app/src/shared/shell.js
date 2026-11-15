@@ -3,12 +3,12 @@
 // `node shared/sync.js`). What differs between the apps (texts, accents, sections) comes in as props.
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { COLORS, SPACE } from './theme';
+import { COLORS, SHADOWS, SPACE } from './theme';
 import { createStyles, useTheme } from './themeRuntime';
 import {
-  AppBackdrop, Button, IconButton, OverlapHeader, OverlapSheet, Segmented, SettingsRow, SettingsSection, Toast, TOP_INSET, type,
+  AppBackdrop, Button, FloatingDock, IconButton, NavIcon, OverlapHeader, OverlapSheet, Segmented, SettingsRow, SettingsSection, Toast, TOP_INSET, type,
 } from './ui';
-import { ArrowLeftIcon } from './icons';
+import { ArrowLeftIcon, SettingsIcon } from './icons';
 import { API_URL } from './api';
 
 export const TOAST_MS = 3500;
@@ -116,6 +116,56 @@ export function SettingsPage({ onBack, appearanceNote, version, signOutLabel, on
         <SettingsSection title="About">
           <SettingsRow label="Version" value={version} />
           <SettingsRow label="Server" value={API_URL.replace(/^https?:\/\//, '')} />
+        </SettingsSection>
+
+        <Button title={signOutLabel} tone="soft" onPress={onLogout} />
+      </OverlapSheet>
+    </ScrollView>
+  );
+}
+
+// The bottom navigation both apps use. tabs: [{ id, label, glyph }], glyph being a NavIcon name ('home', 'arrow', 'route', ...).
+export function NavDock({ tabs, active, onChange }) {
+  const items = tabs.map((t) => ({ id: t.id, label: t.label, icon: (on) => <NavIcon name={t.glyph} active={on} /> }));
+  return <FloatingDock items={items} active={active} onChange={onChange} />;
+}
+
+const useProfile = createStyles(() => StyleSheet.create({
+  scroll: { paddingBottom: 120 },
+  gear: { position: 'absolute', right: 0, top: TOP_INSET + 4, zIndex: 2 },
+  hero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
+  avatar: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine,
+    alignItems: 'center', justifyContent: 'center', marginBottom: SPACE[3], ...SHADOWS.md,
+  },
+  name: { ...type('h1'), color: COLORS.ink },
+  sub: { ...type('small'), color: COLORS.ink, marginTop: SPACE[1] },
+}));
+
+// The Profile screen both apps use: a settings button, the avatar with a name and a line under it, the app's own sections
+// (children), a Settings row and sign out. A one-letter avatar is drawn larger than a two-letter one.
+export function ProfilePage({ initials, name, subtitle, onOpenSettings, settingsValue, signOutLabel, onLogout, children }) {
+  const P = useProfile();
+  return (
+    <ScrollView style={COMMON_STYLES.flex} contentContainerStyle={P.scroll} showsVerticalScrollIndicator={false}>
+      <OverlapHeader minHeight={200}>
+        <View style={P.gear}>
+          <IconButton label="Settings" onPress={onOpenSettings}><SettingsIcon color={COLORS.ink} size={20} /></IconButton>
+        </View>
+        <View style={P.hero}>
+          <View style={P.avatar}>
+            <Text style={{ ...type(initials.length > 1 ? 'h1' : 'display'), color: COLORS.primaryDeep }}>{initials}</Text>
+          </View>
+          <Text style={P.name}>{name}</Text>
+          <Text style={P.sub}>{subtitle}</Text>
+        </View>
+      </OverlapHeader>
+
+      <OverlapSheet>
+        {children}
+
+        <SettingsSection>
+          <SettingsRow icon={<SettingsIcon color={COLORS.ink} size={18} />} label="Settings" value={settingsValue} onPress={onOpenSettings} />
         </SettingsSection>
 
         <Button title={signOutLabel} tone="soft" onPress={onLogout} />

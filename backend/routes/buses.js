@@ -1,7 +1,7 @@
 const express = require('express');
 const { hashPassword } = require('../lib/auth');
 const { nextId } = require('../lib/sequence');
-const { pick, withoutBlankStatus, idQuery, badRequest } = require('../lib/crud');
+const { pick, withoutBlankStatus, idQuery, badRequest, httpError } = require('../lib/crud');
 const Bus = require('../models/Bus');
 const Driver = require('../models/Driver');
 const Route = require('../models/Route');
@@ -32,7 +32,7 @@ router.get('/api/buses', async (req, res) => {
 
 router.get('/api/buses/:id', async (req, res) => {
   const bus = await Bus.findOne(byId(req.params.id));
-  if (!bus) return res.status(404).json({ error: 'Bus not found' });
+  if (!bus) throw httpError(404, 'Bus not found');
   return res.json(busView(bus));
 });
 
@@ -61,7 +61,7 @@ router.put('/api/buses/:id', async (req, res) => {
   await checkRoute(data.routeId);
 
   const before = await Bus.findOne(byId(req.params.id));
-  if (!before) return res.status(404).json({ error: 'Bus not found' });
+  if (!before) throw httpError(404, 'Bus not found');
   const updated = await Bus.findOneAndUpdate({ _id: before._id }, data, { new: true, runValidators: true });
 
   return res.json(busView(updated));
@@ -69,7 +69,7 @@ router.put('/api/buses/:id', async (req, res) => {
 
 router.delete('/api/buses/:id', async (req, res) => {
   const deleted = await Bus.findOneAndDelete(byId(req.params.id));
-  if (!deleted) return res.status(404).json({ error: 'Bus not found' });
+  if (!deleted) throw httpError(404, 'Bus not found');
   return res.json({ message: 'Bus deleted successfully', id: req.params.id });
 });
 

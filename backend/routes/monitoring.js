@@ -1,5 +1,6 @@
 // Admin-only read endpoints: live status, metrics, analytics and the dashboard summary.
 const express = require('express');
+const { httpError } = require('../lib/crud');
 const Bus = require('../models/Bus');
 const Driver = require('../models/Driver');
 const Route = require('../models/Route');
@@ -16,7 +17,7 @@ module.exports = ({ realtime }) => {
   // Journey-time distribution per route segment (the ETA engine's baseline).
   router.get('/api/analytics/segments', async (req, res) => {
     const route = await Route.findOne({ routeId: String(req.query.routeId || '') }).lean();
-    if (!route) return res.status(404).json({ error: 'Route not found' });
+    if (!route) throw httpError(404, 'Route not found');
     return res.json(await segmentAnalytics(route));
   });
 
