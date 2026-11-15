@@ -1,4 +1,6 @@
 export const SESSION_KEY = 'smartbus:session';
+// The passenger's usual journey (route and stops), kept per account so it survives closing the app.
+export const JOURNEY_KEY = 'smartbus:journey';
 
 export const MAP_PADDING = { top: 170, bottom: 400 };
 

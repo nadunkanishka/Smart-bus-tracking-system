@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isActiveRoute, request, toRoute } from '../shared/api';
-import { NO_ROUTE } from '../constants';
+import { JOURNEY_KEY, NO_ROUTE } from '../constants';
+import { restoreJourney } from '../utils';
 
 // The route list from the backend, the selected route and the passenger's boarding and destination stops.
 export function useRoutes({ session, showToast }) {
@@ -13,11 +15,12 @@ export function useRoutes({ session, showToast }) {
 
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) || NO_ROUTE;
 
+  // The route being tracked is listed first.
   const filteredRoutes = useMemo(() => {
-    if (!routeSearchQuery.trim()) return routes;
-    const q = routeSearchQuery.toLowerCase();
-    return routes.filter((r) => String(r.number).toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.stops.some((s) => s.toLowerCase().includes(q)));
-  }, [routeSearchQuery, routes]);
+    const q = routeSearchQuery.trim().toLowerCase();
+    const found = q ? routes.filter((r) => String(r.number).toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.stops.some((s) => s.toLowerCase().includes(q))) : routes;
+    return [...found.filter((r) => r.id === selectedRouteId), ...found.filter((r) => r.id !== selectedRouteId)];
+  }, [routeSearchQuery, routes, selectedRouteId]);
 
   const boardingIndex = selectedRoute.stops.indexOf(boardingStop);
   const destinationIndex = selectedRoute.stops.indexOf(destinationStop);
@@ -25,6 +28,14 @@ export function useRoutes({ session, showToast }) {
   // loadRoutes reads the selection when the response arrives, not when the load started.
   const selectedIdRef = useRef(selectedRouteId);
   selectedIdRef.current = selectedRouteId;
+  const journeyKey = useRef(JOURNEY_KEY);
+  journeyKey.current = `${JOURNEY_KEY}:${session?.user?.id || ''}`;
+
+  // Save every change of route or stops, so the next start opens on the same journey.
+  useEffect(() => {
+    if (!selectedRouteId) return;
+    AsyncStorage.setItem(journeyKey.current, JSON.stringify({ routeId: selectedRouteId, boarding: boardingStop, destination: destinationStop })).catch(() => {});
+  }, [selectedRouteId, boardingStop, destinationStop]);
 
   const selectRoute = useCallback((route) => {
     setSelectedRouteId(route.id);
@@ -38,8 +49,19 @@ export function useRoutes({ session, showToast }) {
       const list = (await request('/routes')).filter(isActiveRoute).map(toRoute);
       setRoutes(list);
       setRoutesState('ready');
-      // Keep the chosen route if it is still listed; otherwise pick the first trackable one.
-      if (!list.some((r) => r.id === selectedIdRef.current) && list.length) selectRoute(list.find((r) => r.trackable) || list[0]);
+      // Keep the chosen route if it is still listed; otherwise the one saved from last time; otherwise the first trackable one.
+      if (!list.some((r) => r.id === selectedIdRef.current) && list.length) {
+        let saved = null;
+        try { saved = JSON.parse(await AsyncStorage.getItem(journeyKey.current)); } catch { /* nothing saved */ }
+        const back = restoreJourney(list, saved);
+        if (back) {
+          setSelectedRouteId(back.route.id);
+          setBoardingStopRaw(back.boarding);
+          setDestinationStopRaw(back.destination);
+        } else {
+          selectRoute(list.find((r) => r.trackable) || list[0]);
+        }
+      }
     } catch (err) {
       setRoutesState('error');
       showToast(err.message);
