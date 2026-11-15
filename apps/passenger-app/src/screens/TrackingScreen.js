@@ -1,10 +1,10 @@
-import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import LiveMap from '../shared/LiveMap';
 import { COLORS } from '../shared/theme';
 import { Button, IconButton, Vehicle, VehicleLoader, ProgressTrack } from '../shared/ui';
 import { ArrowRightIcon, MoreVerticalIcon } from '../shared/icons';
-import { MAP_PADDING } from '../constants';
+import { MAP_PADDING, MAP_PADDING_COMPACT_BOTTOM } from '../constants';
 import { StopPicker } from '../components/StopPicker';
 import { trackedSummary } from '../utils';
 import { ConnectionChip } from '../components/ConnectionChip';
@@ -32,6 +32,10 @@ export function TrackingScreen({
 }) {
   const S = useS();
   const bus = tracked?.bus;
+  // The card starts short (bus, status, progress) so most of the map stays visible; the stop list and driver open on request.
+  const [showStops, setShowStops] = useState(false);
+  const compactCard = Boolean(bus) && !showStops;
+  const mapPadding = { top: MAP_PADDING.top, bottom: compactCard ? MAP_PADDING_COMPACT_BOTTOM : MAP_PADDING.bottom };
   // How far along the route the tracked bus is (by segment), for the progress bar.
   const progress = bus?.segIndex != null && routeStops.length > 1
     ? Math.min(0.94, Math.max(0.06, (bus.segIndex + 0.5) / (routeStops.length - 1)))
@@ -50,7 +54,8 @@ export function TrackingScreen({
           stops={selectedRoute.stopPoints}
           buses={mapBuses}
           highlightStop={boardingIndex}
-          padding={MAP_PADDING}
+          padding={mapPadding}
+          focus={bus ? { lat: bus.lat, lng: bus.lng } : null}
         />
       </View>
 
@@ -144,6 +149,13 @@ export function TrackingScreen({
               <Text style={S.progressSummary}>{trackedSummary(tracked, boardingStop, destinationStop)}</Text>
             </View>
 
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: showStops }} onPress={() => setShowStops((v) => !v)} style={S.moreRow}>
+              <Text style={S.moreText}>{showStops ? 'Hide stops and driver' : 'Stops and driver'}</Text>
+              <Text style={S.moreText}>{showStops ? '▴' : '▾'}</Text>
+            </Pressable>
+
+            {showStops ? (
+              <>
             {/* Predicted arrival at every stop, updated on each GPS fix */}
             <ScrollView style={S.etaList} showsVerticalScrollIndicator={false}>
               {bus.stops.map((stop) => {
@@ -175,6 +187,8 @@ export function TrackingScreen({
                 <Text style={S.driverStatusText}>On Duty</Text>
               </View>
             </View>
+              </>
+            ) : null}
           </>
         )}
       </View>
