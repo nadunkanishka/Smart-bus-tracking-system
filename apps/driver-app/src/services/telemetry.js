@@ -90,6 +90,11 @@ if (Platform.OS !== 'web') {
     if (error || !data?.locations) return;
     data.locations.forEach((loc) => submitFix(loc.coords, loc.timestamp));
   });
+  // A freshly started app is never on duty. If a background service survived the last run, stop it, so it cannot restart
+  // on its own and keep the app from opening.
+  Location.hasStartedLocationUpdatesAsync(TASK)
+    .then((started) => started && Location.stopLocationUpdatesAsync(TASK))
+    .catch(() => {});
 }
 
 export async function connect(token) {
