@@ -1,7 +1,8 @@
 // Live route map (Android / iOS build), drawn by the app itself: map tiles as ordinary images, then the route line, the stops
 // and the buses on top. No WebView and no Google Maps key. It fits the whole route on screen (no pan or zoom yet).
-// Tiles: OpenStreetMap's own server, which asks apps to identify themselves in the User-Agent. Dark mode dims the same tiles
-// over the dark background. shortcut: fine for a pilot; before heavy use switch to a tile provider with a key or host tiles.
+// Tiles: Esri's light and dark gray basemaps, made for drawing routes on top of, free without a key (OpenStreetMap's own tile
+// server blocks apps that do not send a browser-like request, and an Android image request cannot).
+// shortcut: Esri's free use is for development and pilots with the credit shown; for a launch use a provider with a key.
 // Source of truth: /shared/native/LiveMap.native.js (copied into each app by `node shared/sync.js`).
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
@@ -9,13 +10,11 @@ import Svg, { Circle, Polyline } from 'react-native-svg';
 import { Vehicle, type } from './ui';
 import { COLORS } from './theme';
 import { useTheme } from './themeRuntime';
-import { TILE, fitView, project, tilesFor } from './mapMath';
+import { TILE_SHOWN, fitView, project, tilesFor } from './mapMath';
 
-const TILE_HEADERS = { 'User-Agent': 'SmartBusTracker/1.0 (student project)' };
-const DARK_TILE_OPACITY = 0.42;
 const GLIDE_MS = 2800; // a bus moves to its new position over about the time between two GPS fixes
 
-const tileUrl = (t) => `https://tile.openstreetmap.org/${t.zoom}/${t.x}/${t.y}.png`;
+const tileUrl = (t, dark) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${dark ? 'Dark' : 'Light'}_Gray_Base/MapServer/tile/${t.zoom}/${t.y}/${t.x}`;
 
 function BusMarker({ bus, view }) {
   const at = project(bus.lat, bus.lng, view);
@@ -46,7 +45,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
   return (
     <View style={[styles.fill, { backgroundColor: COLORS.bg }]} onLayout={(e) => setSize(e.nativeEvent.layout)}>
       {tiles.map((t) => (
-        <Image key={t.key} source={{ uri: tileUrl(t), headers: TILE_HEADERS }} style={{ position: 'absolute', left: t.left, top: t.top, width: TILE, height: TILE, opacity: dark ? DARK_TILE_OPACITY : 1 }} />
+        <Image key={t.key} source={{ uri: tileUrl(t, dark) }} style={{ position: 'absolute', left: t.left, top: t.top, width: TILE_SHOWN, height: TILE_SHOWN }} />
       ))}
       {view ? (
         <Svg style={styles.fill} pointerEvents="none">
@@ -59,7 +58,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
         </Svg>
       ) : null}
       {view ? (buses || []).map((bus) => <BusMarker key={bus.id} bus={bus} view={view} />) : null}
-      <Text style={[styles.credit, { bottom: Math.max(4, bottom - 18) }]}>© OpenStreetMap contributors</Text>
+      <Text style={[styles.credit, { bottom: Math.max(4, bottom - 18) }]}>Esri, HERE, Garmin, © OpenStreetMap contributors</Text>
     </View>
   );
 }
