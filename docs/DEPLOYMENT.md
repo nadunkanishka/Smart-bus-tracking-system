@@ -92,7 +92,7 @@ Both are static sites, free on Vercel's Hobby plan. Each has a `vercel.json` in 
 5. On the backend host, set `CORS_ORIGIN` to the two Vercel addresses, comma separated and without trailing slashes: `https://smartbusadmin.vercel.app,https://smartbuspassenger.vercel.app` (use the addresses Vercel shows you if the names were taken). The service restarts.
 6. Open the admin site, sign in with `ADMIN_USERNAME` and `ADMIN_PASSWORD`, and check Live Monitor loads.
 
-A variable is baked into the build, so changing it later needs a new build: **Deployments, the latest one, Redeploy** (untick "Use existing Build Cache"). Vercel serves over https, so the backend must also be https. Pull requests get their own preview address; a preview is a different origin, so it is not in `CORS_ORIGIN` and its data calls are blocked unless you add it.
+A variable is baked into the build, so changing it later needs a new build: **Deployments, the latest one, Redeploy** (untick "Use existing Build Cache"). Vercel serves over https, so the backend must also be https. Only `main` and `dev` are built (the `ignoreCommand` in each `vercel.json` skips every other branch), because the free plan allows 100 deployments a day and a preview per pull request used them up. Pull requests get no preview address; if one is ever turned on, a preview is a different origin, so it is not in `CORS_ORIGIN` and its data calls are blocked unless you add it.
 
 To build the passenger web app by hand instead: `cd apps/passenger-app && EXPO_PUBLIC_API_URL=<api url> npx expo export --platform web`, then host the `dist` folder as a static site.
 
