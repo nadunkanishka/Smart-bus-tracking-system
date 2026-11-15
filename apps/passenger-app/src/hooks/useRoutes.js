@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isActiveRoute, request, toRoute } from '../shared/api';
 import { JOURNEY_KEY, NO_ROUTE } from '../constants';
-import { restoreJourney } from '../utils';
+import { restoreJourney, searchRoutes } from '../utils';
 
 // The route list from the backend, the selected route and the passenger's boarding and destination stops.
 export function useRoutes({ session, showToast }) {
@@ -15,12 +15,7 @@ export function useRoutes({ session, showToast }) {
 
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) || NO_ROUTE;
 
-  // The route being tracked is listed first.
-  const filteredRoutes = useMemo(() => {
-    const q = routeSearchQuery.trim().toLowerCase();
-    const found = q ? routes.filter((r) => String(r.number).toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.stops.some((s) => s.toLowerCase().includes(q))) : routes;
-    return [...found.filter((r) => r.id === selectedRouteId), ...found.filter((r) => r.id !== selectedRouteId)];
-  }, [routeSearchQuery, routes, selectedRouteId]);
+  const filteredRoutes = useMemo(() => searchRoutes(routes, routeSearchQuery, selectedRouteId), [routes, routeSearchQuery, selectedRouteId]);
 
   const boardingIndex = selectedRoute.stops.indexOf(boardingStop);
   const destinationIndex = selectedRoute.stops.indexOf(destinationStop);
