@@ -35,6 +35,12 @@
     },
     "plugins": [
       "expo-status-bar"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/86e46836-e73f-4ce2-ac14-28fca0189c3b"
+    }
   }
 }
