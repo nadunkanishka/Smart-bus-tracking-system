@@ -4,7 +4,7 @@ export const API_BASE = `${(process.env.REACT_APP_API_URL || 'http://localhost:5
 
 // The signed-in admin ({ ...user, token }) lives in sessionStorage, so it ends with the browser tab.
 const SESSION_KEY = 'adminUser';
-export const SESSION_EXPIRED = 'Your session has expired. Please sign in again.';
+const SESSION_EXPIRED = 'Your session has expired. Please sign in again.';
 
 export const getSession = () => {
   try {

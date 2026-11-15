@@ -30,4 +30,4 @@ async function nextId(kind) {
   throw new Error(`Could not find a free ${kind} id`);
 }
 
-module.exports = { getNextSequence, nextId };
+module.exports = { nextId };

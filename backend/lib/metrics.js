@@ -53,4 +53,4 @@ const liveRow = (b) => ({
   tripId: b.trip?.tripId || null,
 });
 
-module.exports = { createMetrics, liveRow, latencyStats };
+module.exports = { createMetrics, liveRow };

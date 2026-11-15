@@ -32,4 +32,4 @@ function createRouteCache({ load = loadPreparedRoute, ttlMs = ROUTE_CACHE_MS, no
   };
 }
 
-module.exports = { createRouteCache, loadPreparedRoute };
+module.exports = { createRouteCache };

@@ -38,7 +38,7 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 - Bus colours: `shared/buses/clay.js` defines the liveries in palette colours. After changing them run `node shared/buses/export.mjs`, then `node shared/sync.js`.
 - Icons are Lucide everywhere: `lucide-react` in the admin (`src/components/Icon.js` maps the page icon names to Lucide components) and `lucide-react-native` on mobile (`native/icons.js`, and the dock's `NavIcon` in `native/ui.js`).
 - Font: Urbanist on the web builds (admin and the Expo web export). Native keeps the system font, so no font file has to ship.
-- Green (`green`, `greenText`, `greenSoft`) is the status colour for anything active or live. It is not a brand colour: use it for running buses, connected servers and drivers on duty, nothing else.
+- Green (`green`, `greenSoft`) is the status colour for anything active or live. It is not a brand colour: use it for running buses, connected servers and drivers on duty, nothing else.
 
 ## Motion and settings parts in `native/ui.js`
 

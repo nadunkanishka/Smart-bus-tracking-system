@@ -68,7 +68,7 @@ async function flush() {
   }
 }
 
-export function submitFix(coords, timestamp) {
+function submitFix(coords, timestamp) {
   const fix = buildFix(coords, timestamp, status.lastFix);
   status.lastFix = fix;
   status.error = null;

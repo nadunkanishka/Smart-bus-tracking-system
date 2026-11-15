@@ -23,7 +23,6 @@ export const useS = createStyles(() => StyleSheet.create({
   dropdownItemActive: { backgroundColor: COLORS.accentSoft },
   dropdownItemText: { ...type('body'), color: COLORS.ink },
   dropdownItemTextActive: { color: COLORS.accentText, fontWeight: '700' },
-  // Timeline
   timelineContainer: { paddingVertical: SPACE[1] },
   timelineRow: { flexDirection: 'row', marginBottom: SPACE[2] },
   timelineLeft: { alignItems: 'center', width: 24, marginRight: SPACE[3] },

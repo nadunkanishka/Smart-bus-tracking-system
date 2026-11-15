@@ -68,7 +68,6 @@ export function useRoutes({ session, showToast }) {
     }
   }, [showToast, selectRoute]);
 
-  // Load routes once signed in
   useEffect(() => { if (session) loadRoutes(); }, [session, loadRoutes]);
 
   // A trip goes forward along the route: choosing a boarding stop at or after the destination moves the destination to the

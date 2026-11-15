@@ -17,7 +17,6 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
         <Text style={S.screenTitle}>Bus Routes</Text>
         <Text style={S.screenSubtitle}>Select a route to start tracking your bus</Text>
 
-        {/* Search */}
         <View style={S.searchBar}>
           <SearchIcon color={COLORS.muted} size={18} />
           <TextInput
@@ -37,7 +36,6 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
       </OverlapHeader>
 
       <OverlapSheet>
-        {/* Currently Selected */}
         {selectedRoute.id && (
           <View style={S.activeRouteBanner}>
             <View style={S.activeRouteLeft}>
@@ -50,7 +48,6 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
           </View>
         )}
 
-        {/* Route Cards */}
         {routesState === 'loading' ? (
           <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
         ) : routesState === 'error' ? (
@@ -116,7 +113,6 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
                     </View>
                   </View>
 
-                  {/* Stops */}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.stopsScroll}>
                     {route.stops.map((stop, idx) => (
                       <View key={idx} style={S.stopChip}>

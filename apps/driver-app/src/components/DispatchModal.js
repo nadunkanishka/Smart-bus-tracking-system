@@ -13,7 +13,6 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
         <Sheet>
           <View style={D.handleRow}><View style={D.handle} /></View>
 
-          {/* Dispatch Info */}
           <View style={D.dispatchRow}>
             <View style={D.dispatchAvatar}>
               <Text style={D.dispatchAvatarText}>HQ</Text>
@@ -29,7 +28,6 @@ export function DispatchModal({ isDispatchModalOpen, setIsDispatchModalOpen, dis
             </View>
           </View>
 
-          {/* Mode Tabs */}
           <View style={D.modeTabs} accessibilityRole="tablist">
             <Tap
               style={[D.modeTab, dispatchMode === 'call' && D.modeTabActive]}

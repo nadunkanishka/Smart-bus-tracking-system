@@ -59,7 +59,6 @@ export function TrackingScreen({
         />
       </View>
 
-      {/* Floating Map Header */}
       <View style={S.mapHeader} pointerEvents="box-none">
         <View style={S.mapHeaderInner}>
           <View style={S.mapHeaderLeft}>
@@ -75,7 +74,6 @@ export function TrackingScreen({
         </View>
       </View>
 
-      {/* ── INLINE STOP SELECTOR (floating card) ─────────────────── */}
       {routeStops.length > 0 ? (
         <View style={S.stopSelectorBar}>
           <StopPicker
@@ -103,7 +101,6 @@ export function TrackingScreen({
         </View>
       ) : null}
 
-      {/* Bottom summary card */}
       <View style={S.summaryCard}>
         {routesState === 'loading' ? (
           <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
@@ -130,7 +127,6 @@ export function TrackingScreen({
           </View>
         ) : (
           <>
-            {/* Header: bus + status */}
             <View style={S.sheetTopRow}>
               <View style={S.flex}>
                 <Text style={S.sheetMetaLabel}>{liveCount > 1 ? `Nearest of ${liveCount} buses` : 'Bus'}</Text>
@@ -143,7 +139,6 @@ export function TrackingScreen({
               </View>
             </View>
 
-            {/* Progress along the route */}
             <View style={S.progressBlock}>
               <ProgressTrack value={progress} height={6} color={COLORS.orange} track={COLORS.line} />
               <Text style={S.progressSummary}>{trackedSummary(tracked, boardingStop, destinationStop)}</Text>

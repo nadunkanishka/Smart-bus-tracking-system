@@ -24,7 +24,6 @@ export function StopSelectorModal({ visible, onClose, trip, tracked }) {
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Route selector */}
             <Text style={S.modalSectionLabel}>Active route</Text>
             <View style={S.routeChipsRow}>
               {routes.map(r => (
@@ -42,7 +41,6 @@ export function StopSelectorModal({ visible, onClose, trip, tracked }) {
               ))}
             </View>
 
-            {/* Boarding */}
             <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Boarding stop</Text>
             <Tap
               style={S.dropdownTrigger}
@@ -71,7 +69,6 @@ export function StopSelectorModal({ visible, onClose, trip, tracked }) {
               </View>
             )}
 
-            {/* Destination */}
             <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Destination stop</Text>
             <Tap
               style={S.dropdownTrigger}

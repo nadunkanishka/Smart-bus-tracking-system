@@ -21,7 +21,6 @@ export const useS = createStyles(() => ({
     mapHeaderText: { flex: 1 },
     mapHeaderTitle: { ...type('h3'), color: COLORS.ink },
     mapHeaderStatus: { ...type('small'), color: COLORS.muted },
-    // Floating stop selector card
     stopSelectorBar: {
       position: 'absolute', top: TOP_INSET + 8 + 72 + 8, left: 16, right: 16, zIndex: 20,
       flexDirection: 'row', alignItems: 'flex-start',
@@ -31,7 +30,6 @@ export const useS = createStyles(() => ({
     stopDotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primaryStrong },
     stopDotOrange: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent },
     stopSelectorDivider: { width: 28, alignItems: 'center', justifyContent: 'flex-end', height: 70 },
-    // Bottom summary card
     summaryCard: {
       position: 'absolute', left: 16, right: 16, bottom: 104,
       backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.xl, padding: SPACE[5],
@@ -45,7 +43,6 @@ export const useS = createStyles(() => ({
     progressBlock: { marginBottom: SPACE[2] },
     moreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: SPACE[3] },
     moreText: { ...type('smallBold'), color: COLORS.accent },
-    // Driver Card
     driverCard: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, padding: SPACE[3], marginBottom: SPACE[4], gap: SPACE[3],

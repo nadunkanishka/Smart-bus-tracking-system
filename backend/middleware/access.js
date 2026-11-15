@@ -27,4 +27,4 @@ function accessGuard(table = ACCESS) {
   return router;
 }
 
-module.exports = { ACCESS, accessGuard };
+module.exports = { accessGuard };
