@@ -51,6 +51,12 @@
           "locationAlwaysAndWhenInUsePermission": "Allow SmartBus Driver to share the live bus location while on duty."
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1cb5c985-7cb1-48bf-82f8-860c46e1450e"
+    }
   }
 }
