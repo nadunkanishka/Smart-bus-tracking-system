@@ -2,7 +2,9 @@ export const SESSION_KEY = 'smartbus:session';
 // The passenger's usual journey (route and stops), kept per account so it survives closing the app.
 export const JOURNEY_KEY = 'smartbus:journey';
 
-export const MAP_PADDING = { top: 170, bottom: 400 };
+export const MAP_PADDING = { top: 170, bottom: 480 };
+// Below the map when the bottom card is short (bus, status and progress only).
+export const MAP_PADDING_COMPACT_BOTTOM = 320;
 
 // Tab ids for the dock and the screen switch in App.js. Settings is not in the dock: it opens from Profile and Home,
 // so the dock shows Profile while it is open.

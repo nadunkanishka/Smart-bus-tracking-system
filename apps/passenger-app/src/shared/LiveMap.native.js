@@ -1,6 +1,6 @@
 // Live route map (Android / iOS build), drawn by the app itself: map tiles as ordinary images, then the route line, the stops
 // and the buses on top. No WebView and no Google Maps key. The route is fitted on screen to start with; one finger moves the map,
-// two fingers pinch to zoom, the + and - buttons zoom, and Fit brings the whole route back.
+// two fingers pinch to zoom, the + and - buttons zoom, Bus centres on the tracked bus and Fit brings the whole route back.
 // Tiles: Esri's light and dark gray basemaps, made for drawing routes on top of, free without a key (OpenStreetMap's own tile
 // server blocks apps that do not send a browser-like request, and an Android image request cannot).
 // shortcut: Esri's free use is for development and pilots with the credit shown; for a launch use a provider with a key.
@@ -50,7 +50,7 @@ function MapButton({ label, text, onPress }) {
   );
 }
 
-export default function LiveMap({ path, stops, buses, highlightStop = -1, padding }) {
+export default function LiveMap({ path, stops, buses, highlightStop = -1, padding, focus = null }) {
   const { mode } = useTheme();
   const dark = mode === 'dark';
   const box = useRef(null);
@@ -100,10 +100,16 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
     });
   }, [drag]);
 
+  // The middle of the part of the map that no card covers.
+  const centre = size ? { x: size.width / 2, y: (top + size.height - bottom) / 2 } : null;
   const zoomBy = (factor) => {
-    if (!latest.current || !size) return;
-    const centre = { x: size.width / 2, y: (top + size.height - bottom) / 2 };
+    if (!latest.current || !centre) return;
     setCamera(moveView(latest.current, centre, centre, factor));
+  };
+  // Moves the map so `focus` (the tracked bus: { lat, lng }) sits in the middle of the free part, keeping the zoom.
+  const showFocus = () => {
+    if (!latest.current || !centre || !focus) return;
+    setCamera(moveView(latest.current, project(focus.lat, focus.lng, latest.current), centre));
   };
 
   return (
@@ -130,6 +136,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
       <View style={[styles.controls, { top: top + 8 }]}>
         <MapButton label="Zoom in" text="+" onPress={() => zoomBy(STEP_ZOOM)} />
         <MapButton label="Zoom out" text="−" onPress={() => zoomBy(1 / STEP_ZOOM)} />
+        {focus ? <MapButton label="Show the bus" text="Bus" onPress={showFocus} /> : null}
         {camera ? <MapButton label="Show the whole route" text="Fit" onPress={() => setCamera(null)} /> : null}
       </View>
       <Text style={[styles.credit, { bottom: Math.max(4, bottom - 18) }]}>Esri, HERE, Garmin, © OpenStreetMap contributors</Text>
