@@ -38,9 +38,8 @@ export function TrackingScreen({
     : 0.06;
 
   // The one-line state of the tracked route for the card at the top: which bus, and what it means for this passenger.
-  const headline = bus
-    ? `${bus.registration} · ${trackedSummary(tracked, boardingStop, destinationStop)}`
-    : conn === 'connected' ? 'No bus on this route right now' : 'Reconnecting…';
+  const noBus = conn === 'connected' ? 'No bus on this route right now' : 'Reconnecting…';
+  const headline = bus ? `${bus.registration} · ${trackedSummary(tracked, boardingStop, destinationStop)}` : noBus;
 
   return (
     <View style={S.flex}>
