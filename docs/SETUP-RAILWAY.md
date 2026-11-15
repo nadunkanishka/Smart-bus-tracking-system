@@ -16,7 +16,7 @@ You need:
 - your Atlas connection string with the real password and `/smartbus` (see SETUP-MONGODB.md);
 - a long random string for `JWT_SECRET` (about 40 letters and numbers; make it up; do not reuse a password);
 - a strong password for the admin dashboard (`ADMIN_PASSWORD`);
-- the repository on GitHub with the latest code on the `dev` branch.
+- the repository on GitHub with the code on `main` (`dev` is kept level with it).
 
 ## 1. Create the project
 
@@ -29,7 +29,7 @@ You need:
 Click the service -> **Settings** -> **Source**:
 
 - **Root Directory:** `/backend` (Railway then uses `backend/Dockerfile`)
-- **Branch:** `dev` (the latest code is on `dev`, not `main`)
+- **Branch:** `main` (`dev` works too; the two are kept level)
 
 If Railway shows a **Staged changes** bar, click **Deploy** there to apply them.
 
@@ -78,7 +78,7 @@ The admin dashboard and the passenger web app are static sites on Vercel (steps 
 - admin site: environment variable `REACT_APP_API_URL`
 - passenger site: environment variable `EXPO_PUBLIC_API_URL`
 
-A variable is baked into the build, so after changing it open **Deployments**, the latest one, **Redeploy**, and untick "Use existing Build Cache". Vercel must build the `dev` branch (Settings -> Git -> Production Branch).
+A variable is baked into the build, so after changing it open **Deployments**, the latest one, **Redeploy**, and untick "Use existing Build Cache". Vercel must build the production branch (`main`) (Settings -> Git -> Production Branch).
 
 Then in Railway add `CORS_ORIGIN` with both site addresses, comma separated, no spaces and no trailing slashes:
 
@@ -113,7 +113,7 @@ Find the route id in `<address>/api/routes` (the `routeId` of Route 138; it is n
 ## Day to day
 
 - **Logs:** service -> **Deployments** -> a deployment -> logs.
-- **Redeploy:** the three-dot menu on a deployment -> **Redeploy**. A push to `dev` redeploys on its own.
+- **Redeploy:** the three-dot menu on a deployment -> **Redeploy**. A push to the deployed branch redeploys on its own.
 - **Change a setting:** edit the variable; Railway redeploys.
 - **Back up the data** before and after each pilot day (SETUP-MONGODB.md).
 
@@ -121,9 +121,9 @@ Find the route id in `<address>/api/routes` (the `routeId` of Route 138; it is n
 
 | Problem | Likely cause and fix |
 |---|---|
-| Build fails or the service crashes | Open the deployment logs. Check Root Directory is `/backend` and Branch is `dev`. |
+| Build fails or the service crashes | Open the deployment logs. Check Root Directory is `/backend` and the Branch is the one you deploy (`main`). |
 | `/api/health` says `mongo` not connected | Atlas Network Access, password characters or the missing `/smartbus` (SETUP-MONGODB.md). |
 | Cannot sign in to the admin dashboard | The admin was created with another password: delete the `admins` document in Atlas and redeploy. |
 | The websites show no data or CORS errors | `CORS_ORIGIN` is missing or has a trailing slash or space; or the site was not rebuilt after setting the API address. |
-| Live activity chart says "Waiting for the backend" | Railway has not redeployed the latest `dev`; redeploy. |
+| Live activity chart says "Waiting for the backend" | Railway has not redeployed the latest code; redeploy. |
 | It stopped working after about a month | The trial credit ran out. Check Usage; upgrade to Hobby or export your data. |

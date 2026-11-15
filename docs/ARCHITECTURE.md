@@ -4,42 +4,68 @@ Smart Bus Tracking and Arrival Prediction System: three client tiers around one 
 
 ```mermaid
 flowchart LR
-  subgraph Tier1[Tier 1: Driver app, Expo / React Native]
+  subgraph Driver[Driver app: Expo, React Native]
     GPS[GPS every 3 s] --> Q[Offline queue<br/>AsyncStorage]
     Q --> DS[Socket.IO client]
   end
 
-  subgraph Backend[Backend: Node.js + Express + Socket.IO]
-    V[Validate fix<br/>ranges, order, duplicates] --> ETA[ETA engine<br/>segmented route]
-    ETA --> TT[Trip tracker]
-    ETA --> PUB[Emit bus:update<br/>to room route:ID]
-    REST[REST API<br/>auth, CRUD, analytics]
+  subgraph Backend[Backend: Node.js, Express, Socket.IO]
+    AUTH[driver:auth<br/>JWT check] --> PIPE
+    PIPE[Fix pipeline<br/>validate, smooth, snap to route] --> ETA[ETA engine<br/>segment times and dwell]
+    ETA --> PUB[bus:update to the<br/>route room]
+    PIPE --> REC[Trip recorder<br/>buffered writes]
+    REST[REST API<br/>auth, CRUD, analytics<br/>role table and one error handler]
   end
 
   subgraph Data[Data]
-    R[(Redis<br/>latest fix per bus)]
-    M[(MongoDB<br/>routes, stops, trips, logs)]
+    C[(Latest-fix store<br/>Redis, or memory without it)]
+    M[(MongoDB<br/>routes, buses, trips, logs)]
   end
 
-  subgraph Tier2[Tier 2: Passenger app, web + mobile]
-    PS[Socket.IO client] --> MAP[Map: Leaflet / OSM on web,<br/>route, stops and buses drawn natively on map tiles on phones<br/>markers glide between fixes]
-    PS --> LIST[ETA per stop]
+  subgraph Passenger[Passenger app: web and phone]
+    PS[Socket.IO client] --> MAP[Map: route, stops, buses<br/>markers glide between fixes]
+    PS --> LIST[ETA for every stop]
   end
 
-  subgraph Tier3[Tier 3: Admin dashboard, React]
-    ED[Route path and stop editor]
-    LM[Live monitor]
-    AN[Trip analytics]
+  subgraph Admin[Admin dashboard: React]
+    ED[Route and stop editor] --- LM[Live monitor] --- AN[Trip analytics]
   end
 
-  DS -- gps:fix / gps:batch --> V
+  DS -- "gps:fix, gps:batch<br/>driver:duty" --> AUTH
   PUB --> PS
-  PUB --> R
-  R -- route:snapshot on subscribe --> PS
-  TT -- segment + ETA logs --> M
-  M -- historical averages --> ETA
+  PUB --> C
+  C -- "route:snapshot on route:subscribe" --> PS
+  REC -- "GpsLog, SegmentLog, EtaLog, Trip" --> M
+  M -- "historical segment times" --> ETA
   ED & LM & AN <--> REST
   REST <--> M
+```
+
+The same tiers over time, for one GPS fix:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant D as Driver app
+  participant S as Backend (realtime.js)
+  participant P as Fix pipeline
+  participant C as Latest-fix store
+  participant DB as MongoDB
+  participant U as Passenger app
+
+  U->>S: route:subscribe { routeId }
+  S-->>U: route:snapshot (cached buses, real age kept)
+  D->>S: driver:auth (JWT)
+  D->>S: gps:fix { lat, lng, speed, heading, ts }
+  S->>P: validate (ranges, order, duplicates, speed cap)
+  P->>P: Kalman smoothing, snap to the route polyline
+  P->>P: ETA for every stop (segment times plus dwell)
+  P->>C: save bus:update (60 s TTL)
+  P-->>U: bus:update to room route:ID (positions and ETAs)
+  P--)DB: raw and smoothed fix buffered, flushed every 5 s
+  Note over D,S: Signal lost: the app queues fixes and later sends gps:batch, oldest first, acknowledged per chunk
+  D--xS: connection drops
+  S-->>U: bus:offline after the bus stops reporting
 ```
 
 ## Data flow for one GPS fix
@@ -68,6 +94,19 @@ Each route has a road polyline and an ordered list of stops. Consecutive stops d
 
 Historical values are averages of `SegmentLog` records for that route and segment. A segment with no history uses 20 km/h and a 20 second dwell. Distances follow the road polyline, not a straight line between points.
 
+```mermaid
+flowchart TD
+  F[Smoothed fix] --> PRJ[Project onto the route polyline<br/>nearest point near the last position]
+  PRJ --> SEG[Active segment and road distance left in it]
+  SEG --> SPD{Bus moving?}
+  SPD -- "over 1.5 m/s" --> NOW[Time left in segment =<br/>distance left / current speed]
+  SPD -- "stopped or crawling" --> HIST[Use the segment's usual speed]
+  NOW --> SUM
+  HIST --> SUM[Add each later segment's historical traversal time<br/>plus the usual dwell at every stop passed]
+  SUM --> OUT[Arrival time per stop, sent in bus:update]
+  OUT --> LOG[On arrival: EtaLog with predicted, actual,<br/>error and the straight-line baseline]
+```
+
 ## Trip history and evaluation data
 
 The trip tracker (`lib/tripTracker.js`, pure) watches each bus's progress and `lib/tripRecorder.js` stores what it reports:
@@ -84,17 +123,47 @@ If the connection drops, the driver app queues fixes (persisted in AsyncStorage,
 
 Passwords are stored as scrypt hashes; a legacy plaintext password is replaced by its hash on the first successful sign-in (admin, bus and passenger alike). The credential rules (username patterns, password minimums: 8 for admins, 6 for passengers, token lifetimes) are in `lib/accounts.js`. Which role each REST path needs is one table, `middleware/access.js`. Login returns a JWT with a `role` claim (`admin`, `driver` or `passenger`). Admin REST endpoints require an admin token. Driver sockets must present a driver token before `gps:fix` is accepted. Reading routes and subscribing to a route room are open.
 
+## Hosting and delivery
+
+```mermaid
+flowchart LR
+  subgraph Phones
+    DA[Driver app APK]
+    PA[Passenger app APK]
+  end
+  subgraph Vercel
+    AD[Admin dashboard<br/>static React build]
+    PW[Passenger web<br/>Expo web export]
+  end
+  subgraph Railway
+    API[Backend API<br/>Node 22, Socket.IO]
+  end
+  ATLAS[(MongoDB Atlas)]
+  DA & PA <--> API
+  AD & PW <--> API
+  API <--> ATLAS
+
+  subgraph Delivery
+    GH[GitHub<br/>pull request into dev] --> CI[CI: lint, backend with MongoDB and Redis,<br/>admin tests and build, app tests,<br/>both apps bundled, generated-copy check]
+    CI --> MAIN[merge dev into main]
+    MAIN --> RW[Railway and Vercel deploy from the branch]
+    MAIN --> EAS[EAS build, or eas update<br/>for JavaScript-only changes]
+  end
+```
+
+A change goes to `dev` through a pull request; CI must be green. `main` is what gets built and shipped. A JavaScript-only change reaches installed phone apps with `eas update` (no rebuild, the app is kept); a native change (a new native package, a permission, the icon) needs a new build, and its version code rises by itself so it installs over the old app. See [SETUP-APKS.md](SETUP-APKS.md).
+
 ## Known limits
 
 - The in-process bus state (trip progress, last fix) lives in one server process. Running several API instances would need that state moved into Redis and the Socket.IO Redis adapter.
 - A route that crosses or doubles back on itself is handled by searching near the bus's last position, which assumes fixes arrive regularly.
-- Background GPS needs an installed build (APK). Expo Go only tracks while the app is open.
+- The driver app tracks while it is open, with the screen kept awake. Tracking with the screen off needs Expo's Android foreground service, which crashed the installed build, so it is switched off (`BACKGROUND_TRACKING` in `apps/driver-app/src/services/telemetry.js`) until it is verified on a phone.
 - A route is one direction of travel. A bus driving back along the same road is projected onto the outbound path, so its stop ETAs are wrong until it is near the first stop again. Model the return leg as its own route and assign the bus to it for the return trip.
 - Going off duty closes the open trip and resets the bus's position state. The next duty period starts a new trip.
 - Passengers have no password reset: there is no email or SMS channel to send one to, so an admin would have to reset it.
 - A deleted admin's token stays valid until it expires (12 h). A deleted passenger's token (30 days) is refused by `/me` but passes other checks. The admin guard checks the token only, not the database.
 - Deleting a route or bus keeps its trip, GPS, segment and ETA logs, so logs can refer to ids that no longer exist.
-- A route stores its bus as text (`NB-4712 (BUS-002)`), not an id, and one bus can be assigned to several routes.
+- A bus belongs to one route (`Bus.routeId`, enforced by the server with a 409); a route can have many buses.
 - A bus on duty keeps streaming after it is deleted or its route changes, until the driver signs in again. On that sign-in the server sees the new route in the token, takes the bus off the old route's map (`bus:offline`) and publishes to the new route only.
 - Lists are not paginated or searchable.
 - The admin role is free text. Every admin can do everything.

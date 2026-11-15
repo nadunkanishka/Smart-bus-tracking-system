@@ -1,267 +1,125 @@
-# Smart Bus Tracking & Arrival Prediction System
+# Smart Bus Tracking and Arrival Prediction System
 
-Live bus tracking for Sri Lanka's public bus network. A driver's phone sends its GPS position, passengers watch the bus move on a map with an arrival time for every stop, and an admin manages routes, buses and drivers.
+[![CI](https://github.com/nadunkanishka/Smart-bus-tracking-system/actions/workflows/ci.yml/badge.svg)](https://github.com/nadunkanishka/Smart-bus-tracking-system/actions/workflows/ci.yml)
+[![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=nadunkanishka_smart-bus-tracking-system&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=nadunkanishka_smart-bus-tracking-system)
+![Node 22](https://img.shields.io/badge/node-22-339933)
+![Expo SDK 57](https://img.shields.io/badge/expo-SDK%2057-000020)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-| Part | Folder | What it is | Opens at |
-|---|---|---|---|
-| Backend | `backend/` | Node.js, Express, Socket.IO, MongoDB | `http://localhost:5000` |
-| Admin dashboard | `apps/admin-dashboard/` | React web app | `http://localhost:3000` |
-| Driver app | `apps/driver-app/` | Expo (React Native), phone or browser | `http://localhost:8081` |
-| Passenger app | `apps/passenger-app/` | Expo (React Native), phone or browser | `http://localhost:8082` |
+Live bus tracking for Sri Lanka's public bus network, with no hardware in the bus: the driver's own phone is the tracker. Passengers watch the bus move on a map with an arrival time for every stop, and an admin manages routes, buses and drivers. Final-year project, BEng (Hons) Software Engineering.
 
-## Folder map
+<p align="center">
+  <img src="docs/images/passenger-tracking.jpg" alt="Passenger app: Route 138 with five buses and the tracking card" height="430">
+  &nbsp;
+  <img src="docs/images/driver-route.jpg" alt="Driver app: route overview with the map and stop timeline" height="430">
+  &nbsp;
+  <img src="docs/images/driver-duty.jpg" alt="Driver app: duty screen" height="430">
+</p>
+<p align="center">
+  <img src="docs/images/admin-dashboard.jpg" alt="Admin dashboard" width="49%">
+  <img src="docs/images/admin-live-monitor.jpg" alt="Admin live monitor with simulated buses on the map" width="49%">
+</p>
+
+**Live:** [admin dashboard](https://smartbusadmin.vercel.app) · [passenger web app](https://smartbuspassenger.vercel.app) · [API health](https://smart-bus-tracking-system-production.up.railway.app/api/health) (backend on Railway, database on MongoDB Atlas, the two phone apps as Android builds).
+
+## What it does
+
+- **Driver app:** sign in with the bus, go on duty, and send a GPS position every 3 seconds. When the signal drops, positions are queued and sent in order when it returns, without loss or duplicates.
+- **Passenger app (phone and web):** pick a route and your stops, see every bus on a map, and read the predicted arrival at each stop. Your usual journey is remembered.
+- **Admin dashboard:** routes with a map editor (road path and stops), buses (many to a route, one route per bus), drivers, passengers and administrators, with search and status filters; a live monitor of connections and delivery latency; ETA accuracy and segment-time analytics; light and dark mode.
+- **Backend:** validates and smooths each fix, predicts arrival times from the route's own history, and pushes updates to the passengers on that route over Socket.IO.
+
+## How it works
+
+```mermaid
+flowchart LR
+  D[Driver app<br/>GPS every 3 s, offline queue] -- "gps:fix, gps:batch" --> API
+  subgraph API[Backend: Node.js, Express, Socket.IO]
+    P[Fix pipeline<br/>validate, Kalman smooth, snap to route] --> E[ETA engine<br/>segment times plus dwell]
+  end
+  E -- "bus:update per route room" --> U[Passenger app<br/>map and ETA per stop]
+  API <--> DB[(MongoDB<br/>routes, trips, logs)]
+  API <--> C[(Latest-fix store<br/>Redis or memory)]
+  A[Admin dashboard] <-- REST --> API
+```
+
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the full component diagram, the realtime sequence, the ETA flow and the hosting and delivery pipeline. [docs/DESIGN-DECISIONS.md](docs/DESIGN-DECISIONS.md) explains the choices and what each costs.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Node.js 22, Express 5, Socket.IO, Mongoose, optional Redis, JWT with scrypt-hashed passwords, helmet, rate limiting |
+| Admin dashboard | React (Create React App), Leaflet, anime.js |
+| Phone apps | Expo SDK 57, React Native, a map drawn by the app on Esri tiles (no map key), EAS Build and EAS Update |
+| Shared | One contract (events, statuses, ids, timing) and one design system, generated into every client and checked in CI |
+| Data | MongoDB with 2dsphere indexes and a 14-day TTL on raw GPS |
+| Hosting | MongoDB Atlas, Railway, Vercel (all on free tiers for the pilot) |
+| Quality | ESLint, 195 automated tests, GitHub Actions CI with MongoDB and Redis services, SonarCloud |
+
+## Results so far
+
+Measured with the replay simulator on one machine (simulated buses, not real traffic), so they show the system's behaviour, not field accuracy. A real pilot ride has not been run yet.
+
+| Measure | Result | How to reproduce |
+|---|---|---|
+| Delivery, phone to passenger | 10 buses, 500 fixes sent, 500 received; **average 4 ms, p95 3 ms, peak 130 ms** | `npm run replay -- --route RT-001 --buses 10 --duration 150 --quiet` |
+| GPS smoothing, 15 m noise (Route 141, simulated track) | Position error **15.6 m to 11.9 m**; at a stop **18.8 m to 7.4 m** | `node scripts/smoothing-eval.js 141` |
+
+Method, caveats and the load test are in [docs/EVALUATION.md](docs/EVALUATION.md).
+
+## Quick start
+
+With MongoDB installed and running locally:
+
+```bash
+git clone https://github.com/nadunkanishka/Smart-bus-tracking-system.git
+cd Smart-bus-tracking-system
+npm run install:all      # backend, admin dashboard and both apps
+npm run dev:backend      # http://localhost:5000 (a second terminal for the rest)
+npm run seed             # 25 Colombo routes with real road lines
+npm run dev:admin        # http://localhost:3000, sign in as admin / admin123
+```
+
+Or the whole backend with Docker (API, MongoDB and Redis): `docker compose up --build`, then `docker compose exec api node scripts/seed.js`.
+
+To try it without a phone, make simulated buses drive a route: `cd backend && npm run replay -- --route RT-001 --buses 3 --duration 120`. The passenger and driver apps run in the browser or in Expo Go: `npm run dev:passenger`, `npm run dev:driver`. Step by step, with troubleshooting: [docs/SETUP-LOCAL.md](docs/SETUP-LOCAL.md).
+
+## Testing and CI
+
+```bash
+npm run check     # ESLint, then backend, admin dashboard and app tests
+```
+
+| Suite | Tests | Covers |
+|---|---|---|
+| Backend (`node --test`) | 90 | ETA engine, Kalman smoothing, fix pipeline, trip tracker, latest-fix store (memory and Redis), auth, and the REST and Socket.IO API on a real server with a throwaway database |
+| Admin dashboard (Jest) | 57 | Sign-in flow, entity forms, list search and filters, account pages, API client |
+| Apps (`node --test`) | 48 | Telemetry decisions, bus selection, saved journey, map maths, the shared UI kit's rules |
+
+GitHub Actions runs lint, the backend against real MongoDB and Redis, the admin tests and production build, the app tests, both apps bundled for web and Android, and a check that the generated copies of `shared/` are current. SonarCloud analyses every pull request.
+
+## Project layout
 
 | Folder | Contents |
 |---|---|
-| `backend/` | API server: `routes/` (REST endpoints), `realtime.js` (live GPS), `lib/` (ETA engine), `models/` |
-| `apps/admin-dashboard/` | Admin web app: `src/pages/`, `src/components/`, `src/hooks/` |
-| `apps/driver-app/` | Driver app: `src/screens/`, `src/services/telemetry.js` |
-| `apps/passenger-app/` | Passenger app: `src/screens/`, `src/hooks/` |
-| `shared/` | Design system shared by the three apps; copied into them by `node shared/sync.js` |
-| `docs/` | Architecture, API, database, deployment, evaluation, and [where things live](docs/STRUCTURE.md) |
-| `loadtest/` | Load test used in the evaluation |
+| `backend/` | API server: `routes/`, `realtime.js`, `lib/` (fix pipeline, ETA, smoothing, store), `models/`, `test/` |
+| `apps/admin-dashboard/` | React admin web app |
+| `apps/driver-app/`, `apps/passenger-app/` | The two Expo apps |
+| `shared/` | The contract and the design system, copied into every client by `npm run sync` |
+| `docs/` | [Documentation index](docs/README.md): architecture, API, database, evaluation, setup and deployment guides |
+| `loadtest/` | Artillery load test |
 
-Looking for a specific file? [docs/STRUCTURE.md](docs/STRUCTURE.md) has a "find it fast" table. `backend/`, `shared/` and each app also have their own short README.
+## Limitations and next steps
 
-## Shortcut commands
+- The driver app tracks while it is open and the screen is awake. Tracking with the screen off needs Android's foreground service, which crashed an installed build and is switched off until it is verified on a phone.
+- ETA and latency figures above are simulated. Field figures need pilot rides with real traffic, and the stop-to-stop history improves with every trip.
+- A route is one direction of travel; a bus driving back is modelled as its own route.
+- The latest-fix store runs in memory on the free hosting; more than one API instance needs Redis.
+- Next: a pilot on Route 138 (Pettah to Homagama), a user study, Redis hosting, background tracking, Play Store release.
 
-Each part has its own `package.json` and `node_modules`. The root `package.json` only holds shortcuts, so these work from the project folder:
+More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#known-limits).
 
-| Command | Does |
-|---|---|
-| `npm run install:all` | `npm install` in the backend and the three apps |
-| `npm run dev:backend` | Start the backend with auto-restart |
-| `npm run dev:admin` | Start the admin dashboard |
-| `npm run dev:driver` / `npm run dev:passenger` | Start an Expo app (ports 8081 / 8082) |
-| `npm run seed` | Add the Colombo routes (`npm run seed -- 138` adds just one) |
-| `npm test` | Backend and admin tests |
-| `npm run build` | Production build of the admin dashboard |
-| `npm run sync` | Copy `shared/` into the apps |
+## License
 
-In VS Code, **Terminal > Run Task** offers the same commands, and **Run and Debug** can start the backend with breakpoints.
-
-The step-by-step guide below uses the long form of each command so you can see what happens.
-
----
-
-## Before you start (install once)
-
-1. **Node.js 22 or newer.** Download from <https://nodejs.org>. Check it with `node -v`.
-2. **MongoDB Community Server.** Download from <https://www.mongodb.com/try/download/community>, install it with the default settings and let it run as a service. It listens on `127.0.0.1:27017`, which is where the backend looks. (MongoDB Compass, the visual tool, is optional.)
-3. **Expo Go** on your phone, only if you want to try the apps on a real phone. Install it from the Play Store or App Store. The apps use **Expo SDK 57**, so keep Expo Go up to date: the store version only opens projects on its own SDK.
-
-You do not need Redis or Docker. Without Redis the backend keeps the latest bus positions in memory, which is fine for development.
-
----
-
-## Run everything, step by step
-
-You will use **four terminal windows**, one per part. Keep them all open while you work. Start them in this order, and **start the two Expo apps one at a time**, waiting for the first to print its QR code before starting the second (starting both together can crash one with a cache error).
-
-All commands are run from the project folder, `Smart-bus-tracking-system`.
-
-### Step 1: Backend (terminal 1)
-
-```bash
-cd backend
-npm install
-```
-
-Create the settings file. On Windows (Command Prompt):
-
-```bash
-copy .env.example .env
-```
-
-On Mac or Linux:
-
-```bash
-cp .env.example .env
-```
-
-Open `backend/.env` and set two values. Everything else can stay as it is.
-
-```
-JWT_SECRET=type-any-long-random-text-here
-ADMIN_PASSWORD=choose-a-password-for-the-admin
-```
-
-Add the Colombo routes (with road lines and stops on the map; Route 138, Pettah to Homagama, is the pilot route). You only need this once. It is safe to run again:
-
-```bash
-npm run seed
-```
-
-Start the server:
-
-```bash
-npm start
-```
-
-You should see that it is listening on port 5000 and connected to MongoDB. To check, open <http://localhost:5000/api/health> in a browser. It should show `"status":"ok"` and `"mongo":"connected"`.
-
-> **The admin account** is created the very first time the server starts, from `ADMIN_USERNAME` (default `admin`) and `ADMIN_PASSWORD`. Changing `ADMIN_PASSWORD` later does not change an account that already exists.
-
-### Step 2: Admin dashboard (terminal 2)
-
-```bash
-cd apps/admin-dashboard
-npm install
-npm start
-```
-
-Your browser opens <http://localhost:3000>. Sign in with the admin username and the `ADMIN_PASSWORD` you chose.
-
-**Create a bus for the driver app.** The driver app signs in as a bus, so one must exist first:
-
-1. Open **Buses** and choose **Add New Bus**.
-2. Enter a registration number (for example `NB-4712`), seats, mileage and a **bus password**. Remember both: the driver signs in with them.
-3. Open **Routes**, edit **Route 138** and pick your bus in **Assign Bus (From Fleet)**.
-
-### Step 3: Driver app (terminal 3)
-
-```bash
-cd apps/driver-app
-npm install
-npx expo start --port 8081
-```
-
-Open it one of two ways:
-
-- **In the browser:** press `w` in the terminal (or go to <http://localhost:8081>).
-- **On a phone:** see "Using a real phone" below first, then scan the QR code with Expo Go (Android) or the Camera app (iPhone).
-
-Sign in with the **bus registration** and **bus password** from Step 2. Then tap the big **On Duty** button to start sending the bus's position.
-
-### Step 4: Passenger app (terminal 4)
-
-Start this after the driver app has printed its QR code.
-
-```bash
-cd apps/passenger-app
-npm install
-npx expo start --port 8082
-```
-
-Open it the same way: press `w`, or go to <http://localhost:8082>, or scan the QR code.
-
-Choose **Create an account**, register, and sign in. Pick Route 138, and you will see the bus on the map as soon as a driver is on duty.
-
----
-
-## Using a real phone
-
-On a phone, `localhost` means the phone itself, not your computer, so the apps need your computer's address.
-
-1. Put the phone and the computer on the **same Wi-Fi**.
-2. Find your computer's address. On Windows run `ipconfig` and read **IPv4 Address** (for example `192.168.8.168`). On Mac run `ipconfig getifaddr en0`.
-3. In **each** app folder (`apps/driver-app` and `apps/passenger-app`), create a file named `.env` containing:
-
-   ```
-   EXPO_PUBLIC_API_URL=http://192.168.8.168:5000
-   ```
-
-   Use your own address, not this example. The file `.env.example` in each folder shows the format.
-4. Stop the app (`Ctrl+C`) and start it again with `npx expo start -c --port 8081` (use `--port 8082` for the passenger app). The `-c` clears the cache so the new address is picked up.
-5. If Windows Firewall asks about Node.js, choose **Allow**.
-
-The Android emulator needs nothing extra. It reaches your computer at `10.0.2.2` automatically.
-
----
-
-## Put it online (so phones work away from your Wi-Fi)
-
-Everything above runs on your computer. To use the system from anywhere, host it on free services. Do these in order, each has its own guide:
-
-| Step | Guide | What it gives you |
-|---|---|---|
-| 1. Database | [docs/SETUP-MONGODB.md](docs/SETUP-MONGODB.md) | A free MongoDB Atlas database holding the routes, buses and logs |
-| 2. Backend | [docs/SETUP-RAILWAY.md](docs/SETUP-RAILWAY.md) | The server on Railway, with a public address; then the admin and passenger websites on Vercel |
-| 3. Phone apps | [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Installable driver and passenger APKs built with Expo EAS, which need the backend address and a Google Maps key |
-
-The apps talk to the backend, and only the backend talks to the database:
-
-```
-phone apps and websites  ->  backend (Railway)  ->  MongoDB Atlas
-```
-
-Free hosting is for building and the pilot: the Railway trial covers about a month, and the free database has no backups, so export your data before and after each pilot day. [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) has the longer reference (Docker, Redis, environment variables, Vercel sites, free-hosting limits).
-
----
-
-## Stopping and starting again
-
-- Stop any part with `Ctrl+C` in its terminal.
-- Next time, you do **not** repeat `npm install`, `.env` or `npm run seed`. Just start MongoDB (it usually starts with Windows), then run the four start commands again in order:
-  `npm start` in `backend`, `npm start` in `apps/admin-dashboard`, `npx expo start --port 8081` in `apps/driver-app`, `npx expo start --port 8082` in `apps/passenger-app`.
-
----
-
-## If something goes wrong
-
-| What you see | What it means and what to do |
-|---|---|
-| **"Cannot reach the server. Check your connection and try again."** | The app cannot find the backend. Check Step 1 is still running and <http://localhost:5000/api/health> opens. On a real phone, follow "Using a real phone". |
-| Backend prints a MongoDB error or `"mongo":"disconnected"` | MongoDB is not running. Start the **MongoDB** service (Windows: Services, or reinstall with "Run as a service" ticked), then restart the backend. |
-| Admin sign-in says "Invalid username or password" | The admin account was created with an earlier password. Use that one, or ask for a reset. |
-| Driver sign-in fails | Use the **bus registration and bus password** you created in the dashboard, not the admin login. The bus must also be assigned to a route. |
-| Driver app says the bus has no route with a map path and stops | Run `npm run seed` in `backend`, then assign the bus to Route 138 in the dashboard. |
-| Expo crashes at start with `ENOENT … native-modules-cache` | Two Expo apps started at the same moment. Start them one at a time. If it keeps happening, delete the folder `native-modules-cache` inside `.expo` in your user folder. |
-| Expo says port 8081 or 8082 is already in use | An old copy is still running. Close its terminal, or use another port, for example `--port 8083`. |
-| Expo Go says the project is incompatible, or asks for a different SDK | The app and Expo Go are on different SDK versions. The apps are on SDK 57: update Expo Go from the store. If you change the SDK later, run `npx expo install expo@^NN.0.0` then `npx expo install --fix` in both app folders. |
-| Phone cannot load the app at all | Phone and computer must be on the same Wi-Fi. Corporate and guest Wi-Fi often block this; use your phone's hotspot instead. |
-| `Missing script: "dev"` in the admin dashboard | Use `npm start`. |
-| Buses on the map seem stuck | The driver must be **On Duty** with GPS allowed. In a desktop browser the position only changes if you move or use the simulator below. |
-
----
-
-## Try it without a phone (simulated buses)
-
-With the backend running, this makes three fake buses drive along a route for two minutes:
-
-```bash
-cd backend
-npm run replay -- --route RT-001 --buses 3 --duration 120
-```
-
-Replace `RT-001` with the route id shown in the dashboard's Routes table. To remove the simulated data afterwards, run `npm run clear-sim`.
-
----
-
-## For developers
-
-**Tests**
-
-```bash
-cd backend && npm test                              # ETA engine, GPS pipeline, API
-cd apps/admin-dashboard && npm test -- --watchAll=false
-```
-
-**The design system.** Colours, type, radii and shadows live in `shared/tokens.js`. The shared mobile components live in `shared/native/`, the bus illustrations in `shared/buses/`, and the navigation icons in `shared/native/icons.js`. After changing anything in `shared/`, copy it into the apps (the copies land in each mobile app's `src/shared/` and the admin's `src/design/`; never edit them there):
-
-```bash
-node shared/sync.js
-```
-
-To regenerate the 3D bus images (needs Edge or Chrome installed):
-
-```bash
-node shared/buses/export.mjs
-node shared/sync.js
-```
-
-Open `shared/buses/export.html` in a browser to preview every bus image.
-
-**Documentation**
-
-| Document | Contents |
-|---|---|
-| [docs/STRUCTURE.md](docs/STRUCTURE.md) | Where every kind of file lives, naming rules, how to add a screen or endpoint, environment variables |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture diagram, data flow, ETA engine, offline buffer |
-| [docs/API.md](docs/API.md) | REST endpoints and Socket.IO events |
-| [docs/DATABASE.md](docs/DATABASE.md) | MongoDB collections, indexes and Redis keys |
-| [docs/SETUP-MONGODB.md](docs/SETUP-MONGODB.md) | Step by step: the free Atlas database, loading the routes, backups |
-| [docs/SETUP-RAILWAY.md](docs/SETUP-RAILWAY.md) | Step by step: the backend on Railway, variables, CORS, testing with a simulated bus |
-| [docs/SETUP-APKS.md](docs/SETUP-APKS.md) | Step by step: building and installing the driver and passenger APKs |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Reference: Docker, Redis, environment variables, Vercel sites, free-hosting limits, post-deploy checks |
-| [docs/EVALUATION.md](docs/EVALUATION.md) | Measuring latency, ETA accuracy and load; user study |
+[MIT](LICENSE) © 2026 Nadun Kanishka

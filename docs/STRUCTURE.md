@@ -23,7 +23,7 @@ A map of the repository and the rules for adding to it. If you are looking for a
 | How the driver app captures and sends GPS | `apps/driver-app/src/services/telemetry.js` | |
 | How the admin loads and saves data | `apps/admin-dashboard/src/hooks/` | `useEntityModal.js` |
 | Colours, font sizes, spacing, shadows | `shared/tokens.js`, then run the sync | |
-| A shared mobile component (button, text field, map) | `shared/native/`, then run the sync | `shared/native/ui.js` |
+| A shared mobile component (button, text field, map) | `shared/native/` (`kit/` for the UI kit), then run the sync | `shared/native/kit/controls.js` |
 | A bus illustration | `shared/buses/`, then export and sync | |
 | The styles of one screen | the `.styles.js` file beside it | `HomeScreen.styles.js` |
 | Admin styling | `apps/admin-dashboard/src/styles/admin-theme.css` | |
@@ -52,7 +52,7 @@ backend/                 API server
     crud.js, sequence.js, rate.js   Route-file helpers, record ids, per-minute counter
   models/                Mongoose schemas
   scripts/               seed, replay (simulated buses), clear-sim-data, smoke (endpoint check, exits 1 on a wrong status), lib/rand.js
-  test/                  node --test unit tests, plus crud.test.js against a throwaway MongoDB database
+  test/                  node --test: unit tests, and api.*.test.js (REST, monitoring, limits) against a real server and a throwaway MongoDB database (helpers/api.js)
 
 apps/passenger-app/      Expo app for passengers
 apps/driver-app/         Expo app for drivers
@@ -108,7 +108,7 @@ node shared/sync.js        # or: npm run sync
 
 One component per file. Imports are relative and never deeper than `../`.
 
-Two files are deliberately large: `shared/native/ui.js` (the mobile UI kit: many small components that are synced as one unit) and `apps/admin-dashboard/src/styles/admin-theme.css` (later sections override earlier ones, so the order must stay intact).
+One file is deliberately large: `apps/admin-dashboard/src/styles/admin-theme.css` (later sections override earlier ones, so the order must stay intact). The mobile UI kit is split by concern in `shared/native/kit/`.
 
 ## Adding things
 
