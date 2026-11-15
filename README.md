@@ -9,11 +9,13 @@
 Live bus tracking for Sri Lanka's public bus network, with no hardware in the bus: the driver's own phone is the tracker. Passengers watch the bus move on a map with an arrival time for every stop, and an admin manages routes, buses and drivers. Final-year project, BEng (Hons) Software Engineering.
 
 <p align="center">
-  <img src="docs/images/passenger-tracking.jpg" alt="Passenger app: Route 138 with five buses and the tracking card" height="430">
+  <img src="docs/images/passenger-home.jpg" alt="Passenger app: home with the live bus, quick actions and stat tiles" height="430">
+  &nbsp;
+  <img src="docs/images/passenger-tracking.jpg" alt="Passenger app: Route 138 with four buses and the tracking card" height="430">
+  &nbsp;
+  <img src="docs/images/driver-duty.jpg" alt="Driver app: duty screen with the black duty card" height="430">
   &nbsp;
   <img src="docs/images/driver-route.jpg" alt="Driver app: route overview with the map and stop timeline" height="430">
-  &nbsp;
-  <img src="docs/images/driver-duty.jpg" alt="Driver app: duty screen" height="430">
 </p>
 <p align="center">
   <img src="docs/images/admin-dashboard.jpg" alt="Admin dashboard" width="49%">
@@ -25,7 +27,7 @@ Live bus tracking for Sri Lanka's public bus network, with no hardware in the bu
 ## What it does
 
 - **Driver app:** sign in with the bus, go on duty, and send a GPS position every 3 seconds. When the signal drops, positions are queued and sent in order when it returns, without loss or duplicates.
-- **Passenger app (phone and web):** pick a route and your stops, see every bus on a map, and read the predicted arrival at each stop. Your usual journey is remembered.
+- **Passenger app (phone and web):** pick a route and your stops, see every bus on a map, and read the predicted arrival at each stop. Your usual journey is remembered. Light and dark mode.
 - **Admin dashboard:** routes with a map editor (road path and stops), buses (many to a route, one route per bus), drivers, passengers and administrators, with search and status filters; a live monitor of connections and delivery latency; ETA accuracy and segment-time analytics; light and dark mode.
 - **Backend:** validates and smooths each fix, predicts arrival times from the route's own history, and pushes updates to the passengers on that route over Socket.IO.
 
@@ -51,7 +53,7 @@ flowchart LR
 |---|---|
 | Backend | Node.js 22, Express 5, Socket.IO, Mongoose, optional Redis, JWT with scrypt-hashed passwords, helmet, rate limiting |
 | Admin dashboard | React (Create React App), Leaflet, anime.js |
-| Phone apps | Expo SDK 57, React Native, a map drawn by the app on Esri tiles (no map key), EAS Build and EAS Update |
+| Phone apps | Expo SDK 57, React Native, a flat black-and-orange design (no gradients, light and dark), a map drawn by the app on Esri tiles (no map key), EAS Build and EAS Update |
 | Shared | One contract (events, statuses, ids, timing) and one design system, generated into every client and checked in CI |
 | Data | MongoDB with 2dsphere indexes and a 14-day TTL on raw GPS |
 | Hosting | MongoDB Atlas, Railway, Vercel (all on free tiers for the pilot) |
