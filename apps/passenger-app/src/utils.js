@@ -4,13 +4,14 @@ import { GONE_AFTER_MS, LIVE_WINDOW_MS } from './shared/contract';
 
 // Which bus matters to this passenger: the next one still coming to the boarding stop; otherwise one that has
 // passed it and is heading to the destination; otherwise any live bus on the route.
-// A trip from a later stop to an earlier one runs the other way ('back'). A bus on the other leg is shown with its
-// `nextStops`: the stops of the leg it will run after the terminal, so the wait to the terminal and the turnaround are in the time.
+// A trip from a later stop to an earlier one runs the other way ('back'). Only buses on that leg count: a bus that
+// started from the other terminal is not shown (it joins the other trip once it turns round at the end).
 export function pickBus(all, boardingIndex, destinationIndex, boardingStop, destinationStop) {
   const dir = destinationIndex >= boardingIndex ? 'out' : 'back';
-  const fresh = all.filter((b) => !b.stale);
+  const onLeg = all.filter((b) => (b.direction || 'out') === dir);
+  const fresh = onLeg.filter((b) => !b.stale);
   // a bus that lost signal is only tracked when nothing else is live
-  const list = (fresh.length ? fresh : all).map((b) => ((b.direction || 'out') === dir ? b : { ...b, stops: b.nextStops || [] }));
+  const list = fresh.length ? fresh : onLeg;
   // The stop is found by name in the bus's own update; the index is only the fallback. The passenger's copy of the route can
   // be older than the bus's (a stop added or removed in the admin since the app loaded), and then the indices disagree.
   const at = (bus, name, fallback) => { const k = name ? (bus.stops || []).findIndex((s) => s.name === name) : -1; return k >= 0 ? k : dir === 'back' ? (bus.stops || []).length - 1 - fallback : fallback; };

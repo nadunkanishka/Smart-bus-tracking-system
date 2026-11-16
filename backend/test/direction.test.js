@@ -49,6 +49,22 @@ test('a bus whose first fix is at the far terminal starts on the return leg', as
   assert.equal(s.published[0].direction, 'back');
 });
 
+test('a bus that starts past the half way point but heads towards the far end runs the outbound leg', async () => {
+  const s = setup();
+  await s.send(0, [0.009, 0.0036]); // nearer S2, so guessed as 'back'
+  assert.equal(s.bus.direction, 'back');
+  await s.send(10, [0.009, 0.0054]); // moving towards S2: outbound
+  assert.equal(s.bus.direction, 'out');
+  assert.equal(s.published[1].direction, 'out');
+});
+
+test('a bus that starts mid-route and heads back towards the first stop runs the return leg', async () => {
+  const s = setup();
+  await s.send(0, [0.0054, 0]); // nearer S0 side, guessed 'out'
+  await s.send(10, [0.0036, 0]); // moving towards S0
+  assert.equal(s.bus.direction, 'back');
+});
+
 test('a bus on either leg publishes the other leg with the wait built in', async () => {
   const s = setup();
   await s.send(0, [0.0045, 0]); // half way up the first side, still going out

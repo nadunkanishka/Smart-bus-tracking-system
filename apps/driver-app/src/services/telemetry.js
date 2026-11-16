@@ -109,7 +109,7 @@ export async function connect(token) {
   socket = io(API_URL, { auth: { token }, transports: ['websocket'], reconnectionDelayMax: TIMING.RECONNECT_MAX_MS });
   socket.on('connect', () => {
     status.connected = true;
-    if (status.onDuty) socket.emit(EVENTS.DUTY, { onDuty: true });
+    if (status.onDuty) socket.emit(EVENTS.DUTY, { onDuty: true, direction: status.direction }); // the leg it is on now
     notify();
     flush();
   });
@@ -118,12 +118,14 @@ export async function connect(token) {
 }
 
 // notificationColor: the accent of the Android "on duty" notification (the caller passes the theme colour).
-export async function startDuty({ notificationColor } = {}) {
+// direction: 'out' (starting from the first stop) or 'back' (from the last stop), chosen by the driver.
+export async function startDuty({ notificationColor, direction } = {}) {
   const fg = await Location.requestForegroundPermissionsAsync();
   if (fg.status !== 'granted') throw new Error('Location permission is needed to share the bus position.');
 
   status.onDuty = true;
-  socket?.emit(EVENTS.DUTY, { onDuty: true });
+  status.direction = direction || null;
+  socket?.emit(EVENTS.DUTY, { onDuty: true, direction });
 
   let background = false;
   if (BACKGROUND_TRACKING && Platform.OS !== 'web') {
