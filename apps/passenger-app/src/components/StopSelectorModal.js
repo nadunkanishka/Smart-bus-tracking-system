@@ -1,145 +1,76 @@
 import React, { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { COLORS } from '../shared/theme';
 import { Button, Chip, Sheet, Tap, SheetModal } from '../shared/ui';
-import { CheckIcon, ChevronDownIcon, FlagIcon, MapPinIcon } from '../shared/icons';
+import { CheckIcon } from '../shared/icons';
 import { useS } from './StopSelectorModal.styles';
 
-// trip: the route list and stop selection from useRoutes. Which picker is unfolded is the modal's own state.
+// One simple trip picker: choose the route (one scrolling row), then tap From or To and tap a stop in the list. Tapping a stop
+// fills the active box and moves on to the other one. The swap button flips the trip. Each stop shows the live bus time.
+// trip: the route list and stop selection from useRoutes.
 export function StopSelectorModal({ visible, onClose, trip, tracked }) {
   const S = useS();
+  const { height } = useWindowDimensions();
   const { routes, selectedRoute, selectRoute, boardingStop, setBoardingStop, destinationStop, setDestinationStop, boardingIndex, destinationIndex } = trip;
-  const [isBoardingOpen, setIsBoardingOpen] = useState(false);
-  const [isDestOpen, setIsDestOpen] = useState(false);
+  const [target, setTarget] = useState('from'); // which box the next tap on a stop fills
+  const pick = (stop) => {
+    if (target === 'from') { setBoardingStop(stop); setTarget('to'); } else { setDestinationStop(stop); setTarget('from'); }
+  };
+  const swap = () => { const b = boardingStop; setBoardingStop(destinationStop); setDestinationStop(b); };
   return (
     <SheetModal visible={visible} onClose={onClose}>
-        <Sheet>
-          <View style={S.modalHandleRow}>
-            <View style={S.modalHandle} />
-          </View>
+      <Sheet>
+        <View style={S.modalHandleRow}><View style={S.modalHandle} /></View>
 
-          <View style={S.modalHeaderRow}>
-            <Text style={S.modalTitle}>Select Your Stops</Text>
-            <Button title="Done" tone="primary" size="sm" full={false} onPress={onClose} />
-          </View>
+        <View style={S.modalHeaderRow}>
+          <Text style={S.modalTitle}>Your trip</Text>
+          <Button title="Done" tone="primary" size="sm" full={false} onPress={onClose} />
+        </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={S.modalSectionLabel}>Active route</Text>
-            <View style={S.routeChipsRow}>
-              {routes.map(r => (
-                <Chip
-                  key={r.id}
-                  label={r.shortName}
-                  selected={selectedRoute.id === r.id}
-                  tone="primary"
-                  onPress={() => {
-                    selectRoute(r);
-                    setIsBoardingOpen(false);
-                    setIsDestOpen(false);
-                  }}
-                />
-              ))}
-            </View>
-
-            <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Boarding stop</Text>
-            <Tap
-              style={S.dropdownTrigger}
-              onPress={() => { setIsBoardingOpen(p => !p); setIsDestOpen(false); }}
-            >
-              <View style={S.dropdownTriggerLeft}>
-                <MapPinIcon color={COLORS.accent} size={18} />
-                <Text style={S.dropdownTriggerText}>{boardingStop || '—'}</Text>
-              </View>
-              <ChevronDownIcon color={COLORS.muted} size={16} />
-            </Tap>
-            {isBoardingOpen && (
-              <View style={S.dropdownList}>
-                {selectedRoute.stops.map((stop, idx) => (
-                  <Tap
-                    key={idx}
-                    style={[S.dropdownItem, boardingStop === stop && S.dropdownItemActive]}
-                    onPress={() => { setBoardingStop(stop); setIsBoardingOpen(false); }}
-                  >
-                    <Text style={[S.dropdownItemText, boardingStop === stop && S.dropdownItemTextActive]}>
-                      {stop}
-                    </Text>
-                    {boardingStop === stop && <CheckIcon color={COLORS.accentText} size={14} />}
-                  </Tap>
-                ))}
-              </View>
-            )}
-
-            <Text style={[S.modalSectionLabel, S.modalSectionGap]}>Destination stop</Text>
-            <Tap
-              style={S.dropdownTrigger}
-              onPress={() => { setIsDestOpen(p => !p); setIsBoardingOpen(false); }}
-            >
-              <View style={S.dropdownTriggerLeft}>
-                <FlagIcon color={COLORS.accent} size={18} />
-                <Text style={S.dropdownTriggerText}>{destinationStop || '—'}</Text>
-              </View>
-              <ChevronDownIcon color={COLORS.muted} size={16} />
-            </Tap>
-            {isDestOpen && (
-              <View style={S.dropdownList}>
-                {selectedRoute.stops.map((stop, idx) => (
-                  <Tap
-                    key={idx}
-                    style={[S.dropdownItem, destinationStop === stop && S.dropdownItemActive]}
-                    onPress={() => { setDestinationStop(stop); setIsDestOpen(false); }}
-                  >
-                    <Text style={[S.dropdownItemText, destinationStop === stop && S.dropdownItemTextActive]}>
-                      {stop}
-                    </Text>
-                    {destinationStop === stop && <CheckIcon color={COLORS.accentText} size={14} />}
-                  </Tap>
-                ))}
-              </View>
-            )}
-
-            {/* Timeline: live arrival time at every stop for the tracked bus */}
-            <Text style={[S.modalSectionLabel, S.modalSectionGapLg]}>Route timeline</Text>
-            <View style={S.timelineContainer}>
-              {selectedRoute.stops.map((stop, idx) => {
-                const live = tracked?.bus.stops?.find((s) => s.name === stop); // the bus's stops run in its own direction
-                const isPassed = live ? live.status === 'passed' : false;
-                const isBoarding = idx === boardingIndex;
-                const isDestination = idx === destinationIndex;
-                const isActive = idx > Math.min(boardingIndex, destinationIndex) && idx < Math.max(boardingIndex, destinationIndex);
-                return (
-                  <View key={idx} style={S.timelineRow}>
-                    <View style={S.timelineLeft}>
-                      <View style={[
-                        S.timelineDot,
-                        isPassed && S.dotPassed,
-                        isBoarding && S.dotBoarding,
-                        isDestination && S.dotDestination,
-                        isActive && !isDestination && S.dotActive,
-                      ]}>
-                        {isPassed ? <CheckIcon color={COLORS.onBright} size={11} /> : null}
-                      </View>
-                      {idx < selectedRoute.stops.length - 1 && (
-                        <View style={[S.timelineLineV, isPassed && S.lineVPassed]} />
-                      )}
-                    </View>
-                    <View style={S.timelineRight}>
-                      <Text style={[
-                        S.timelineStopName,
-                        (isBoarding || isDestination) && S.timelineStopNameHighlight,
-                      ]}>
-                        {stop}
-                      </Text>
-                      <Text style={S.timelineTag}>
-                        {isBoarding ? 'Boarding stop · ' : isDestination ? 'Destination · ' : ''}
-                        {!live ? 'No live bus' : isPassed ? 'Bus passed' : `Bus in ${live.etaMin} min`}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
+        <ScrollView style={[S.listScroll, { maxHeight: Math.round(height * 0.62) }]} showsVerticalScrollIndicator={false}>
+          <Text style={S.modalSectionLabel}>Route</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.routeChipsRow}>
+            {routes.map((r) => (
+              <Chip key={r.id} label={r.shortName} selected={selectedRoute.id === r.id} onPress={() => { selectRoute(r); setTarget('from'); }} />
+            ))}
           </ScrollView>
-        </Sheet>
+
+          <View style={S.tripRow}>
+            <Tap style={[S.tripBox, S.tripFrom, target === 'from' && S.tripActive]} onPress={() => setTarget('from')} accessibilityRole="button" accessibilityLabel={`From: ${boardingStop || 'none'}`}>
+              <Text style={S.tripLabel}>From</Text>
+              <Text style={S.tripStop} numberOfLines={2}>{boardingStop || '—'}</Text>
+            </Tap>
+            <Tap style={S.swap} onPress={swap} accessibilityRole="button" accessibilityLabel="Swap from and to">
+              <Text style={S.swapText}>⇄</Text>
+            </Tap>
+            <Tap style={[S.tripBox, S.tripTo, target === 'to' && S.tripActive]} onPress={() => setTarget('to')} accessibilityRole="button" accessibilityLabel={`To: ${destinationStop || 'none'}`}>
+              <Text style={S.tripLabelBlue}>To</Text>
+              <Text style={S.tripStopBlue} numberOfLines={2}>{destinationStop || '—'}</Text>
+            </Tap>
+          </View>
+
+          <Text style={S.modalSectionLabel}>{target === 'from' ? 'Tap the stop you board at' : 'Tap the stop you get off at'}</Text>
+          {selectedRoute.stops.map((stop, idx) => {
+            const live = tracked?.bus.stops?.find((s) => s.name === stop); // the bus's stops run in its own direction
+            const isPassed = live ? live.status === 'passed' : false;
+            const isFrom = idx === boardingIndex;
+            const isTo = idx === destinationIndex;
+            return (
+              <Tap key={idx} style={[S.stopRow, isFrom && S.stopRowFrom, isTo && S.stopRowTo]} onPress={() => pick(stop)} accessibilityRole="button" accessibilityLabel={`${stop}${isFrom ? ', from' : isTo ? ', to' : ''}`}>
+                <View style={[S.stopNum, (isFrom || isTo) && S.stopNumOn]}>
+                  {isPassed ? <CheckIcon color={COLORS.ink} size={12} /> : <Text style={S.stopNumText}>{String(idx + 1).padStart(2, '0')}</Text>}
+                </View>
+                <View style={S.flexOne}>
+                  <Text style={[S.stopName, (isFrom || isTo) && S.stopNameOn]} numberOfLines={1}>{stop}</Text>
+                  <Text style={[S.stopSub, isTo && S.stopSubBlue]}>
+                    {isFrom ? 'From · ' : isTo ? 'To · ' : ''}{!live ? 'No live bus' : isPassed ? 'Bus passed' : `Bus in ${live.etaMin} min`}
+                  </Text>
+                </View>
+              </Tap>
+            );
+          })}
+        </ScrollView>
+      </Sheet>
     </SheetModal>
   );
 }
