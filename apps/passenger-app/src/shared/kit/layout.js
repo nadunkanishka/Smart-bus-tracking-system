@@ -84,7 +84,7 @@ export const AppBackdrop = themed(function AppBackdrop() {
   return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.bg }]} />;
 });
 
-// Navigation icon: Lucide outline. The current item sits on an orange circle, so it is drawn in night; idle items are muted.
+// Navigation icon: Lucide outline. The current item sits on a black circle, so its icon is white; idle items are muted.
 const NAV_GLYPHS = { home: House, arrow: Navigation, route: RouteGlyph, user: User, gauge: Gauge, people: Users, bus: BusGlyph, pulse: Activity, chart: ChartColumn };
 export const NavIcon = themed(function NavIcon({ name, active, size = 24 }) {
   const Glyph = NAV_GLYPHS[name] || House;
@@ -110,12 +110,12 @@ export const FloatingDock = themed(function FloatingDock({ items, active, onChan
     >
       <View
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.line, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between' }}
+        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.pill, padding: 6, width: '100%', maxWidth: 420, justifyContent: 'space-between' }}
       >
         {itemW ? (
           <Animated.View
             pointerEvents="none"
-            style={{ position: 'absolute', top: 8, left: 6 + (itemW - 42) / 2, width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.orange, transform: [{ translateX: x.interpolate({ inputRange: [0, n - 1 || 1], outputRange: [0, itemW * (n - 1)] }) }] }}
+            style={{ position: 'absolute', top: 8, left: 6 + (itemW - 42) / 2, width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.primaryStrong, transform: [{ translateX: x.interpolate({ inputRange: [0, n - 1 || 1], outputRange: [0, itemW * (n - 1)] }) }] }}
           />
         ) : null}
         {items.map((item) => {
@@ -145,19 +145,19 @@ export const FloatingDock = themed(function FloatingDock({ items, active, onChan
 // icon: (color) => element. tone: 'orange' (peach) | 'purple' (blue).
 export const NotchStat = themed(function NotchStat({ label, value, tone = 'orange', icon, valueColor, style, pill, pillTone = 'green' }) {
   const dark = tone === 'ink';
-  const [wash, ink] = dark ? [COLORS.orange, COLORS.onBright] : tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];
+  const [wash, ink] = dark ? ['rgba(255, 255, 255, 0.14)', COLORS.onCard] : tone === 'purple' ? [COLORS.accentSoft, COLORS.accentText] : [COLORS.primaryLight, COLORS.primaryDeep];
   // The pill: green for live, red for a problem, otherwise a quiet neutral one (readable on both card colours).
   const neutral = pillTone !== 'red' && pillTone !== 'green';
-  const pillBg = pillTone === 'red' ? COLORS.danger : neutral ? (dark ? 'rgba(255, 255, 255, 0.14)' : COLORS.surfaceSoft) : COLORS.green;
-  const pillFg = neutral ? (dark ? COLORS.onCard : COLORS.muted) : COLORS.onBright;
+  const pillBg = pillTone === 'red' ? COLORS.danger : neutral ? (dark ? 'rgba(255, 255, 255, 0.14)' : COLORS.surfaceSoft) : COLORS.success;
+  const pillFg = neutral ? (dark ? COLORS.onCard : COLORS.muted) : COLORS.white;
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 112, backgroundColor: dark ? COLORS.card : COLORS.surface, borderRadius: RADII.lg, padding: 16, gap: 2, justifyContent: 'space-between' }, style]}>
+    <View accessible accessibilityLabel={`${label}: ${value}`} style={[{ flex: 1, minHeight: 112, backgroundColor: dark ? COLORS.card : COLORS.surface, borderWidth: dark ? 0 : 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: 16, gap: 2, justifyContent: 'space-between' }, style]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ ...TYPE.small, ...FONT, color: dark ? COLORS.cardMuted : COLORS.muted, flexShrink: 1 }} numberOfLines={1}>{label}</Text>
         {icon ? <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: wash, alignItems: 'center', justifyContent: 'center' }}>{icon(ink)}</View> : null}
       </View>
       {typeof value === 'string' || typeof value === 'number'
-        ? <Text style={{ ...(String(value).length > 7 ? TYPE.bodyBold : TYPE.h2), ...FONT, color: valueColor || (dark ? COLORS.orange : COLORS.ink) }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+        ? <Text style={{ ...(String(value).length > 7 ? TYPE.bodyBold : TYPE.h2), ...FONT, color: valueColor || (dark ? COLORS.onCard : COLORS.ink) }} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
         : value}
       {pill ? <View style={{ alignSelf: 'flex-start', backgroundColor: pillBg, borderRadius: RADII.pill, paddingHorizontal: 10, paddingVertical: 3 }}><Text style={{ ...TYPE.caption, ...FONT, color: pillFg }}>{pill}</Text></View> : null}
     </View>

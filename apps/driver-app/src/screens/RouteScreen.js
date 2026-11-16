@@ -68,7 +68,7 @@ export function RouteScreen({ session, duty }) {
                     isPassed && D.dotPassed,
                     isCurrent && D.dotCurrent,
                   ]}>
-                    {isPassed ? <CheckIcon color={COLORS.onBright} size={7} /> : null}
+                    {isPassed ? <CheckIcon color={COLORS.onBright} size={11} /> : null}
                     {isCurrent ? <View style={D.dotCurrentInner} /> : null}
                   </View>
                   {idx < legStops.length - 1 && (

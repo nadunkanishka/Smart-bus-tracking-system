@@ -1,26 +1,26 @@
-// SmartBus mobile design tokens: a flat, two-colour skin (black and orange on white), no gradients, no glow, no shadows.
+// SmartBus mobile design tokens: a quiet monochrome skin (black, white and soft grey, with orange only as a small accent), no gradients, no glow, no shadows.
 // `npm run sync` copies this into both phone apps (src/shared/theme.js). The admin dashboard has its own tokens in
 // adminTokens.json, which sync.js turns into CSS variables.
 
-// Orange is the one action colour, black the one strong colour. Green marks anything active or live (a running bus, a
+// Black is the one strong colour (buttons, the selected tab, the hero card); orange is a small accent (the route line, progress). Green marks anything active or live (a running bus, a
 // connected server): a status colour, not a brand colour. Red is only for destructive actions.
 export const PALETTE = { night: '#0E0E0F', orange: '#FF7A00', red: '#D92D20', green: '#1FA95B' };
 
 // Semantic names stay the same in both modes. Rules the apps rely on:
 //   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
-//   onBright is always night: text on orange, never `ink` or `white` (white on this orange is 2.7:1, night is 8:1).
+//   onBright: text on a primary fill (black in light mode, near-white in dark): never on the orange accent.
 //   card / onCard: the black card (a hero, a stat) and its text; in dark mode the card is a lighter grey than the page.
 const LIGHT = {
-  bg: '#FFFFFF',
-  surface: '#F5F5F6', // cards and rows
-  surfaceSoft: '#ECECEE', // inactive pills, inputs, tracks
-  line: '#E6E6E9',
+  bg: '#EDEDEF', // soft grey page, white cards on it
+  surface: '#FFFFFF', // cards and rows
+  surfaceSoft: '#E4E4E7', // inactive pills, inputs, tracks
+  line: '#DEDEE2',
   outline: '#CFCFD4', // input borders
   ring: 'rgba(14, 14, 15, 0.45)', // keyboard focus ring
-  glass: '#F5F5F6', // kept as the card fill name used across the screens: flat, not translucent
+  glass: '#FFFFFF', // the card fill name used across the screens
   scrim: 'rgba(14, 14, 15, 0.4)', // behind sheets and dialogs
   mapChrome: 'rgba(255, 255, 255, 0.8)',
-  glassLine: 'rgba(14, 14, 15, 0)', // no card borders
+  glassLine: '#E1E1E5', // hairline card border
   glowA: 'rgba(0, 0, 0, 0)',
   glowB: 'rgba(0, 0, 0, 0)',
   orange: PALETTE.orange,
@@ -30,11 +30,11 @@ const LIGHT = {
   heroShape: PALETTE.orange,
   backdrop: PALETTE.orange,
 
-  primary: PALETTE.orange,
-  primaryLight: '#FFE5CC',
-  primaryDeep: '#A64B00',
-  primaryStrong: PALETTE.orange,
-  primarySoft: '#FFF0E0',
+  primary: PALETTE.night,
+  primaryLight: '#E4E4E7',
+  primaryDeep: PALETTE.night,
+  primaryStrong: PALETTE.night,
+  primarySoft: '#F1F1F3',
   accent: PALETTE.night,
   accentText: '#0E0E0F',
   accentSoft: '#ECECEE',
@@ -57,11 +57,11 @@ const LIGHT = {
   danger: PALETTE.red,
   dangerSoft: '#FDE4E1',
 
-  onBright: PALETTE.night,
+  onBright: '#FFFFFF',
   glow: 'rgba(0, 0, 0, 0)',
 
-  tints: { bus: ['#F5F5F6', '#F5F5F6'] },
-  tintLines: { bus: '#F5F5F6' },
+  tints: { bus: ['#FFFFFF', '#FFFFFF'] },
+  tintLines: { bus: '#FFFFFF' },
 
   white: '#FFFFFF',
 };
@@ -76,7 +76,7 @@ const DARK = {
   glass: '#161618',
   scrim: 'rgba(0, 0, 0, 0.6)',
   mapChrome: 'rgba(11, 11, 12, 0.8)',
-  glassLine: 'rgba(255, 255, 255, 0)',
+  glassLine: '#26262A',
   glowA: 'rgba(0, 0, 0, 0)',
   glowB: 'rgba(0, 0, 0, 0)',
   orange: PALETTE.orange,
@@ -86,11 +86,11 @@ const DARK = {
   heroShape: PALETTE.orange,
   backdrop: PALETTE.orange,
 
-  primary: PALETTE.orange,
-  primaryLight: '#3A2410',
-  primaryDeep: '#FFA24D',
-  primaryStrong: PALETTE.orange,
-  primarySoft: '#2A1A0C',
+  primary: '#F4F4F5',
+  primaryLight: '#2A2A2E',
+  primaryDeep: '#F4F4F5',
+  primaryStrong: '#F4F4F5',
+  primarySoft: '#1E1E21',
   accent: '#F4F4F5',
   accentText: '#F4F4F5',
   accentSoft: '#232326',
@@ -113,7 +113,7 @@ const DARK = {
   danger: '#FF7A6E',
   dangerSoft: '#3F1C1A',
 
-  onBright: PALETTE.night,
+  onBright: '#0E0E0F',
   glow: 'rgba(0, 0, 0, 0)',
 
   tints: { bus: ['#161618', '#161618'] },
@@ -143,7 +143,7 @@ export const EASE_OUT = [0.23, 1, 0.32, 1];
 
 // Type scale: one fixed size + line-height + weight per role. Headings are large and tight, like the reference.
 export const TYPE = {
-  display: { fontSize: 36, lineHeight: 40, fontWeight: '800', letterSpacing: -1.2 },
+  display: { fontSize: 40, lineHeight: 44, fontWeight: '800', letterSpacing: -1.6 },
   h1: { fontSize: 28, lineHeight: 33, fontWeight: '800', letterSpacing: -0.8 },
   h2: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.4 },
   h3: { fontSize: 18, lineHeight: 24, fontWeight: '700', letterSpacing: -0.2 },

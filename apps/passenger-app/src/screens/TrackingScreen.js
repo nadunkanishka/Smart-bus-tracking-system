@@ -43,7 +43,7 @@ export function TrackingScreen({
 
   // The one-line state of the tracked route for the card at the top: which bus, and what it means for this passenger.
   const noBus = conn === 'connected' ? 'No bus on this route right now' : 'Reconnecting…';
-  const headline = bus ? `${bus.registration} · ${trackedSummary(tracked, boardingStop, destinationStop)}` : noBus;
+  const headline = bus ? trackedSummary(tracked, boardingStop, destinationStop) : noBus; // the registration is on the card below
 
   return (
     <View style={S.flex}>
@@ -65,7 +65,7 @@ export function TrackingScreen({
             <ConnectionChip conn={conn} />
             <View style={S.mapHeaderText}>
               <Text style={S.mapHeaderTitle} numberOfLines={1}>{selectedRoute.shortName}</Text>
-              <Text style={S.mapHeaderStatus} numberOfLines={1}>{headline}</Text>
+              <Text style={S.mapHeaderStatus} numberOfLines={2}>{headline}</Text>
             </View>
           </View>
           <IconButton label="Change stops" onPress={onOpenStops} tone="soft" size={44}>

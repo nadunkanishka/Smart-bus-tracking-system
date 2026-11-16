@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
+import { COLORS, RADII, SPACE } from '../shared/theme';
 import { buildCommon } from '../styles/common';
 import { TOP_INSET, type } from '../shared/ui';
 
@@ -15,8 +15,7 @@ export const useS = createStyles(() => ({
     mapHeaderInner: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, paddingLeft: SPACE[4], paddingRight: SPACE[2], paddingVertical: SPACE[2],
-      ...SHADOWS.md,
-    },
+      },
     mapHeaderLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACE[3] },
     mapHeaderText: { flex: 1 },
     mapHeaderTitle: { ...type('h3'), color: COLORS.ink },
@@ -25,16 +24,14 @@ export const useS = createStyles(() => ({
       position: 'absolute', top: TOP_INSET + 8 + 72 + 8, left: 16, right: 16, zIndex: 20,
       flexDirection: 'row', alignItems: 'flex-start',
       backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[3],
-      ...SHADOWS.md,
-    },
+      },
     stopDotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primaryStrong },
     stopDotOrange: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.accent },
     stopSelectorDivider: { width: 28, alignItems: 'center', justifyContent: 'flex-end', height: 70 },
     summaryCard: {
       position: 'absolute', left: 16, right: 16, bottom: 104,
       backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.xl, padding: SPACE[5],
-      ...SHADOWS.lg,
-    },
+      },
     sheetTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[4], gap: SPACE[3] },
     sheetMetaLabel: { ...type('caption'), color: COLORS.muted },
     sheetBookingId: { ...type('h2'), color: COLORS.ink },

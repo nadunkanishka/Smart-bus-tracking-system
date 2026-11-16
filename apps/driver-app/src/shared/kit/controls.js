@@ -8,11 +8,11 @@ import { useTheme } from '../themeRuntime';
 import { EASE_OUT, FONT, IS_WEB, PRESS_WEB, native, themed, useReducedMotion, webRing } from './core';
 
 // ─── Surfaces ───────────────────────────────────────────────────────────────
-// A flat card. tint 'bus' (the default) is the light grey card, 'hero' the orange card, 'ink' the black card whose text is
-// white (onCard). No gradient, no border, no shadow: the colour is the separation. (The name is from the old skin.)
+// A flat card. tint 'bus' (the default) is the white card with a hairline border, 'hero' and 'ink' the black card whose
+// text is white (onCard). No gradient, no shadow. (The name is from the old skin.)
 export const GradientCard = themed(function GradientCard({ tint = 'bus', style, children }) {
-  const fill = tint === 'hero' ? COLORS.orange : tint === 'ink' ? COLORS.card : COLORS.surface;
-  return <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', backgroundColor: fill }, style]}>{children}</View>;
+  const fill = tint === 'hero' ? COLORS.card : tint === 'ink' ? COLORS.card : COLORS.surface;
+  return <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', backgroundColor: fill, borderWidth: fill === COLORS.surface ? 1 : 0, borderColor: COLORS.glassLine }, style]}>{children}</View>;
 });
 
 export const Banner = themed(function Banner({ tone = 'danger', children }) {
@@ -30,7 +30,7 @@ const tones = () => ({
   ink: { bg: COLORS.ink, fg: COLORS.white },
   primary: { bg: COLORS.primaryStrong, fg: COLORS.onBright },
   accent: { bg: COLORS.accent, fg: COLORS.onBright },
-  orange: { bg: COLORS.orange, fg: COLORS.onBright },
+  orange: { bg: COLORS.orange, fg: '#0E0E0F' },
   soft: { bg: COLORS.surfaceSoft, fg: COLORS.ink },
   dangerSoft: { bg: COLORS.dangerSoft, fg: COLORS.danger },
   glass: { bg: COLORS.surface, fg: COLORS.ink },
