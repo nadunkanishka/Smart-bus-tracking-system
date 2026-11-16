@@ -132,11 +132,13 @@ export function TrackingScreen({
                 <Text style={S.sheetMetaLabel}>{liveCount > 1 ? `Nearest of ${liveCount} buses` : 'Bus'}</Text>
                 <Text style={S.sheetBookingId}>{bus.registration}</Text>
               </View>
-              <View style={[S.transitBadge, bus.stale && S.transitBadgeWarn]}>
-                <Text style={[S.transitBadgeText, bus.stale && S.transitBadgeTextWarn]}>
-                  {bus.stale ? 'Signal lost' : tracked.phase === 'coming' ? `${tracked.etaMin} min away` : 'In transit'}
-                </Text>
-              </View>
+              {!bus.stale && tracked.phase === 'coming' ? (
+                <Text style={S.sheetEta} accessibilityLabel={`${tracked.etaMin} minutes away`}>{tracked.etaMin}<Text style={S.sheetEtaUnit}> min</Text></Text>
+              ) : (
+                <View style={[S.transitBadge, bus.stale && S.transitBadgeWarn]}>
+                  <Text style={[S.transitBadgeText, bus.stale && S.transitBadgeTextWarn]}>{bus.stale ? 'Signal lost' : 'In transit'}</Text>
+                </View>
+              )}
             </View>
 
             <View style={S.progressBlock}>

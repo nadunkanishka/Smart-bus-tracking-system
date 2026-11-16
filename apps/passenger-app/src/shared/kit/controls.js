@@ -158,7 +158,7 @@ export const TextField = themed(function TextField({ label, icon, error, hint, s
       <View
         style={{
           minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[4], borderRadius: RADII.md,
-          backgroundColor: COLORS.surface, borderWidth: 1.5,
+          backgroundColor: COLORS.surfaceSoft, borderWidth: 1.5,
           borderColor: error ? COLORS.danger : focused ? COLORS.ink : 'transparent',
           ...(IS_WEB && focused ? { boxShadow: error ? `0 0 0 4px ${COLORS.dangerSoft}` : `0 0 0 4px ${COLORS.primaryLight}` } : null),
         }}
