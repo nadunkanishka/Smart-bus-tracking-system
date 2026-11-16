@@ -10,7 +10,7 @@ Run it after every change in this folder, and commit the copies together with th
 
 | Path | Contents | Copied to |
 |---|---|---|
-| `tokens.js` | The phone apps' flat skin: black and orange on white (a light and a dark set), type scale, radii, spacing, and no shadows, no gradients, no glow | mobile `src/shared/theme.js` |
+| `tokens.js` | The phone apps' "Studio" skin: charcoal and white surfaces, a black block, a blue block and an orange accent (a light and a dark set), a light-weight type scale, radii, spacing, and no shadows, no gradients, no glow | mobile `src/shared/theme.js` |
 | `adminTokens.json` | The admin dashboard's own tokens (the glass-on-ember look), turned into CSS variables by sync.js | admin `src/design/tokens.css` (generated: light `:root` plus a dark block) |
 | `native/themeRuntime.js` | Mobile light/dark mode: `ThemeProvider`, `useTheme()`, `createStyles()` | mobile `src/shared/` |
 | `native/ui.js` and `native/kit/` | Mobile UI kit, split by concern in `kit/` (`core`, `vehicle`, `controls`, `layout`, `motion`, `settings`) behind one import path: buttons, fields, layouts, dock; `TOP_INSET` (the one top inset) and `type()` | mobile `src/shared/` |
@@ -38,7 +38,7 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 - Map tiles: the web maps use OpenStreetMap and recolour it with a CSS filter (grey, or inverted dark). The phone map is drawn by the app (`native/LiveMap.native.js`, maths in `native/mapMath.js`) on Esri's light and dark gray basemaps, which need no key (OpenStreetMap's tile server blocks the app's requests, and Carto's basemaps need a key). The route line is orange.
 - Bus colours: `shared/buses/clay.js` defines the liveries in palette colours. After changing them run `node shared/buses/export.mjs`, then `node shared/sync.js`.
 - Icons are Lucide everywhere: `lucide-react` in the admin (`src/components/Icon.js` maps the page icon names to Lucide components) and `lucide-react-native` on mobile (`native/icons.js`, and the dock's `NavIcon` in `native/ui.js`).
-- Font: Urbanist on the web builds (admin and the Expo web export). Native keeps the system font, so no font file has to ship.
+- Font: Urbanist in the admin and Inter Tight in the Expo web export (the phone apps' type is light and tight). Native keeps the system font, so no font file has to ship.
 - Green (`green`, `greenSoft`) is the status colour for anything active or live. It is not a brand colour: use it for running buses, connected servers and drivers on duty, nothing else.
 
 ## Motion and settings parts (`native/kit/motion.js`, `native/kit/settings.js`)
@@ -54,6 +54,6 @@ To regenerate the images: `node shared/buses/export.mjs`, then `node shared/sync
 
 ## The phone screens
 
-- The phone skin is flat: `AppBackdrop` is one plain colour, cards are filled (`COLORS.surface`, light grey) with no border and no shadow, the black card (`GradientCard tint="ink"`, `NotchStat tone="ink"`) and the orange card (`tint="hero"`) carry the emphasis, chips and buttons are pills, and headings are large and bold. `OverlapHeader` and `OverlapSheet` are plain containers. Colour, not depth, separates a card from the page.
+- The phone skin is flat blocks: `AppBackdrop` is one plain colour, blocks are filled (`COLORS.surface`: white in light mode, charcoal in dark) with no border and no shadow, the black block (`COLORS.card`), the blue block (`COLORS.blue`, text `onBlue`) and the orange block (`COLORS.orange`, text `onBright`) carry the emphasis, buttons are 60px pills, fields are filled, and headings and numbers are large and light. Orange is the accent only: main buttons, the active tab, the live bus, the route line. `OverlapHeader` and `OverlapSheet` are plain containers. Colour, not depth, separates a card from the page.
 - `NotchStat` is the small stat tile (label, big number, a quiet pill): light grey by default, black with an orange number for the one that matters. `GradientCard` keeps its old name but is a flat card.
-- Animated pieces (all react-native `Animated`, no extra dependency, all still with reduced motion): `FloatingDock` (the orange circle slides between tabs), `CountUp`, `RingGauge`, `LiveDot`, `ProgressTrack`, plus `Reveal` for staggered entrances.
+- Animated pieces (all react-native `Animated`, no extra dependency, all still with reduced motion): `FloatingDock` (a row of round, icon-only buttons; the current one is orange), `CountUp`, `RingGauge`, `LiveDot`, `ProgressTrack`, plus `Reveal` for staggered entrances.

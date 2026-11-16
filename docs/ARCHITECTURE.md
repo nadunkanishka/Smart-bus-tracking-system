@@ -155,7 +155,7 @@ A change goes to `dev` through a pull request; CI must be green. `main` is what 
 
 ## Design
 
-The two phone apps share one flat skin, and the admin dashboard has its own; both read the same contract and component logic. The reasoning is in [DESIGN-DECISIONS.md](DESIGN-DECISIONS.md#two-skins-one-contract) and the token files are described in [shared/README.md](../shared/README.md).
+The two phone apps share one flat "Studio" skin, and the admin dashboard has its own; both read the same contract and component logic. The reasoning is in [DESIGN-DECISIONS.md](DESIGN-DECISIONS.md#two-skins-one-contract) and the token files are described in [shared/README.md](../shared/README.md).
 
 ## Known limits
 

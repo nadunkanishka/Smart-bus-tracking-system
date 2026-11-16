@@ -110,13 +110,13 @@ Connect to the base URL. Drivers pass their token in the handshake: `io(url, { a
 }
 ```
 
-`direction` is `out` (the route's first stop to its last) or `back` (the reverse); `stops` are in the order of that leg. `nextStops` are the stops of the other leg, with the time to finish this leg and a turnaround already added, so a passenger waiting at the far end sees the bus before it turns round. A bus flips legs by itself at each terminal.
+`direction` is `out` (the route's first stop to its last) or `back` (the reverse); `stops` are in the order of that leg. `nextStops` are the stops of the other leg with the time to finish this leg and a turnaround added (the passenger app no longer uses them: it shows only buses on the leg of the trip). A bus flips legs by itself at each terminal.
 
 ### Driver
 
 | Direction | Event | Payload |
 |---|---|---|
-| client → server | `driver:duty` | `{ onDuty: true/false }`. Off duty removes the bus from the map. Ack: `{ ok: true, onDuty }` |
+| client → server | `driver:duty` | `{ onDuty: true/false, direction?: 'out' | 'back' }`. `direction` (optional, on duty only) is the leg the run starts on: `out` from the first stop, `back` from the last. Off duty removes the bus from the map. Ack: `{ ok: true, onDuty }` |
 | client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, ts, nextStopIndex, direction }` (`ts` echoes the fix's `ts`; `nextStopIndex` counts along the leg `direction` names) where `result` is `accepted`, `duplicate` (also an out-of-order fix), `too frequent`, `position jump` or a validation message; `ok` is true for `accepted` and `duplicate` (the app may drop the fix) |
 | client → server | `gps:batch` | Array of up to 1000 fixes (`MAX_BATCH` in the contract) from the offline queue, replayed oldest first. A fix without a numeric `ts` counts as rejected. Ack: `{ ok: true, accepted, duplicate, rejected, lastTs }` (`lastTs`: the newest usable `ts`, or null); `{ ok: false, error: 'Batch must be an array of at most 1000 fixes' }` otherwise |
 | client → server | `driver:auth` | `{ token }` (a driver token). Alternative to the handshake token, used by the load tests. Ack: `{ ok: true }` or `{ ok: false, error: 'Invalid driver token' }`; accepted once per connection |
