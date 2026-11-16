@@ -3,7 +3,7 @@
 // `node shared/sync.js`). What differs between the apps (texts, accents, sections) comes in as props.
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { COLORS, SHADOWS, SPACE } from './theme';
+import { COLORS, SPACE } from './theme';
 import { createStyles, useTheme } from './themeRuntime';
 import {
   AppBackdrop, Button, FloatingDock, IconButton, NavIcon, OverlapHeader, OverlapSheet, Segmented, SettingsRow, SettingsSection, Toast, TOP_INSET, type,
@@ -85,7 +85,7 @@ const THEME_OPTIONS = [
 const useSettings = createStyles(() => StyleSheet.create({
   scroll: { paddingBottom: 132 },
   header: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingTop: TOP_INSET },
-  title: { ...type('h1'), color: COLORS.ink },
+  title: { ...type('display'), color: COLORS.ink },
   pad: { padding: SPACE[3] },
 }));
 
@@ -97,7 +97,7 @@ export function SettingsPage({ onBack, appearanceNote, version, signOutLabel, on
   const choose = (value) => (value === 'system' ? followSystem() : setMode(value));
   return (
     <ScrollView style={COMMON_STYLES.flex} contentContainerStyle={S.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps={keyboardShouldPersistTaps}>
-      <OverlapHeader minHeight={132}>
+      <OverlapHeader minHeight={110}>
         <View style={S.header}>
           <IconButton label="Back to profile" onPress={onBack}><ArrowLeftIcon color={COLORS.ink} size={20} /></IconButton>
           <Text style={S.title}>Settings</Text>
@@ -133,13 +133,10 @@ export function NavDock({ tabs, active, onChange }) {
 const useProfile = createStyles(() => StyleSheet.create({
   scroll: { paddingBottom: 120 },
   gear: { position: 'absolute', right: 0, top: TOP_INSET + 4, zIndex: 2 },
-  hero: { alignItems: 'center', paddingTop: TOP_INSET + 8 },
-  avatar: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine,
-    alignItems: 'center', justifyContent: 'center', marginBottom: SPACE[3], ...SHADOWS.md,
-  },
-  name: { ...type('h1'), color: COLORS.ink },
-  sub: { ...type('small'), color: COLORS.ink, marginTop: SPACE[1] },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: SPACE[4], backgroundColor: COLORS.blue, borderRadius: 36, padding: SPACE[5], marginTop: TOP_INSET + 56 },
+  avatar: { width: 72, height: 72, borderRadius: 24, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center' },
+  name: { ...type('h1'), color: COLORS.onBlue },
+  sub: { ...type('small'), color: COLORS.onBlue, opacity: 0.8, marginTop: SPACE[1] },
 }));
 
 // The Profile screen both apps use: a settings button, the avatar with a name and a line under it, the app's own sections
@@ -148,16 +145,18 @@ export function ProfilePage({ initials, name, subtitle, onOpenSettings, settings
   const P = useProfile();
   return (
     <ScrollView style={COMMON_STYLES.flex} contentContainerStyle={P.scroll} showsVerticalScrollIndicator={false}>
-      <OverlapHeader minHeight={200}>
+      <OverlapHeader minHeight={210}>
         <View style={P.gear}>
           <IconButton label="Settings" onPress={onOpenSettings}><SettingsIcon color={COLORS.ink} size={20} /></IconButton>
         </View>
         <View style={P.hero}>
           <View style={P.avatar}>
-            <Text style={{ ...type(initials.length > 1 ? 'h1' : 'display'), color: COLORS.primaryDeep }}>{initials}</Text>
+            <Text style={{ ...type(initials.length > 1 ? 'h1' : 'display'), color: COLORS.onCard }}>{initials}</Text>
           </View>
-          <Text style={P.name}>{name}</Text>
-          <Text style={P.sub}>{subtitle}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={P.name} numberOfLines={2}>{name}</Text>
+            <Text style={P.sub}>{subtitle}</Text>
+          </View>
         </View>
       </OverlapHeader>
 

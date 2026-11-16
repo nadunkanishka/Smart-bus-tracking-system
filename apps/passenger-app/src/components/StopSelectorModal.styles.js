@@ -1,44 +1,38 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
+import { COLORS, RADII, SPACE } from '../shared/theme';
 import { type } from '../shared/ui';
 
 export const useS = createStyles(() => StyleSheet.create({
+  listScroll: { flexShrink: 1 }, // the list scrolls inside the sheet instead of running off its top
   modalHandleRow: { alignItems: 'center', paddingBottom: SPACE[4] },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.line },
-  modalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[6] },
-  modalTitle: { ...type('h2'), color: COLORS.ink },
-  modalSectionLabel: { ...type('overline'), color: COLORS.muted, marginBottom: SPACE[3], textTransform: 'uppercase' },
-  modalSectionGap: { marginTop: SPACE[6] },
-  modalSectionGapLg: { marginTop: SPACE[8] },
-  routeChipsRow: { flexDirection: 'row', gap: SPACE[2], flexWrap: 'wrap' },
-  dropdownTrigger: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: COLORS.surfaceSoft, borderRadius: RADII.md, paddingHorizontal: SPACE[4], minHeight: 52,
-  },
-  dropdownTriggerLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3] },
-  dropdownTriggerText: { ...type('bodyBold'), color: COLORS.ink },
-  dropdownList: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.md, marginTop: SPACE[2], overflow: 'hidden', ...SHADOWS.md },
-  dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: SPACE[4] },
-  dropdownItemActive: { backgroundColor: COLORS.accentSoft },
-  dropdownItemText: { ...type('body'), color: COLORS.ink },
-  dropdownItemTextActive: { color: COLORS.accentText, fontWeight: '700' },
-  timelineContainer: { paddingVertical: SPACE[1] },
-  timelineRow: { flexDirection: 'row', marginBottom: SPACE[2] },
-  timelineLeft: { alignItems: 'center', width: 24, marginRight: SPACE[3] },
-  timelineDot: {
-    width: 16, height: 16, borderRadius: 8,
-    backgroundColor: COLORS.bg, borderWidth: 2, borderColor: COLORS.outline, alignItems: 'center', justifyContent: 'center',
-  },
-  dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
-  dotBoarding: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  dotDestination: { backgroundColor: COLORS.ink, borderColor: COLORS.ink },
-  dotActive: { borderColor: COLORS.accent },
-  timelineLineV: { width: 2, flex: 1, backgroundColor: COLORS.line, marginVertical: SPACE[1] },
-  lineVPassed: { backgroundColor: COLORS.primaryStrong },
-  timelineRight: { flex: 1, paddingTop: 0, paddingBottom: SPACE[2] },
-  timelineStopName: { ...type('small'), color: COLORS.ink },
-  timelineStopNameHighlight: { fontWeight: '700', color: COLORS.accentText },
-  timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
-// ─── Live states ─────────────────────────────────────────
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.outline },
+  modalHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE[4] },
+  modalTitle: { ...type('h1'), color: COLORS.ink },
+  modalSectionLabel: { ...type('overline'), color: COLORS.muted, marginTop: SPACE[4], marginBottom: SPACE[2], textTransform: 'uppercase' },
+  routeChipsRow: { gap: SPACE[2], paddingRight: SPACE[4] },
+
+  tripRow: { flexDirection: 'row', alignItems: 'stretch', gap: SPACE[2], marginTop: SPACE[4] },
+  tripBox: { flex: 1, minHeight: 96, borderRadius: RADII.lg, padding: SPACE[4], justifyContent: 'space-between', borderWidth: 2, borderColor: 'transparent' },
+  tripFrom: { backgroundColor: COLORS.surfaceSoft },
+  tripTo: { backgroundColor: COLORS.blue },
+  tripActive: { borderColor: COLORS.orange },
+  tripLabel: { ...type('overline'), color: COLORS.muted },
+  tripLabelBlue: { ...type('overline'), color: COLORS.onBlue, opacity: 0.8 },
+  tripStop: { ...type('h3'), color: COLORS.ink },
+  tripStopBlue: { ...type('h3'), color: COLORS.onBlue },
+  swap: { alignSelf: 'center', width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center', marginHorizontal: -SPACE[4], zIndex: 2 },
+  swapText: { ...type('h3'), color: COLORS.onCard },
+
+  stopRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3], minHeight: 64, borderRadius: RADII.md, paddingHorizontal: SPACE[3], marginBottom: SPACE[1], backgroundColor: COLORS.surfaceSoft },
+  stopRowFrom: { backgroundColor: COLORS.primaryLight },
+  stopRowTo: { backgroundColor: COLORS.blueSoft },
+  stopNum: { width: 40, height: 40, borderRadius: 14, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
+  stopNumOn: { backgroundColor: COLORS.orange },
+  stopNumText: { ...type('caption'), color: COLORS.ink },
+  flexOne: { flex: 1 },
+  stopName: { ...type('bodyBold'), color: COLORS.ink },
+  stopNameOn: { color: COLORS.ink },
+  stopSub: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
+  stopSubBlue: { color: COLORS.accentText },
 }));

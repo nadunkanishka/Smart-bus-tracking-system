@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import LiveMap from '../shared/LiveMap';
 import { COLORS } from '../shared/theme';
 import { Button, IconButton, Vehicle, VehicleLoader, ProgressTrack } from '../shared/ui';
-import { ArrowRightIcon, MoreVerticalIcon } from '../shared/icons';
+import { MoreVerticalIcon } from '../shared/icons';
 import { MAP_PADDING, MAP_PADDING_COMPACT_BOTTOM } from '../constants';
 import { StopPicker } from '../components/StopPicker';
 import { trackedSummary } from '../utils';
@@ -43,7 +43,7 @@ export function TrackingScreen({
 
   // The one-line state of the tracked route for the card at the top: which bus, and what it means for this passenger.
   const noBus = conn === 'connected' ? 'No bus on this route right now' : 'Reconnecting…';
-  const headline = bus ? `${bus.registration} · ${trackedSummary(tracked, boardingStop, destinationStop)}` : noBus;
+  const headline = bus ? trackedSummary(tracked, boardingStop, destinationStop) : noBus; // the registration is on the card below
 
   return (
     <View style={S.flex}>
@@ -65,7 +65,7 @@ export function TrackingScreen({
             <ConnectionChip conn={conn} />
             <View style={S.mapHeaderText}>
               <Text style={S.mapHeaderTitle} numberOfLines={1}>{selectedRoute.shortName}</Text>
-              <Text style={S.mapHeaderStatus} numberOfLines={1}>{headline}</Text>
+              <Text style={S.mapHeaderStatus} numberOfLines={2}>{headline}</Text>
             </View>
           </View>
           <IconButton label="Change stops" onPress={onOpenStops} tone="soft" size={44}>
@@ -78,19 +78,16 @@ export function TrackingScreen({
         <View style={S.stopSelectorBar}>
           <StopPicker
             label="BOARDING"
-            dotStyle={S.stopDotGreen}
+            tone="white"
             value={boardingStop}
             expanded={isBoardingExpanded}
             onToggle={() => { setIsBoardingExpanded(p => !p); setIsDestExpanded(false); }}
             stops={routeStops}
             onPick={(stop) => { setBoardingStop(stop); setIsBoardingExpanded(false); }}
           />
-          <View style={S.stopSelectorDivider}>
-            <ArrowRightIcon color={COLORS.accent} size={16} />
-          </View>
           <StopPicker
             label="DESTINATION"
-            dotStyle={S.stopDotOrange}
+            tone="blue"
             value={destinationStop}
             expanded={isDestExpanded}
             onToggle={() => { setIsDestExpanded(p => !p); setIsBoardingExpanded(false); }}
@@ -132,15 +129,17 @@ export function TrackingScreen({
                 <Text style={S.sheetMetaLabel}>{liveCount > 1 ? `Nearest of ${liveCount} buses` : 'Bus'}</Text>
                 <Text style={S.sheetBookingId}>{bus.registration}</Text>
               </View>
-              <View style={[S.transitBadge, bus.stale && S.transitBadgeWarn]}>
-                <Text style={[S.transitBadgeText, bus.stale && S.transitBadgeTextWarn]}>
-                  {bus.stale ? 'Signal lost' : tracked.phase === 'coming' ? `${tracked.etaMin} min away` : 'In transit'}
-                </Text>
-              </View>
+              {!bus.stale && tracked.phase === 'coming' ? (
+                <Text style={S.sheetEta} accessibilityLabel={`${tracked.etaMin} minutes away`}>{tracked.etaMin}<Text style={S.sheetEtaUnit}> min</Text></Text>
+              ) : (
+                <View style={[S.transitBadge, bus.stale && S.transitBadgeWarn]}>
+                  <Text style={[S.transitBadgeText, bus.stale && S.transitBadgeTextWarn]}>{bus.stale ? 'Signal lost' : 'In transit'}</Text>
+                </View>
+              )}
             </View>
 
             <View style={S.progressBlock}>
-              <ProgressTrack value={progress} height={6} color={COLORS.orange} track={COLORS.line} />
+              <ProgressTrack value={progress} height={6} color={COLORS.orange} track={COLORS.surfaceSoft} />
               <Text style={S.progressSummary}>{trackedSummary(tracked, boardingStop, destinationStop)}</Text>
             </View>
 
@@ -158,8 +157,8 @@ export function TrackingScreen({
                 return (
                   <View key={stop.index} style={[S.etaRow, mine && S.etaRowOn]}>
                     <View style={[S.etaDot, stop.status === 'passed' && S.etaDotPassed, mine && S.etaDotOn]} />
-                    <Text style={[S.etaStop, stop.status === 'passed' && S.etaPassed]} numberOfLines={1}>{stop.name}</Text>
-                    <Text style={[S.etaVal, stop.status === 'passed' && S.etaPassed]}>
+                    <Text style={[S.etaStop, stop.status === 'passed' && S.etaPassed, mine && S.etaOnText]} numberOfLines={1}>{stop.name}</Text>
+                    <Text style={[S.etaVal, stop.status === 'passed' && S.etaPassed, mine && S.etaOnText]}>
                       {stop.status === 'passed' ? 'Passed' : `${stop.etaMin} min`}
                     </Text>
                   </View>

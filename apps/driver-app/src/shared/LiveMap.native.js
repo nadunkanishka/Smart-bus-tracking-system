@@ -133,7 +133,7 @@ export default function LiveMap({ path, stops, buses, highlightStop = -1, paddin
         </Svg>
       ) : null}
       {view ? (buses || []).map((bus) => <BusMarker key={bus.id} bus={bus} view={view} />) : null}
-      <View style={[styles.controls, { top: top + 8 }]}>
+      <View style={[styles.controls, { top: top + 76 }]}>
         <MapButton label="Zoom in" text="+" onPress={() => zoomBy(STEP_ZOOM)} />
         <MapButton label="Zoom out" text="−" onPress={() => zoomBy(1 / STEP_ZOOM)} />
         {focus ? <MapButton label="Show the bus" text="Bus" onPress={showFocus} /> : null}

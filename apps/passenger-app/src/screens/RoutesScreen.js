@@ -1,21 +1,19 @@
 import React from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Button, GradientCard, OverlapHeader, OverlapSheet, Vehicle, VehicleLoader, Tap, Reveal } from '../shared/ui';
-import { ArrowRightIcon, NavigationArrowIcon, SearchIcon } from '../shared/icons';
+import { Button, OverlapSheet, Vehicle, VehicleLoader, Tap, Reveal } from '../shared/ui';
+import { ArrowRightIcon, SearchIcon } from '../shared/icons';
 import { useS } from './RoutesScreen.styles';
 
+// Routes: a big title, a search pill, and one block per route. The route you are tracking is the orange block, the rest are
+// white; the route number is the big light number in the corner.
 export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteSearchQuery, filteredRoutes, selectedRoute, onSelectRoute }) {
   const S = useS();
   return (
-    <ScrollView
-      style={S.flex}
-      contentContainerStyle={S.routesScroll}
-      showsVerticalScrollIndicator={false}
-    >
-      <OverlapHeader minHeight={190}>
-        <Text style={S.screenTitle}>Bus Routes</Text>
-        <Text style={S.screenSubtitle}>Select a route to start tracking your bus</Text>
+    <ScrollView style={S.flex} contentContainerStyle={S.routesScroll} showsVerticalScrollIndicator={false}>
+      <OverlapSheet>
+        <Text style={S.screenTitle}>Routes</Text>
+        <Text style={S.screenSubtitle}>Pick a route to track its buses</Text>
 
         <View style={S.searchBar}>
           <SearchIcon color={COLORS.muted} size={18} />
@@ -24,7 +22,7 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
             value={routeSearchQuery}
             onChangeText={setRouteSearchQuery}
             placeholder="Search route no. or stop name…"
-            placeholderTextColor={COLORS.mutedLight}
+            placeholderTextColor={COLORS.muted}
             accessibilityLabel="Search routes"
           />
           {routeSearchQuery ? (
@@ -33,20 +31,6 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
             </Tap>
           ) : null}
         </View>
-      </OverlapHeader>
-
-      <OverlapSheet>
-        {selectedRoute.id && (
-          <View style={S.activeRouteBanner}>
-            <View style={S.activeRouteLeft}>
-              <NavigationArrowIcon color={COLORS.accentText} size={14} />
-              <Text style={S.activeRouteBannerText}>
-                Tracking {selectedRoute.shortName}
-              </Text>
-            </View>
-            <View style={S.activeDot} />
-          </View>
-        )}
 
         {routesState === 'loading' ? (
           <View style={S.emptyState}><VehicleLoader label="Loading routes" /></View>
@@ -66,63 +50,42 @@ export function RoutesScreen({ routesState, onRetry, routeSearchQuery, setRouteS
         ) : (
           filteredRoutes.map((route, index) => {
             const isSel = selectedRoute.id === route.id;
-            const Wrap = isSel ? GradientCard : View;
-            const wrapProps = isSel ? { tint: 'bus', id: `route-${route.id}`, style: S.routeCardWrap } : { style: [S.routeCardWrap, S.routeCardPlain] };
             return (
-            <Reveal key={route.id} index={index}>
-              <Wrap {...wrapProps}>
+              <Reveal key={route.id} index={index}>
                 <Tap
-                  style={S.routeCard}
+                  style={[S.routeBlock, isSel ? S.routeBlockOn : S.routeBlockOff]}
                   onPress={() => onSelectRoute(route)}
                   accessibilityRole="button"
                   accessibilityLabel={`${route.name}, ${isSel ? 'currently tracking' : 'select'}`}
                 >
-                  <View style={S.routeCardTop}>
-                    <View style={[S.routeNumBadge, isSel && S.routeNumBadgeActive]}>
-                      <Text style={[S.routeNumText, isSel && S.routeNumTextActive]}>
-                        {route.number}
-                      </Text>
-                    </View>
-                    <View style={S.routeCardTitleBox}>
-                      <Text style={S.routeCardName} numberOfLines={1}>{route.name}</Text>
-                      <Text style={S.routeCardMeta}>
+                  <View style={S.routeTop}>
+                    <View style={S.flex}>
+                      <Text style={[S.routeName, isSel && S.onOrange]} numberOfLines={2}>{route.name}</Text>
+                      <Text style={[S.routeMeta, isSel && S.onOrangeSoft]}>
                         {route.distanceKm} km · {route.stops.length} stops{route.trackable ? '' : ' · no live tracking yet'}
                       </Text>
                     </View>
-                    {isSel ? (
-                      <View style={S.trackingPill}>
-                        <Text style={S.trackingPillText}>Tracking</Text>
-                      </View>
-                    ) : (
-                      <View style={S.trackRoutePill}>
-                        <Text style={S.trackRoutePillText}>Select</Text>
-                        <ArrowRightIcon color={COLORS.primaryDeep} size={12} />
-                      </View>
-                    )}
+                    {isSel ? <View style={S.trackingPill}><Text style={S.trackingPillText}>Tracking</Text></View> : null}
                   </View>
 
-                  <View style={S.routeTerminalsCard}>
-                    <View style={S.terminalItem}>
-                      <View style={S.terminalDotStart} />
-                      <Text style={S.terminalName} numberOfLines={1}>{route.startTerminal}</Text>
-                    </View>
-                    <View style={S.terminalDashedLine} />
-                    <View style={S.terminalItem}>
-                      <View style={S.terminalDotEnd} />
-                      <Text style={S.terminalName} numberOfLines={1}>{route.endTerminal}</Text>
-                    </View>
+                  <View style={S.routeEnds}>
+                    <Text style={[S.endName, isSel && S.onOrange]} numberOfLines={1}>{route.startTerminal}</Text>
+                    <ArrowRightIcon color={isSel ? COLORS.onBright : COLORS.muted} size={14} />
+                    <Text style={[S.endName, isSel && S.onOrange]} numberOfLines={1}>{route.endTerminal}</Text>
                   </View>
 
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.stopsScroll}>
-                    {route.stops.map((stop, idx) => (
-                      <View key={idx} style={S.stopChip}>
-                        <Text style={S.stopChipText}>{stop}</Text>
-                      </View>
-                    ))}
-                  </ScrollView>
+                  <View style={S.routeBottom}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.stopsScroll}>
+                      {route.stops.map((stop, idx) => (
+                        <View key={idx} style={[S.stopChip, isSel && S.stopChipOn]}>
+                          <Text style={[S.stopChipText, isSel && S.onOrange]}>{stop}</Text>
+                        </View>
+                      ))}
+                    </ScrollView>
+                    <Text style={[S.routeNumber, isSel && S.onOrange]}>{route.number}</Text>
+                  </View>
                 </Tap>
-              </Wrap>
-            </Reveal>
+              </Reveal>
             );
           })
         )}

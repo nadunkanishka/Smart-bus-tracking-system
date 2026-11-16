@@ -1,41 +1,35 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
+import { COLORS, RADII, SPACE } from '../shared/theme';
 import { buildCommon } from '../styles/common';
 import { type } from '../shared/ui';
 
 export const useD = createStyles(() => ({
   ...buildCommon(),
   ...StyleSheet.create({
-    mapCard: { height: 260, borderRadius: RADII.lg, overflow: 'hidden', marginTop: SPACE[4], backgroundColor: COLORS.surfaceSoft, ...SHADOWS.sm },
-    routeHeaderCardWrap: { marginBottom: 0 },
-    routeHeaderCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: SPACE[5], gap: SPACE[3] },
-    routeHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3], flex: 1 },
-    routeNumBadge: { width: 52, height: 52, borderRadius: RADII.md, backgroundColor: COLORS.ink, alignItems: 'center', justifyContent: 'center' },
-    routeNumText: { ...type('h3'), color: COLORS.white },
-    routeCardLabel: { ...type('h3'), color: COLORS.ink },
-    routeCardSub: { ...type('small'), color: COLORS.inkSoft },
-    statusPill: { paddingHorizontal: SPACE[3], paddingVertical: SPACE[2], borderRadius: RADII.pill },
-    statusPillActive: { backgroundColor: COLORS.successSoft },
-    statusPillOff: { backgroundColor: COLORS.surfaceSoft },
+    numberBlock: { flexDirection: 'row', alignItems: 'center', gap: SPACE[4], backgroundColor: COLORS.blue, borderRadius: RADII.xl, padding: SPACE[5], marginBottom: SPACE[2] },
+    numberText: { fontSize: 64, lineHeight: 68, fontWeight: '300', letterSpacing: -3, color: COLORS.onBlue },
+    routeCardLabel: { ...type('h3'), color: COLORS.onBlue },
+    statusPill: { alignSelf: 'flex-start', marginTop: SPACE[2], paddingHorizontal: SPACE[3], paddingVertical: SPACE[1], borderRadius: RADII.pill },
+    statusPillActive: { backgroundColor: COLORS.orange },
+    statusPillOff: { backgroundColor: 'rgba(16, 17, 20, 0.25)' },
     statusPillText: { ...type('caption') },
-    statusPillTextActive: { color: COLORS.success },
-    statusPillTextOff: { color: COLORS.muted },
-    timelineCard: { backgroundColor: COLORS.surface, borderRadius: RADII.lg, padding: SPACE[5], ...SHADOWS.sm },
-    timelineRow: { flexDirection: 'row', minHeight: 56 },
-    timelineLeft: { alignItems: 'center', width: 24, marginRight: SPACE[3] },
-    timelineDot: {
-      width: 16, height: 16, borderRadius: 8,
-      backgroundColor: COLORS.bg, borderWidth: 2, borderColor: COLORS.outline, alignItems: 'center', justifyContent: 'center',
-    },
-    dotPassed: { backgroundColor: COLORS.primaryStrong, borderColor: COLORS.primaryStrong },
-    dotCurrent: { borderColor: COLORS.accent, backgroundColor: COLORS.accentSoft },
-    dotCurrentInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.accent },
-    timelineLine: { width: 2, flex: 1, backgroundColor: COLORS.line, marginVertical: SPACE[1] },
-    lineVPassed: { backgroundColor: COLORS.primaryStrong },
-    timelineRight: { flex: 1, paddingBottom: SPACE[3] },
-    timelineStop: { ...type('bodyBold'), color: COLORS.ink },
-    timelineStopActive: { color: COLORS.accentText },
-    timelineTag: { ...type('caption'), color: COLORS.muted, marginTop: 2 },
+    statusPillTextActive: { color: COLORS.onBright },
+    statusPillTextOff: { color: COLORS.onBlue },
+    mapCard: { height: 260, borderRadius: RADII.xl, overflow: 'hidden', backgroundColor: COLORS.surfaceSoft },
+    emptyBlock: { backgroundColor: COLORS.surface, borderRadius: RADII.xl, padding: SPACE[5], alignItems: 'center', gap: SPACE[2] },
+
+    stopBlock: { flexDirection: 'row', alignItems: 'center', gap: SPACE[3], minHeight: 72, borderRadius: RADII.lg, paddingHorizontal: SPACE[4], paddingVertical: SPACE[3], marginBottom: SPACE[2] },
+    stopUpcoming: { backgroundColor: COLORS.surface },
+    stopPassed: { backgroundColor: COLORS.card },
+    stopCurrent: { backgroundColor: COLORS.orange },
+    stopIndex: { width: 40, height: 40, borderRadius: 14, backgroundColor: COLORS.surfaceSoft, alignItems: 'center', justifyContent: 'center' },
+    stopIndexCurrent: { backgroundColor: 'rgba(16, 17, 20, 0.16)' },
+    stopIndexText: { ...type('caption'), color: COLORS.ink },
+    stopName: { ...type('h3'), color: COLORS.ink, flex: 1 },
+    stopTag: { ...type('caption'), color: COLORS.muted },
+    onOrange: { color: COLORS.onBright },
+    onCard: { color: COLORS.onCard },
+    onCardSoft: { color: COLORS.cardMuted },
   }),
 }));
