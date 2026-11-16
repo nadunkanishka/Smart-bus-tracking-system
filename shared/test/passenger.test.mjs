@@ -20,6 +20,39 @@ test('coming: the bus with the shortest wait at the boarding stop wins', () => {
   assert.equal(trackedSummary(t, 'Maharagama', 'Nugegoda'), 'Arrives at Maharagama in 4 min');
 });
 
+// The return trip: Pettah to Maharagama runs the other way (boarding index 4, destination index 2).
+const REVERSED = [...STOPS].reverse();
+const leg = (statuses) => REVERSED.map((name, i) => stop(name, statuses[i][0], statuses[i][1]));
+
+test('a return trip waits for a bus still on its way out: its nextStops carry the wait to the terminal and back', () => {
+  const going = bus('BUS-010', at([['passed'], ['upcoming', 3], ['upcoming', 8], ['upcoming', 14], ['upcoming', 22]]), {
+    direction: 'out',
+    nextStops: leg([['upcoming', 22], ['upcoming', 25], ['upcoming', 33], ['upcoming', 40], ['upcoming', 48]]),
+  });
+  const t = pickBus([going], 4, 2, 'Pettah', 'Maharagama');
+  assert.equal(t.phase, 'coming');
+  assert.equal(t.etaMin, 22);
+  assert.equal(t.bus.stops[0].name, 'Pettah'); // the stop list the passenger sees runs in the direction of the trip
+  assert.equal(trackedSummary(t, 'Pettah', 'Maharagama'), 'Arrives at Pettah in 22 min');
+});
+
+test('a return trip prefers a bus that is already running back, when it gets there sooner', () => {
+  const going = bus('BUS-010', at([['passed'], ['upcoming', 3], ['upcoming', 8], ['upcoming', 14], ['upcoming', 22]]), {
+    direction: 'out', nextStops: leg([['upcoming', 22], ['upcoming', 25], ['upcoming', 33], ['upcoming', 40], ['upcoming', 48]]),
+  });
+  const returning = bus('BUS-011', leg([['passed'], ['upcoming', 6], ['upcoming', 12], ['upcoming', 18], ['upcoming', 30]]), { direction: 'back' });
+  assert.equal(pickBus([going, returning], 3, 2, 'Nugegoda', 'Maharagama').bus.busId, 'BUS-011');
+});
+
+test('an outward trip counts a bus that is running back through its nextStops', () => {
+  const returning = bus('BUS-011', leg([['passed'], ['upcoming', 2], ['upcoming', 9], ['upcoming', 14], ['upcoming', 20]]), {
+    direction: 'back',
+    nextStops: at([['upcoming', 20], ['upcoming', 24], ['upcoming', 30], ['upcoming', 36], ['upcoming', 45]]),
+  });
+  const t = pickBus([returning], 2, 3, 'Maharagama', 'Nugegoda');
+  assert.equal(t.etaMin, 30);
+});
+
 test('passed: once every bus is past the boarding stop, the one heading to the destination is shown', () => {
   const riding = bus('BUS-003', at([['passed'], ['passed'], ['passed'], ['upcoming', 6], ['upcoming', 21]]));
   const t = pickBus([riding], 2, 3, 'Maharagama', 'Nugegoda');
@@ -78,11 +111,16 @@ test('the saved journey comes back with its route and stops', () => {
   assert.deepEqual([j.route.id, j.boarding, j.destination], ['RT-1', 'B', 'C']);
 });
 
-test('a saved stop that no longer exists, or a trip that goes backwards, falls back to the terminals', () => {
+test('a saved stop that no longer exists, or a trip that starts and ends at the same stop, falls back to the terminals', () => {
   const gone = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'Z', destination: 'C' });
   assert.deepEqual([gone.boarding, gone.destination], ['A', 'D']);
-  const back = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'C', destination: 'B' });
-  assert.deepEqual([back.boarding, back.destination], ['A', 'D']);
+  const same = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'C', destination: 'C' });
+  assert.deepEqual([same.boarding, same.destination], ['A', 'D']);
+});
+
+test('a saved return trip (a later stop to an earlier one) is kept', () => {
+  const j = restoreJourney(ROUTES, { routeId: 'RT-1', boarding: 'C', destination: 'B' });
+  assert.deepEqual([j.boarding, j.destination], ['C', 'B']);
 });
 
 test('no journey is restored when nothing is saved or its route is gone', () => {

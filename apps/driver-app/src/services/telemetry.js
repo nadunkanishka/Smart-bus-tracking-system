@@ -25,7 +25,7 @@ let flushing = false;
 let foregroundWatch = null;
 let retryTimer = null;
 const listeners = new Set();
-const status = { connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, mode: null, error: null };
+const status = { connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, direction: null, mode: null, error: null };
 
 const notify = () => { status.queued = queue.length; listeners.forEach((fn) => fn({ ...status })); };
 export const subscribe = (fn) => { listeners.add(fn); fn({ ...status }); return () => listeners.delete(fn); };
@@ -83,6 +83,7 @@ function submitFix(coords, timestamp) {
     if (err) { enqueue(fix); return; } // no ack: assume it never arrived
     status.sent += 1;
     if (ack?.nextStopIndex != null) status.nextStopIndex = ack.nextStopIndex;
+    if (ack?.direction) status.direction = ack.direction; // 'out' or 'back': the leg the server has the bus on
     if (ack && !ack.ok) status.error = ack.error || ack.result;
     notify();
   });
@@ -184,6 +185,7 @@ export async function disconnect() {
     status.sent = 0;
     status.lastFix = null;
     status.nextStopIndex = null;
+    status.direction = null;
     notify();
   }
 }

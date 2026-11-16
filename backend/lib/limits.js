@@ -39,11 +39,12 @@ const BACK_AT_START_M = 200;
 
 const DEFAULT_SPEED_MPS = 5.5;
 const BASELINE_SPEED_MPS = 5.5;
+const TURNAROUND_SEC = 120; // a bus waits about this long at a terminal before it starts the other leg (a guess to tune from trip data)
 const MIN_MOVING_MPS = 1.5; // below this the bus is treated as stopped or crawling
 const JUMP_FACTOR = 1.5;
 
 module.exports = {
   MIN_FIX_GAP_MS, SMOOTHER_RESET_MS, DWELL_GAP_MS, ROUTE_CACHE_MS, FORGET_BUS_MS, MAX_FIX_AGE_MS, MAX_FUTURE_MS, GPS_FLUSH_MS,
   STOP_RADIUS_M, ARRIVE_RADIUS_M, START_RADIUS_M, BACK_AT_START_M,
-  DEFAULT_SPEED_MPS, BASELINE_SPEED_MPS, MIN_MOVING_MPS, JUMP_FACTOR,
+  DEFAULT_SPEED_MPS, BASELINE_SPEED_MPS, TURNAROUND_SEC, MIN_MOVING_MPS, JUMP_FACTOR,
 };

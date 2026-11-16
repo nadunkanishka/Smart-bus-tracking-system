@@ -101,11 +101,11 @@ export function StopSelectorModal({ visible, onClose, trip, tracked }) {
             <Text style={[S.modalSectionLabel, S.modalSectionGapLg]}>Route timeline</Text>
             <View style={S.timelineContainer}>
               {selectedRoute.stops.map((stop, idx) => {
-                const live = tracked?.bus.stops?.[idx];
+                const live = tracked?.bus.stops?.find((s) => s.name === stop); // the bus's stops run in its own direction
                 const isPassed = live ? live.status === 'passed' : false;
                 const isBoarding = idx === boardingIndex;
                 const isDestination = idx === destinationIndex;
-                const isActive = idx > boardingIndex && idx <= destinationIndex;
+                const isActive = idx > Math.min(boardingIndex, destinationIndex) && idx < Math.max(boardingIndex, destinationIndex);
                 return (
                   <View key={idx} style={S.timelineRow}>
                     <View style={S.timelineLeft}>

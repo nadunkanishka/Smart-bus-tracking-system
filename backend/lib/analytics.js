@@ -25,9 +25,10 @@ const byHorizon = (rows) => HORIZONS
   .map(({ h, row }) => ({ horizon: h.label, samples: row.samples, engineMaeSec: round(row.engine), baselineMaeSec: round(row.baseline) }));
 
 // Average traversal and dwell per segment of a route: what the ETA engine uses as history.
-async function segmentHistory(routeId) {
+// direction: 'out' (the stored order) or 'back' (the same route reversed); logs from before directions existed are 'out'.
+async function segmentHistory(routeId, direction = 'out') {
   const rows = await SegmentLog.aggregate([
-    { $match: { routeId } },
+    { $match: { routeId, direction: direction === 'back' ? 'back' : { $ne: 'back' } } },
     { $group: { _id: '$segIndex', traversalSec: { $avg: '$traversalSec' }, dwellSec: { $avg: '$dwellSec' }, samples: { $sum: 1 } } },
   ]);
   return Object.fromEntries(rows.map((r) => [r._id, r]));

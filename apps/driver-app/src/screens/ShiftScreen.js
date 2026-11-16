@@ -10,9 +10,9 @@ import { useD } from './ShiftScreen.styles';
 export function ShiftScreen({ session, duty }) {
   const D = useD();
   const { registration: busRegistration, driverName, routeLabel, routeNumber, route, routeStops } = session;
-  const { isOnShift, busy, busSpeed, gpsStatus, connected, queued, mode, currentStopIndex, toggle: onToggleShift } = duty;
+  const { isOnShift, busy, busSpeed, gpsStatus, connected, queued, mode, currentStopIndex, direction, toggle: onToggleShift } = duty;
   const hasRoute = !!route?.trackable;
-  const nextStop = routeStops[currentStopIndex];
+  const nextStop = (direction === 'back' ? [...routeStops].reverse() : routeStops)[currentStopIndex];
   const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
