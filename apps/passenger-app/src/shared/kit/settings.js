@@ -23,7 +23,7 @@ export const Segmented = themed(function Segmented({ options, value, onChange, l
       accessibilityRole="radiogroup"
       accessibilityLabel={label}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      style={{ flexDirection: 'row', padding: 4, borderRadius: RADII.pill, backgroundColor: COLORS.surfaceSoft, borderWidth: 1, borderColor: COLORS.glassLine }}
+      style={{ flexDirection: 'row', padding: 4, borderRadius: RADII.pill, backgroundColor: COLORS.surfaceSoft }}
     >
       {seg ? <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 4, bottom: 4, left: 4, width: seg, borderRadius: RADII.pill, backgroundColor: COLORS.primaryStrong, transform: [{ translateX: x.interpolate({ inputRange: [0, n - 1 || 1], outputRange: [0, seg * (n - 1)] }) }] }} /> : null}
       {options.map((o) => {
@@ -44,7 +44,7 @@ export const SettingsSection = themed(function SettingsSection({ title, note, ch
   return (
     <View style={{ marginBottom: 20 }}>
       {title ? <Text style={{ ...TYPE.overline, ...FONT, color: COLORS.muted, marginBottom: 8, marginLeft: 8, textTransform: 'uppercase' }}>{title}</Text> : null}
-      <View style={{ backgroundColor: COLORS.surface, borderRadius: RADII.lg, borderWidth: 1, borderColor: COLORS.glassLine, overflow: 'hidden' }}>
+      <View style={{ backgroundColor: COLORS.surface, borderRadius: RADII.xl, overflow: 'hidden' }}>
         {rows.map((row, i) => (React.isValidElement(row) && row.type === SettingsRow ? React.cloneElement(row, { first: i === 0 }) : row))}
       </View>
       {note ? <Text style={{ ...TYPE.caption, ...FONT, color: COLORS.muted, marginTop: 8, marginHorizontal: 8 }}>{note}</Text> : null}

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
+import { COLORS, RADII, SPACE } from '../shared/theme';
 import { TOP_INSET, type } from '../shared/ui';
 import { COMMON_STYLES } from '../shared/shell';
 
@@ -7,10 +7,10 @@ import { COMMON_STYLES } from '../shared/shell';
 export const buildCommon = () => StyleSheet.create({
   ...COMMON_STYLES,
   routeScroll: { paddingBottom: 120 },
-  screenTitle: { ...type('display'), color: COLORS.ink, paddingTop: TOP_INSET },
-  screenSubHeader: { ...type('small'), color: COLORS.muted, marginTop: SPACE[1] },
-  sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: SPACE[6], marginBottom: SPACE[3] },
+  screenTitle: { ...type('display'), color: COLORS.ink, paddingTop: TOP_INSET + SPACE[3] },
+  screenSubHeader: { ...type('body'), color: COLORS.muted, marginTop: SPACE[1], marginBottom: SPACE[5] },
+  sectionLabel: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginTop: SPACE[5], marginBottom: SPACE[2] },
   emptyLogBox: { alignItems: 'center', paddingVertical: SPACE[6], gap: SPACE[2] },
   emptyLog: { ...type('small'), color: COLORS.muted, textAlign: 'center' },
-  profileCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[5], marginBottom: SPACE[4], ...SHADOWS.sm },
+  profileCard: { backgroundColor: COLORS.surface, borderRadius: RADII.xl, padding: SPACE[5], marginBottom: SPACE[4] },
 });

@@ -1,92 +1,69 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import LiveMap from '../shared/LiveMap';
-import { GradientCard, OverlapHeader, OverlapSheet, Vehicle } from '../shared/ui';
+import { OverlapSheet, Vehicle } from '../shared/ui';
 import { CheckIcon } from '../shared/icons';
 import { COLORS } from '../shared/theme';
 import { MAP_PADDING } from '../constants';
 import { useD } from './RouteScreen.styles';
 
+// Route: the route number as a big block, the map, then one block per stop: passed stops are dark, the next stop is orange,
+// the rest are white.
 export function RouteScreen({ session, duty }) {
   const D = useD();
   const { route, routeNumber, routeLabel, routeStops } = session;
   const { busMarkers, currentStopIndex, direction, isOnShift } = duty;
-  const back = direction === 'back'; // the list and the highlighted stop follow the leg the bus is on
+  const back = direction === 'back';
   const legStops = back ? [...routeStops].reverse() : routeStops;
   return (
-    <ScrollView
-      style={D.flex}
-      contentContainerStyle={D.routeScroll}
-      showsVerticalScrollIndicator={false}
-    >
-      <OverlapHeader minHeight={150}>
-        <Text style={D.screenTitle}>Route Overview</Text>
-        <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
-      </OverlapHeader>
-
+    <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
       <OverlapSheet>
-        <GradientCard tint="bus" style={D.routeHeaderCardWrap}>
-          <View style={D.routeHeaderCard}>
-            <View style={D.routeHeaderLeft}>
-              <View style={D.routeNumBadge}>
-                <Text style={D.routeNumText}>{route?.number || '–'}</Text>
-              </View>
-              <View style={D.flex}>
-                <Text style={D.routeCardLabel}>{routeNumber}</Text>
-                <Text style={D.routeCardSub} numberOfLines={2}>{routeLabel}</Text>
-              </View>
-            </View>
+        <Text style={D.screenTitle}>Route</Text>
+        <Text style={D.screenSubHeader}>{routeNumber} · {routeStops.length} stops</Text>
+
+        <View style={D.numberBlock}>
+          <Text style={D.numberText}>{route?.number || '–'}</Text>
+          <View style={D.flex}>
+            <Text style={D.routeCardLabel} numberOfLines={2}>{routeLabel}</Text>
             <View style={[D.statusPill, isOnShift ? D.statusPillActive : D.statusPillOff]}>
-              <Text style={[D.statusPillText, isOnShift ? D.statusPillTextActive : D.statusPillTextOff]}>
-                {isOnShift ? 'On Duty' : 'Off Duty'}
-              </Text>
+              <Text style={[D.statusPillText, isOnShift ? D.statusPillTextActive : D.statusPillTextOff]}>{isOnShift ? 'On duty' : 'Off duty'}</Text>
             </View>
           </View>
-        </GradientCard>
+        </View>
 
         {route?.trackable ? (
           <View style={D.mapCard}>
-            <LiveMap path={route.path} stops={route.stopPoints} buses={busMarkers} highlightStop={isOnShift ? (back ? routeStops.length - 1 - currentStopIndex : currentStopIndex) : -1} padding={MAP_PADDING} />
+            <LiveMap
+              path={route.path}
+              stops={route.stopPoints}
+              buses={busMarkers}
+              padding={MAP_PADDING}
+              highlightStop={!isOnShift ? -1 : back ? routeStops.length - 1 - currentStopIndex : currentStopIndex}
+            />
           </View>
         ) : null}
 
-        <Text style={D.sectionLabel}>Stop timeline</Text>
-        <View style={D.timelineCard}>
-          {routeStops.length === 0 ? (
-            <View style={D.emptyLogBox}>
-              <Vehicle name="bus" width={100} label="No route assigned" />
-              <Text style={D.emptyLog}>No route is assigned to this bus yet.</Text>
-            </View>
-          ) : legStops.map((stop, idx) => {
+        <Text style={D.sectionLabel}>Stops</Text>
+        {routeStops.length === 0 ? (
+          <View style={D.emptyBlock}>
+            <Vehicle name="bus" width={100} label="No route assigned" />
+            <Text style={D.emptyLog}>No route is assigned to this bus yet.</Text>
+          </View>
+        ) : (
+          legStops.map((stop, idx) => {
             const isPassed = isOnShift && idx < currentStopIndex;
             const isCurrent = isOnShift && idx === currentStopIndex;
             return (
-              <View key={idx} style={D.timelineRow}>
-                <View style={D.timelineLeft}>
-                  <View style={[
-                    D.timelineDot,
-                    isPassed && D.dotPassed,
-                    isCurrent && D.dotCurrent,
-                  ]}>
-                    {isPassed ? <CheckIcon color={COLORS.onBright} size={11} /> : null}
-                    {isCurrent ? <View style={D.dotCurrentInner} /> : null}
-                  </View>
-                  {idx < legStops.length - 1 && (
-                    <View style={[D.timelineLine, isPassed && D.lineVPassed]} />
-                  )}
+              <View key={idx} style={[D.stopBlock, isCurrent ? D.stopCurrent : isPassed ? D.stopPassed : D.stopUpcoming]}>
+                <View style={[D.stopIndex, isCurrent && D.stopIndexCurrent]}>
+                  {isPassed ? <CheckIcon color={COLORS.onCard} size={14} /> : <Text style={[D.stopIndexText, isCurrent && D.onOrange]}>{String(idx + 1).padStart(2, '0')}</Text>}
                 </View>
-                <View style={D.timelineRight}>
-                  <Text style={[D.timelineStop, isCurrent && D.timelineStopActive]}>
-                    {stop}
-                  </Text>
-                  <Text style={D.timelineTag}>
-                    {isPassed ? 'Passed' : isCurrent ? '→ Next stop' : 'Upcoming'}
-                  </Text>
-                </View>
+                <Text style={[D.stopName, isCurrent && D.onOrange, isPassed && D.onCard]} numberOfLines={2}>{stop}</Text>
+                <Text style={[D.stopTag, isCurrent && D.onOrange, isPassed && D.onCardSoft]}>{isPassed ? 'Passed' : isCurrent ? 'Next stop' : 'Upcoming'}</Text>
               </View>
             );
-          })}
-        </View>
+          })
+        )}
       </OverlapSheet>
     </ScrollView>
   );

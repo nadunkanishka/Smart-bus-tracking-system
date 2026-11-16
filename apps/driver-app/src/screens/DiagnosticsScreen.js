@@ -1,48 +1,44 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { CountUp, LiveDot, OverlapHeader, OverlapSheet, RingGauge, Vehicle } from '../shared/ui';
+import { CountUp, LiveDot, OverlapSheet, Vehicle } from '../shared/ui';
 import { formatCoord } from '../utils';
 import { useD } from './DiagnosticsScreen.styles';
 
+// Telemetry: speed as one huge number on the orange block, GPS on the blue block, the coordinates, then the log on black.
 export function DiagnosticsScreen({ duty }) {
   const D = useD();
   const { busSpeed, gpsStatus, driverCoordinate, logs, isOnShift } = duty;
   const gpsOk = gpsStatus === 'Connected';
+  const speed = isOnShift ? busSpeed : 0;
   return (
-    <ScrollView
-      style={D.flex}
-      contentContainerStyle={D.routeScroll}
-      showsVerticalScrollIndicator={false}
-    >
-      <OverlapHeader minHeight={150}>
-        <Text style={D.screenTitle}>Telemetry</Text>
-        <Text style={D.screenSubHeader}>Live diagnostics & GPS transmission log</Text>
-      </OverlapHeader>
-
+    <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
       <OverlapSheet>
-        <View style={D.metricsRow}>
-          <View style={[D.metricCard, D.ringCard]}>
-            <RingGauge value={isOnShift ? busSpeed : 0} max={80} size={116} stroke={10} color={COLORS.orange}>
-              <CountUp value={isOnShift ? busSpeed : 0} style={D.ringValue} />
-              <Text style={D.metricUnit}>km/h</Text>
-            </RingGauge>
-            <Text style={D.metricLabel}>Speed</Text>
-          </View>
-          <View style={[D.metricCard, D.ringCard]}>
-            <View style={D.gpsBox}>
-              {gpsOk ? <LiveDot color={COLORS.green} size={14} /> : <View style={[D.gpsStatusDot, { backgroundColor: COLORS.danger }]} />}
-            </View>
-            <Text style={[D.metricValSm, { color: gpsOk ? COLORS.success : COLORS.danger }]}>{gpsStatus}</Text>
-            <Text style={D.metricLabel}>GPS</Text>
+        <Text style={D.screenTitle}>Telemetry</Text>
+        <Text style={D.screenSubHeader}>Live speed, GPS and the transmission log</Text>
+
+        <View style={D.speedBlock}>
+          <Text style={D.speedLabel}>Speed</Text>
+          <View style={D.speedRow}>
+            <CountUp value={speed} style={D.speedValue} />
+            <Text style={D.speedUnit}>km/h</Text>
           </View>
         </View>
 
-        <View style={D.coordCard}>
-          <Text style={D.sectionLabelFlat}>Current coordinates</Text>
-          <Text style={D.coordText}>
-            {driverCoordinate ? `${formatCoord(driverCoordinate.latitude)}, ${formatCoord(driverCoordinate.longitude)}` : 'No GPS fix yet'}
-          </Text>
+        <View style={D.pairRow}>
+          <View style={[D.pair, D.pairBlue]}>
+            <Text style={D.pairLabelBlue}>GPS</Text>
+            <View style={D.pairValueRow}>
+              {gpsOk ? <LiveDot color={COLORS.onBlue} size={12} /> : <View style={D.gpsStatusDot} />}
+              <Text style={D.pairValueBlue}>{gpsStatus}</Text>
+            </View>
+          </View>
+          <View style={[D.pair, D.pairWhite]}>
+            <Text style={D.pairLabel}>Coordinates</Text>
+            <Text style={D.coordText} numberOfLines={2}>
+              {driverCoordinate ? `${formatCoord(driverCoordinate.latitude)}\n${formatCoord(driverCoordinate.longitude)}` : 'No GPS fix yet'}
+            </Text>
+          </View>
         </View>
 
         <Text style={D.sectionLabel}>GPS transmission log</Text>
@@ -50,7 +46,7 @@ export function DiagnosticsScreen({ duty }) {
           {logs.length === 0 ? (
             <View style={D.emptyLogBox}>
               <Vehicle name="bus" status="idle" width={100} label="No GPS fixes yet" />
-              <Text style={D.emptyLog}>No fixes recorded. Go on duty to broadcast.</Text>
+              <Text style={D.emptyLogOnCard}>No fixes recorded. Go on duty to broadcast.</Text>
             </View>
           ) : (
             logs.map((entry, idx) => (

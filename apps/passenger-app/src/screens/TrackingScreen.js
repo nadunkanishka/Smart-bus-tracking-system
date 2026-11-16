@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import LiveMap from '../shared/LiveMap';
 import { COLORS } from '../shared/theme';
 import { Button, IconButton, Vehicle, VehicleLoader, ProgressTrack } from '../shared/ui';
-import { ArrowRightIcon, MoreVerticalIcon } from '../shared/icons';
+import { MoreVerticalIcon } from '../shared/icons';
 import { MAP_PADDING, MAP_PADDING_COMPACT_BOTTOM } from '../constants';
 import { StopPicker } from '../components/StopPicker';
 import { trackedSummary } from '../utils';
@@ -78,19 +78,16 @@ export function TrackingScreen({
         <View style={S.stopSelectorBar}>
           <StopPicker
             label="BOARDING"
-            dotStyle={S.stopDotGreen}
+            tone="white"
             value={boardingStop}
             expanded={isBoardingExpanded}
             onToggle={() => { setIsBoardingExpanded(p => !p); setIsDestExpanded(false); }}
             stops={routeStops}
             onPick={(stop) => { setBoardingStop(stop); setIsBoardingExpanded(false); }}
           />
-          <View style={S.stopSelectorDivider}>
-            <ArrowRightIcon color={COLORS.accent} size={16} />
-          </View>
           <StopPicker
             label="DESTINATION"
-            dotStyle={S.stopDotOrange}
+            tone="blue"
             value={destinationStop}
             expanded={isDestExpanded}
             onToggle={() => { setIsDestExpanded(p => !p); setIsBoardingExpanded(false); }}
@@ -142,7 +139,7 @@ export function TrackingScreen({
             </View>
 
             <View style={S.progressBlock}>
-              <ProgressTrack value={progress} height={6} color={COLORS.orange} track={COLORS.line} />
+              <ProgressTrack value={progress} height={6} color={COLORS.orange} track={COLORS.surfaceSoft} />
               <Text style={S.progressSummary}>{trackedSummary(tracked, boardingStop, destinationStop)}</Text>
             </View>
 
@@ -160,8 +157,8 @@ export function TrackingScreen({
                 return (
                   <View key={stop.index} style={[S.etaRow, mine && S.etaRowOn]}>
                     <View style={[S.etaDot, stop.status === 'passed' && S.etaDotPassed, mine && S.etaDotOn]} />
-                    <Text style={[S.etaStop, stop.status === 'passed' && S.etaPassed]} numberOfLines={1}>{stop.name}</Text>
-                    <Text style={[S.etaVal, stop.status === 'passed' && S.etaPassed]}>
+                    <Text style={[S.etaStop, stop.status === 'passed' && S.etaPassed, mine && S.etaOnText]} numberOfLines={1}>{stop.name}</Text>
+                    <Text style={[S.etaVal, stop.status === 'passed' && S.etaPassed, mine && S.etaOnText]}>
                       {stop.status === 'passed' ? 'Passed' : `${stop.etaMin} min`}
                     </Text>
                   </View>

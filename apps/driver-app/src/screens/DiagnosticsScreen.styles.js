@@ -1,27 +1,31 @@
 import { StyleSheet } from 'react-native';
 import { createStyles } from '../shared/themeRuntime';
-import { COLORS, RADII, SHADOWS, SPACE } from '../shared/theme';
+import { COLORS, RADII, SPACE } from '../shared/theme';
 import { buildCommon } from '../styles/common';
 import { type } from '../shared/ui';
 
 export const useD = createStyles(() => ({
   ...buildCommon(),
   ...StyleSheet.create({
-    sectionLabelFlat: { ...type('overline'), color: COLORS.muted, textTransform: 'uppercase', marginBottom: SPACE[2] },
-    metricsRow: { flexDirection: 'row', gap: SPACE[3], marginBottom: SPACE[3] },
-    metricCard: { flex: 1, backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[5], gap: SPACE[1], ...SHADOWS.sm },
-    metricValSm: { ...type('h2') },
-    ringCard: { alignItems: 'center', justifyContent: 'center', gap: SPACE[3], paddingVertical: SPACE[5] },
-    ringValue: { ...type('display'), color: COLORS.ink, letterSpacing: -0.5 },
-    gpsBox: { width: 116, height: 116, alignItems: 'center', justifyContent: 'center' },
-    metricUnit: { ...type('small'), color: COLORS.muted },
-    metricLabel: { ...type('small'), color: COLORS.muted },
-    gpsStatusDot: { width: 12, height: 12, borderRadius: 6 },
-    coordCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, padding: SPACE[5], ...SHADOWS.sm },
-    coordText: { ...type('h2'), color: COLORS.ink, fontVariant: ['tabular-nums'] },
-    logCard: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassLine, borderRadius: RADII.lg, paddingHorizontal: SPACE[5], paddingVertical: SPACE[2], ...SHADOWS.sm },
-    logRow: { minHeight: 44, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: COLORS.line },
+    speedBlock: { backgroundColor: COLORS.orange, borderRadius: RADII.xl, padding: SPACE[5], marginBottom: SPACE[2], minHeight: 190, justifyContent: 'space-between' },
+    speedLabel: { ...type('h3'), color: COLORS.onBright },
+    speedRow: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE[2] },
+    speedValue: { fontSize: 112, lineHeight: 112, fontWeight: '300', letterSpacing: -6, color: COLORS.onBright },
+    speedUnit: { ...type('h3'), color: COLORS.onBright, opacity: 0.75, paddingBottom: SPACE[3] },
+    pairRow: { flexDirection: 'row', gap: SPACE[2], marginBottom: SPACE[2] },
+    pair: { flex: 1, minHeight: 120, borderRadius: RADII.lg, padding: SPACE[4], justifyContent: 'space-between' },
+    pairBlue: { backgroundColor: COLORS.blue },
+    pairWhite: { backgroundColor: COLORS.surface },
+    pairLabel: { ...type('caption'), color: COLORS.muted },
+    pairLabelBlue: { ...type('caption'), color: COLORS.onBlue, opacity: 0.8 },
+    pairValueRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE[2] },
+    pairValueBlue: { ...type('h2'), color: COLORS.onBlue },
+    gpsStatusDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.danger },
+    coordText: { ...type('bodyBold'), color: COLORS.ink, fontVariant: ['tabular-nums'] },
+    logCard: { backgroundColor: COLORS.card, borderRadius: RADII.xl, paddingHorizontal: SPACE[5], paddingVertical: SPACE[3] },
+    emptyLogOnCard: { ...type('small'), color: COLORS.cardMuted, textAlign: 'center' },
+    logRow: { minHeight: 44, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.1)' },
     logRowLast: { borderBottomWidth: 0 },
-    logText: { ...type('small'), color: COLORS.inkSoft, fontVariant: ['tabular-nums'] },
+    logText: { ...type('small'), color: COLORS.onCard, fontVariant: ['tabular-nums'] },
   }),
 }));

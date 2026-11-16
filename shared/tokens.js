@@ -1,52 +1,57 @@
-// SmartBus mobile design tokens: a clean skin (soft grey page, white cards, black text, one orange accent for actions and the hero), no gradients, no glow, no shadows.
-// `npm run sync` copies this into both phone apps (src/shared/theme.js). The admin dashboard has its own tokens in
-// adminTokens.json, which sync.js turns into CSS variables.
+// SmartBus mobile design tokens: "Studio". Charcoal and white surfaces, big flat colour blocks (royal blue, white, black),
+// light-weight oversized type, and orange as the accent only (actions, the live bus, the route line, key numbers).
+// No gradients, no glow, no shadows. `npm run sync` copies this into both phone apps (src/shared/theme.js). The admin
+// dashboard has its own tokens in adminTokens.json, which sync.js turns into CSS variables.
 
-// Orange is the accent: buttons, the selected tab, the hero and on-duty cards, the route line. Black is text and the dark card. Green marks anything active or live (a running bus, a
-// connected server): a status colour, not a brand colour. Red is only for destructive actions.
-export const PALETTE = { night: '#0E0E0F', orange: '#FF7A00', red: '#D92D20', green: '#1FA95B' };
+// Green marks anything active or live (a running bus, a connected server): a status colour, not a brand colour.
+// Red is only for destructive actions.
+export const PALETTE = { night: '#101114', orange: '#FF5A1F', blue: '#4562D9', red: '#D92D20', green: '#1FA95B' };
 
 // Semantic names stay the same in both modes. Rules the apps rely on:
 //   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
-//   onBright is always night: text on the orange accent, never `ink` or `white` (white on this orange is 2.7:1, night is 8:1).
-//   card / onCard: the black card (a hero, a stat) and its text; in dark mode the card is a lighter grey than the page.
+//   onBright is always night: text on the orange accent (white on this orange is 3.1:1, night is 6.6:1).
+//   card / onCard: the black block (a hero, a stat) and its text. blue / onBlue: the blue block and its white text.
 const LIGHT = {
-  bg: '#EDEDEF', // soft grey page, white cards on it
+  bg: '#ECECEF',
   surface: '#FFFFFF', // cards and rows
-  surfaceSoft: '#E4E4E7', // inactive pills, inputs, tracks
-  line: '#DEDEE2',
-  outline: '#CFCFD4', // input borders
-  ring: 'rgba(14, 14, 15, 0.45)', // keyboard focus ring
-  glass: '#FFFFFF', // the card fill name used across the screens
-  scrim: 'rgba(14, 14, 15, 0.4)', // behind sheets and dialogs
-  mapChrome: 'rgba(255, 255, 255, 0.8)',
-  glassLine: '#E1E1E5', // hairline card border
+  surfaceSoft: '#E3E3E8', // inputs, inactive pills, tracks
+  line: '#DADADF',
+  outline: '#C9C9D1',
+  ring: 'rgba(255, 90, 31, 0.6)', // keyboard focus ring
+  glass: '#FFFFFF',
+  scrim: 'rgba(16, 17, 20, 0.45)', // behind sheets and dialogs
+  mapChrome: 'rgba(255, 255, 255, 0.85)',
+  glassLine: 'rgba(16, 17, 20, 0)', // blocks have no border
   glowA: 'rgba(0, 0, 0, 0)',
   glowB: 'rgba(0, 0, 0, 0)',
   orange: PALETTE.orange,
-  violet: PALETTE.night, // the "second voice" of the old skin is black now: destination dots, highlights
+  violet: PALETTE.blue, // destination dots and the "second voice"
   heroFrom: PALETTE.orange,
   heroTo: PALETTE.orange,
   heroShape: PALETTE.orange,
   backdrop: PALETTE.orange,
 
   primary: PALETTE.orange,
-  primaryLight: '#FFE5CC',
-  primaryDeep: '#A64B00',
+  primaryLight: '#FFDFD2',
+  primaryDeep: '#B53A0A',
   primaryStrong: PALETTE.orange,
-  primarySoft: '#FFF0E0',
-  accent: PALETTE.night,
-  accentText: '#0E0E0F',
-  accentSoft: '#ECECEE',
+  primarySoft: '#FFEFE8',
+  accent: PALETTE.blue,
+  accentText: '#3550C4',
+  accentSoft: '#DDE3FA',
 
-  ink: PALETTE.night,
-  inkSoft: '#2A2A2C',
-  muted: '#76767C', // 4.6:1 on white
-  mutedLight: '#B1B1B7', // decorative only
+  blue: PALETTE.blue,
+  blueSoft: '#DDE3FA',
+  onBlue: '#FFFFFF',
+
+  ink: '#16171B',
+  inkSoft: '#34353C',
+  muted: '#6B6D77', // 4.9:1 on white
+  mutedLight: '#B3B5BE', // decorative only
 
   card: PALETTE.night,
   onCard: '#FFFFFF',
-  cardMuted: '#A6A6AC',
+  cardMuted: '#9A9CA6',
 
   green: PALETTE.green,
   greenSoft: '#DDF3E6',
@@ -67,42 +72,46 @@ const LIGHT = {
 };
 
 const DARK = {
-  bg: '#0B0B0C',
-  surface: '#161618',
-  surfaceSoft: '#232326',
-  line: '#2B2B2F',
-  outline: '#3C3C42',
-  ring: 'rgba(255, 122, 0, 0.7)',
-  glass: '#161618',
-  scrim: 'rgba(0, 0, 0, 0.6)',
-  mapChrome: 'rgba(11, 11, 12, 0.8)',
-  glassLine: '#26262A',
+  bg: '#17181C',
+  surface: '#222328',
+  surfaceSoft: '#2D2E35',
+  line: '#34353C',
+  outline: '#44454E',
+  ring: 'rgba(255, 90, 31, 0.75)',
+  glass: '#222328',
+  scrim: 'rgba(0, 0, 0, 0.62)',
+  mapChrome: 'rgba(23, 24, 28, 0.85)',
+  glassLine: 'rgba(255, 255, 255, 0)',
   glowA: 'rgba(0, 0, 0, 0)',
   glowB: 'rgba(0, 0, 0, 0)',
   orange: PALETTE.orange,
-  violet: '#F4F4F5',
+  violet: '#6F88F2',
   heroFrom: PALETTE.orange,
   heroTo: PALETTE.orange,
   heroShape: PALETTE.orange,
   backdrop: PALETTE.orange,
 
   primary: PALETTE.orange,
-  primaryLight: '#3A2410',
-  primaryDeep: '#FFA24D',
+  primaryLight: '#4A2415',
+  primaryDeep: '#FF9166',
   primaryStrong: PALETTE.orange,
-  primarySoft: '#2A1A0C',
-  accent: '#F4F4F5',
-  accentText: '#F4F4F5',
-  accentSoft: '#232326',
+  primarySoft: '#33201A',
+  accent: '#6F88F2',
+  accentText: '#8FA3F6',
+  accentSoft: '#26305E',
 
-  ink: '#F4F4F5',
-  inkSoft: '#D8D8DC',
-  muted: '#9E9EA6', // 6.6:1 on surface
-  mutedLight: '#5F5F66',
+  blue: PALETTE.blue,
+  blueSoft: '#26305E',
+  onBlue: '#FFFFFF',
 
-  card: '#2A2A2E',
+  ink: '#F5F5F7',
+  inkSoft: '#D6D6DB',
+  muted: '#9A9CA6', // 6.1:1 on surface
+  mutedLight: '#5C5E68',
+
+  card: '#0E0F12',
   onCard: '#FFFFFF',
-  cardMuted: '#A6A6AC',
+  cardMuted: '#9A9CA6',
 
   green: '#35D07F',
   greenSoft: '#12301F',
@@ -116,8 +125,8 @@ const DARK = {
   onBright: PALETTE.night,
   glow: 'rgba(0, 0, 0, 0)',
 
-  tints: { bus: ['#161618', '#161618'] },
-  tintLines: { bus: '#161618' },
+  tints: { bus: ['#222328', '#222328'] },
+  tintLines: { bus: '#222328' },
 
   white: PALETTE.night, // "text on ink": night on the near-white fills
 };
@@ -133,28 +142,29 @@ export function applyTheme(mode) {
   return mode in THEMES ? mode : 'light';
 }
 
-// Rounder than before: cards 28, big blocks 32, controls are pills.
-export const RADII = { sm: 16, md: 20, lg: 28, xl: 32, pill: 999 };
+// Big soft blocks: cards 28, hero blocks 36, controls are pills.
+export const RADII = { sm: 16, md: 22, lg: 28, xl: 36, pill: 999 };
 
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48 };
 
 // The strong ease-out every press, toast and switch uses: cubic-bezier control points.
 export const EASE_OUT = [0.23, 1, 0.32, 1];
 
-// Type scale: one fixed size + line-height + weight per role. Headings are large and tight, like the reference.
+// Type scale: light, large and tight for the headings and numbers (the look of the reference), medium for labels.
+// One fixed size + line-height + weight per role.
 export const TYPE = {
-  display: { fontSize: 40, lineHeight: 44, fontWeight: '800', letterSpacing: -1.6 },
-  h1: { fontSize: 28, lineHeight: 33, fontWeight: '800', letterSpacing: -0.8 },
-  h2: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.4 },
-  h3: { fontSize: 18, lineHeight: 24, fontWeight: '700', letterSpacing: -0.2 },
-  body: { fontSize: 16, lineHeight: 24, fontWeight: '500' },
-  bodyBold: { fontSize: 16, lineHeight: 24, fontWeight: '700' },
-  small: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  smallBold: { fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  caption: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
-  overline: { fontSize: 12, lineHeight: 16, fontWeight: '700', letterSpacing: 0.8 },
+  display: { fontSize: 40, lineHeight: 44, fontWeight: '300', letterSpacing: -1.4 },
+  h1: { fontSize: 30, lineHeight: 34, fontWeight: '400', letterSpacing: -0.8 },
+  h2: { fontSize: 24, lineHeight: 29, fontWeight: '400', letterSpacing: -0.5 },
+  h3: { fontSize: 19, lineHeight: 24, fontWeight: '500', letterSpacing: -0.2 },
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' },
+  bodyBold: { fontSize: 16, lineHeight: 24, fontWeight: '600' },
+  small: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
+  smallBold: { fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
+  overline: { fontSize: 12, lineHeight: 16, fontWeight: '600', letterSpacing: 0.8 },
 };
 
-// Flat: no shadows. Cards separate from the page by colour, not by depth. (The keys stay so style code does not change.)
+// Flat: no shadows. Blocks separate from the page by colour, not by depth. (The keys stay so style code does not change.)
 const NONE = { shadowColor: '#000000', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0, shadowRadius: 0, elevation: 0 };
 export const SHADOWS = { sm: NONE, md: NONE, lg: NONE };
