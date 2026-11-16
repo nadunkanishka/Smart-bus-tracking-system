@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const segmentLogSchema = new mongoose.Schema({
   routeId: { type: String, required: true },
   segIndex: { type: Number, required: true },
+  direction: { type: String, default: 'out' }, // 'back': the route reversed (segIndex counts from the other end)
   tripId: String,
   busId: String,
   traversalSec: { type: Number, required: true },

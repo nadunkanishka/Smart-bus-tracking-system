@@ -10,12 +10,33 @@ const { haversine } = require('./geo');
 const { computeEta } = require('./eta');
 const { smoothFix, SMOOTHING } = require('./smooth');
 const { LIVE_WINDOW_MS, MAX_SPEED_MPS } = require('./contract');
-const { MIN_FIX_GAP_MS, JUMP_FACTOR } = require('./limits');
+const { MIN_FIX_GAP_MS, JUMP_FACTOR, TURNAROUND_SEC } = require('./limits');
 
 const OK_RESULTS = new Set(['accepted', 'duplicate']); // what the driver app may drop from its queue
+const other = (direction) => (direction === 'out' ? 'back' : 'out');
+
+// A route is run in two legs. A bus starts on the leg that begins at the terminal it is nearer to, and flips legs by
+// itself at each terminal. shortcut: a bus that starts mid-route is placed by its nearer terminal, not its heading.
+const nearerEnd = (route, fix) => {
+  const first = route.stops[0];
+  const last = route.stops[route.stops.length - 1];
+  return haversine([fix.lat, fix.lng], [last.lat, last.lng]) < haversine([fix.lat, fix.lng], [first.lat, first.lng]);
+};
+
+// The stops of the opposite leg with the wait built in: the time to finish this leg, a turnaround, then that leg's
+// own times (from its first stop). A passenger at the far terminal sees the bus long before it turns round.
+// Computed once per prepared route (the bus is taken to start at the terminal), then shifted.
+function nextLegStops(route, thisEta) {
+  if (!route.fromStart) route.fromStart = computeEta(route, { ...route.stops[0], speed: 0 }, 0).stops;
+  const toEnd = thisEta.stops[thisEta.stops.length - 1].etaSec ?? 0;
+  return route.fromStart.map((s) => {
+    const etaSec = (s.etaSec ?? 0) + toEnd + (s.index ? TURNAROUND_SEC : 0);
+    return { ...s, status: 'upcoming', etaSec, etaMin: Math.max(1, Math.round(etaSec / 60)) };
+  });
+}
 
 // deps:
-//   getRoute(routeId)               prepared route or null (no geometry: positions are still shown, without ETA)
+//   getRoute(routeId, direction)    prepared route ('out', or 'back' = reversed) or null (no geometry: positions are still shown, without ETA)
 //   track(bus, route, eta, fix)     trip history (lib/tripRecorder.js)
 //   recordFix(bus, raw, used, fromOfflineQueue)  GPS log
 //   publish(bus, payload)           send the update to the route's passengers and the latest-fix cache
@@ -57,13 +78,26 @@ function createFixPipeline({ getRoute, track, recordFix, publish, metrics, smoot
       bus.smooth = null;
     }
 
-    const route = await getRoute(bus.routeId);
+    if (!bus.direction) {
+      const out = await getRoute(bus.routeId, 'out');
+      bus.direction = out && nearerEnd(out, used) ? 'back' : 'out';
+    }
+    const direction = bus.direction; // the leg this fix is on (the bus may flip legs below)
+    const route = await getRoute(bus.routeId, direction);
     let eta = null;
+    let nextStops = [];
     if (route) {
       eta = computeEta(route, used, bus.distAlong);
       bus.distAlong = eta.distAlong;
       bus.nextStopIndex = Math.min(eta.segIndex + 1, route.stops.length - 1);
       await track(bus, route, eta, used);
+      const next = await getRoute(bus.routeId, other(direction));
+      if (next) nextStops = nextLegStops(next, eta);
+      if (eta.finished) { // at the terminal: the next fix is on the other leg
+        bus.direction = other(direction);
+        bus.distAlong = undefined;
+        bus.nextStopIndex = 1;
+      }
     }
     recordFix(bus, fix, used, fromOfflineQueue);
 
@@ -84,6 +118,8 @@ function createFixPipeline({ getRoute, track, recordFix, publish, metrics, smoot
       offRouteM: eta ? Math.round(eta.offRoute) : null,
       finished: eta ? eta.finished : false,
       stops: eta ? eta.stops : [],
+      direction,
+      nextStops,
     };
     publish(bus, payload);
     metrics.count('broadcasts');

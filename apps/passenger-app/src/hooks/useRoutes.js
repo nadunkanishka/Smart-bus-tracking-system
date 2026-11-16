@@ -65,18 +65,17 @@ export function useRoutes({ session, showToast }) {
 
   useEffect(() => { if (session) loadRoutes(); }, [session, loadRoutes]);
 
-  // A trip goes forward along the route: choosing a boarding stop at or after the destination moves the destination to the
-  // end of the route, and choosing a destination at or before the boarding stop moves the boarding stop to the start.
-  const lastStop = selectedRoute.stops.length - 1;
+  // Any two different stops make a trip, in either direction (a later stop to an earlier one is the return leg). Choosing
+  // the stop the other end already has moves that other end to the far terminal.
+  const { stops } = selectedRoute;
+  const farTerminal = (name) => (name === stops[stops.length - 1] ? stops[0] : stops[stops.length - 1]);
   function setBoardingStop(name) {
     setBoardingStopRaw(name);
-    const i = selectedRoute.stops.indexOf(name);
-    if (i >= 0 && selectedRoute.stops.indexOf(destinationStop) <= i) setDestinationStopRaw(i >= lastStop ? name : selectedRoute.stops[lastStop]);
+    if (name === destinationStop) setDestinationStopRaw(farTerminal(name));
   }
   function setDestinationStop(name) {
     setDestinationStopRaw(name);
-    const d = selectedRoute.stops.indexOf(name);
-    if (d >= 0 && selectedRoute.stops.indexOf(boardingStop) >= d) setBoardingStopRaw(d === 0 ? name : selectedRoute.stops[0]);
+    if (name === boardingStop) setBoardingStopRaw(farTerminal(name));
   }
 
   return {

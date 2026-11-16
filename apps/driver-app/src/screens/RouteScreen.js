@@ -10,7 +10,9 @@ import { useD } from './RouteScreen.styles';
 export function RouteScreen({ session, duty }) {
   const D = useD();
   const { route, routeNumber, routeLabel, routeStops } = session;
-  const { busMarkers, currentStopIndex, isOnShift } = duty;
+  const { busMarkers, currentStopIndex, direction, isOnShift } = duty;
+  const back = direction === 'back'; // the list and the highlighted stop follow the leg the bus is on
+  const legStops = back ? [...routeStops].reverse() : routeStops;
   return (
     <ScrollView
       style={D.flex}
@@ -44,7 +46,7 @@ export function RouteScreen({ session, duty }) {
 
         {route?.trackable ? (
           <View style={D.mapCard}>
-            <LiveMap path={route.path} stops={route.stopPoints} buses={busMarkers} highlightStop={isOnShift ? currentStopIndex : -1} padding={MAP_PADDING} />
+            <LiveMap path={route.path} stops={route.stopPoints} buses={busMarkers} highlightStop={isOnShift ? (back ? routeStops.length - 1 - currentStopIndex : currentStopIndex) : -1} padding={MAP_PADDING} />
           </View>
         ) : null}
 
@@ -55,7 +57,7 @@ export function RouteScreen({ session, duty }) {
               <Vehicle name="bus" width={100} label="No route assigned" />
               <Text style={D.emptyLog}>No route is assigned to this bus yet.</Text>
             </View>
-          ) : routeStops.map((stop, idx) => {
+          ) : legStops.map((stop, idx) => {
             const isPassed = isOnShift && idx < currentStopIndex;
             const isCurrent = isOnShift && idx === currentStopIndex;
             return (
@@ -69,7 +71,7 @@ export function RouteScreen({ session, duty }) {
                     {isPassed ? <CheckIcon color={COLORS.onBright} size={7} /> : null}
                     {isCurrent ? <View style={D.dotCurrentInner} /> : null}
                   </View>
-                  {idx < routeStops.length - 1 && (
+                  {idx < legStops.length - 1 && (
                     <View style={[D.timelineLine, isPassed && D.lineVPassed]} />
                   )}
                 </View>

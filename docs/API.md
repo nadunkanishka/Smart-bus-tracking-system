@@ -101,19 +101,23 @@ Connect to the base URL. Drivers pass their token in the handshake: `io(url, { a
   "lat": 6.9211, "lng": 79.8702, "speed": 9.4, "heading": 132,
   "deviceTs": 1791306871911, "serverRecvTs": 1791306871950, "serverEmitTs": 1791306871953,
   "segIndex": 0, "offRouteM": 6, "finished": false, "buffered": false,
+  "direction": "out",
   "stops": [
     { "index": 0, "name": "Pettah", "status": "passed", "etaSec": null, "etaMin": null },
     { "index": 1, "name": "Borella Junction", "status": "upcoming", "etaSec": 312, "etaMin": 5 }
-  ]
+  ],
+  "nextStops": [ { "index": 0, "name": "Kottawa", "status": "upcoming", "etaSec": 2410, "etaMin": 40 } ]
 }
 ```
+
+`direction` is `out` (the route's first stop to its last) or `back` (the reverse); `stops` are in the order of that leg. `nextStops` are the stops of the other leg, with the time to finish this leg and a turnaround already added, so a passenger waiting at the far end sees the bus before it turns round. A bus flips legs by itself at each terminal.
 
 ### Driver
 
 | Direction | Event | Payload |
 |---|---|---|
 | client → server | `driver:duty` | `{ onDuty: true/false }`. Off duty removes the bus from the map. Ack: `{ ok: true, onDuty }` |
-| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, ts, nextStopIndex }` (`ts` echoes the fix's `ts`) where `result` is `accepted`, `duplicate` (also an out-of-order fix), `too frequent`, `position jump` or a validation message; `ok` is true for `accepted` and `duplicate` (the app may drop the fix) |
+| client → server | `gps:fix` | `{ lat, lng, speed, heading, accuracy, ts }`. `speed` in m/s, `ts` device epoch ms. Ack: `{ ok, result, ts, nextStopIndex, direction }` (`ts` echoes the fix's `ts`; `nextStopIndex` counts along the leg `direction` names) where `result` is `accepted`, `duplicate` (also an out-of-order fix), `too frequent`, `position jump` or a validation message; `ok` is true for `accepted` and `duplicate` (the app may drop the fix) |
 | client → server | `gps:batch` | Array of up to 1000 fixes (`MAX_BATCH` in the contract) from the offline queue, replayed oldest first. A fix without a numeric `ts` counts as rejected. Ack: `{ ok: true, accepted, duplicate, rejected, lastTs }` (`lastTs`: the newest usable `ts`, or null); `{ ok: false, error: 'Batch must be an array of at most 1000 fixes' }` otherwise |
 | client → server | `driver:auth` | `{ token }` (a driver token). Alternative to the handshake token, used by the load tests. Ack: `{ ok: true }` or `{ ok: false, error: 'Invalid driver token' }`; accepted once per connection |
 

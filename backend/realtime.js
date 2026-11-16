@@ -24,7 +24,7 @@ function createRealtime(io, store, {
   const buses = new Map(); // busId -> live state for this process
 
   const pipeline = createFixPipeline({
-    getRoute: (routeId) => routeCache.get(routeId),
+    getRoute: (routeId, direction) => routeCache.get(routeId, direction),
     track: recorder.track,
     recordFix: recorder.recordFix,
     publish(bus, payload) {
@@ -42,7 +42,7 @@ function createRealtime(io, store, {
   async function takeOffMap(bus) {
     const routeId = bus.routeId;
     const ending = recorder.endTrip(bus, false, Date.now());
-    Object.assign(bus, { onDuty: false, lastFix: null, smooth: null, distAlong: undefined, nextStopIndex: undefined });
+    Object.assign(bus, { onDuty: false, lastFix: null, smooth: null, distAlong: undefined, nextStopIndex: undefined, direction: undefined });
     const results = await Promise.allSettled([ending, store.remove(bus.busId)]);
     io.to(room(routeId)).emit(EVENTS.OFFLINE, { busId: bus.busId });
     const failed = results.find((r) => r.status === 'rejected');
@@ -123,7 +123,7 @@ function createRealtime(io, store, {
     socket.on(EVENTS.FIX, driverEvent(async (raw, ack) => {
       bus.onDuty = true;
       const result = await pipeline.handleFix(bus, raw);
-      return ack?.({ ok: OK_RESULTS.has(result), result, ts: raw?.ts, nextStopIndex: bus.nextStopIndex ?? null });
+      return ack?.({ ok: OK_RESULTS.has(result), result, ts: raw?.ts, nextStopIndex: bus.nextStopIndex ?? null, direction: bus.direction ?? null });
     }));
 
     const batch = driverEvent(async (list, ack) => ack?.({ ok: true, ...(await pipeline.handleBatch(bus, list)) }));

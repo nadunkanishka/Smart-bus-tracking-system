@@ -10,7 +10,7 @@ const DUTY_MESSAGE = {
   off: 'Off duty. Location sharing stopped.',
 };
 
-const INITIAL = { connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, mode: null, error: null };
+const INITIAL = { connected: false, onDuty: false, queued: 0, sent: 0, lastFix: null, nextStopIndex: null, direction: null, mode: null, error: null };
 
 const stamp = () => new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -69,7 +69,8 @@ export function useDuty({ showToast }) {
     mode: tele.mode,
     busSpeed: lastFix ? toKmh(lastFix.speed) : 0,
     gpsStatus: !tele.onDuty ? 'Disconnected' : lastFix ? 'Connected' : 'Searching',
-    currentStopIndex: tele.nextStopIndex ?? 0,
+    currentStopIndex: tele.nextStopIndex ?? 0, // counts along the leg the bus is on
+    direction: tele.direction, // 'back': the route is being run from its last stop to its first
     busMarkers,
     driverCoordinate,
     logs,

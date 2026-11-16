@@ -38,6 +38,10 @@ Passengers who subscribe get the latest position of every bus on the route at on
 
 The link is `Bus.routeId`. A bus cannot be on two routes by construction, the server answers 409 when asked to, and the admin form only offers free buses. The earlier model stored the bus as text on the route, allowed duplicates and matched by regex.
 
+## A route is run in both directions
+
+A route is stored once, from its first stop to its last. The return trip is the same road and the same stops read backwards: the server builds a reversed view of the route (`lib/routeCache.js`, key `routeId:direction`), so the ETA engine, which needs stops at increasing distance, runs unchanged. Direction belongs to the bus, not the route: a bus starts on the leg of the terminal it is nearer to and flips legs by itself when it reaches the end, so one bus can run A to B while another, which started its duty at B, runs B to A. Trips, segment logs and ETA logs carry the direction, so the history baseline is per direction. A passenger at B going to A sees a bus that is still coming from A: each update also carries `nextStops`, the stops of the other leg with the rest of this leg plus a turnaround (`TURNAROUND_SEC`, a guess to tune) added, so the wait is honest. Limits: the return uses the same road and stops (one-way streets or different return stops need a route of their own), and a bus that starts duty mid-route is placed by its nearer terminal, not its heading.
+
 ## The live path never waits for the database
 
 A fix is validated, smoothed, turned into ETAs, cached and broadcast. The raw record is appended to an in-memory buffer that is written to MongoDB every 5 seconds (`backend/lib/tripRecorder.js`). A slow or failed write costs history, never a late bus. Delivery measured with ten simulated buses was a few milliseconds on one machine (see the results in the README).

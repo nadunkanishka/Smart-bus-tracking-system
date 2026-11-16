@@ -6,6 +6,7 @@ const tripSchema = new mongoose.Schema(
     tripId: { type: String, unique: true },
     busId: { type: String, index: true },
     routeId: { type: String, index: true },
+    direction: { type: String, default: 'out' }, // 'back': the bus ran the route from its last stop to its first
     startedAt: Date,
     endedAt: Date,
     completed: { type: Boolean, default: false },

@@ -5,7 +5,8 @@ const etaLogSchema = new mongoose.Schema({
   routeId: { type: String, index: true },
   tripId: String,
   busId: String,
-  stopIndex: Number,
+  stopIndex: Number, // in the order of the leg (see direction)
+  direction: { type: String, default: 'out' },
   predictedAt: Date,
   predictedArrival: Date,
   actualArrival: Date,
