@@ -55,7 +55,7 @@ export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boa
                   <View style={S.flex}>
                     {!bus.stale ? (
                       <View style={S.livePill}>
-                        <LiveDot color={COLORS.green} size={8} />
+                        <LiveDot color={COLORS.onBright} size={8} />
                         <Text style={S.livePillText}>LIVE</Text>
                       </View>
                     ) : null}

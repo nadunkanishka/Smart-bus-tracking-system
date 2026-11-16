@@ -1,14 +1,14 @@
-// SmartBus mobile design tokens: a quiet monochrome skin (black, white and soft grey, with orange only as a small accent), no gradients, no glow, no shadows.
+// SmartBus mobile design tokens: a clean skin (soft grey page, white cards, black text, one orange accent for actions and the hero), no gradients, no glow, no shadows.
 // `npm run sync` copies this into both phone apps (src/shared/theme.js). The admin dashboard has its own tokens in
 // adminTokens.json, which sync.js turns into CSS variables.
 
-// Black is the one strong colour (buttons, the selected tab, the hero card); orange is a small accent (the route line, progress). Green marks anything active or live (a running bus, a
+// Orange is the accent: buttons, the selected tab, the hero and on-duty cards, the route line. Black is text and the dark card. Green marks anything active or live (a running bus, a
 // connected server): a status colour, not a brand colour. Red is only for destructive actions.
 export const PALETTE = { night: '#0E0E0F', orange: '#FF7A00', red: '#D92D20', green: '#1FA95B' };
 
 // Semantic names stay the same in both modes. Rules the apps rely on:
 //   ink / white are "strongest foreground" / "text on ink": they swap in dark mode, so ink-filled buttons stay readable.
-//   onBright: text on a primary fill (black in light mode, near-white in dark): never on the orange accent.
+//   onBright is always night: text on the orange accent, never `ink` or `white` (white on this orange is 2.7:1, night is 8:1).
 //   card / onCard: the black card (a hero, a stat) and its text; in dark mode the card is a lighter grey than the page.
 const LIGHT = {
   bg: '#EDEDEF', // soft grey page, white cards on it
@@ -30,11 +30,11 @@ const LIGHT = {
   heroShape: PALETTE.orange,
   backdrop: PALETTE.orange,
 
-  primary: PALETTE.night,
-  primaryLight: '#E4E4E7',
-  primaryDeep: PALETTE.night,
-  primaryStrong: PALETTE.night,
-  primarySoft: '#F1F1F3',
+  primary: PALETTE.orange,
+  primaryLight: '#FFE5CC',
+  primaryDeep: '#A64B00',
+  primaryStrong: PALETTE.orange,
+  primarySoft: '#FFF0E0',
   accent: PALETTE.night,
   accentText: '#0E0E0F',
   accentSoft: '#ECECEE',
@@ -57,7 +57,7 @@ const LIGHT = {
   danger: PALETTE.red,
   dangerSoft: '#FDE4E1',
 
-  onBright: '#FFFFFF',
+  onBright: PALETTE.night,
   glow: 'rgba(0, 0, 0, 0)',
 
   tints: { bus: ['#FFFFFF', '#FFFFFF'] },
@@ -86,11 +86,11 @@ const DARK = {
   heroShape: PALETTE.orange,
   backdrop: PALETTE.orange,
 
-  primary: '#F4F4F5',
-  primaryLight: '#2A2A2E',
-  primaryDeep: '#F4F4F5',
-  primaryStrong: '#F4F4F5',
-  primarySoft: '#1E1E21',
+  primary: PALETTE.orange,
+  primaryLight: '#3A2410',
+  primaryDeep: '#FFA24D',
+  primaryStrong: PALETTE.orange,
+  primarySoft: '#2A1A0C',
   accent: '#F4F4F5',
   accentText: '#F4F4F5',
   accentSoft: '#232326',
@@ -113,7 +113,7 @@ const DARK = {
   danger: '#FF7A6E',
   dangerSoft: '#3F1C1A',
 
-  onBright: '#0E0E0F',
+  onBright: PALETTE.night,
   glow: 'rgba(0, 0, 0, 0)',
 
   tints: { bus: ['#161618', '#161618'] },

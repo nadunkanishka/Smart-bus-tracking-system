@@ -8,10 +8,10 @@ import { useTheme } from '../themeRuntime';
 import { EASE_OUT, FONT, IS_WEB, PRESS_WEB, native, themed, useReducedMotion, webRing } from './core';
 
 // ─── Surfaces ───────────────────────────────────────────────────────────────
-// A flat card. tint 'bus' (the default) is the white card with a hairline border, 'hero' and 'ink' the black card whose
+// A flat card. tint 'bus' (the default) is the white card with a hairline border, 'hero' the orange card, 'ink' the black card whose
 // text is white (onCard). No gradient, no shadow. (The name is from the old skin.)
 export const GradientCard = themed(function GradientCard({ tint = 'bus', style, children }) {
-  const fill = tint === 'hero' ? COLORS.card : tint === 'ink' ? COLORS.card : COLORS.surface;
+  const fill = tint === 'hero' ? COLORS.orange : tint === 'ink' ? COLORS.card : COLORS.surface;
   return <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', backgroundColor: fill, borderWidth: fill === COLORS.surface ? 1 : 0, borderColor: COLORS.glassLine }, style]}>{children}</View>;
 });
 
