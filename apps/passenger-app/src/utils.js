@@ -4,12 +4,16 @@ import { GONE_AFTER_MS, LIVE_WINDOW_MS } from './shared/contract';
 
 // Which bus matters to this passenger: the next one still coming to the boarding stop; otherwise one that has
 // passed it and is heading to the destination; otherwise any live bus on the route.
+// A trip from a later stop to an earlier one runs the other way ('back'). A bus on the other leg is shown with its
+// `nextStops`: the stops of the leg it will run after the terminal, so the wait to the terminal and the turnaround are in the time.
 export function pickBus(all, boardingIndex, destinationIndex, boardingStop, destinationStop) {
+  const dir = destinationIndex >= boardingIndex ? 'out' : 'back';
   const fresh = all.filter((b) => !b.stale);
-  const list = fresh.length ? fresh : all; // a bus that lost signal is only tracked when nothing else is live
+  // a bus that lost signal is only tracked when nothing else is live
+  const list = (fresh.length ? fresh : all).map((b) => ((b.direction || 'out') === dir ? b : { ...b, stops: b.nextStops || [] }));
   // The stop is found by name in the bus's own update; the index is only the fallback. The passenger's copy of the route can
   // be older than the bus's (a stop added or removed in the admin since the app loaded), and then the indices disagree.
-  const at = (bus, name, fallback) => { const k = name ? (bus.stops || []).findIndex((s) => s.name === name) : -1; return k >= 0 ? k : fallback; };
+  const at = (bus, name, fallback) => { const k = name ? (bus.stops || []).findIndex((s) => s.name === name) : -1; return k >= 0 ? k : dir === 'back' ? (bus.stops || []).length - 1 - fallback : fallback; };
   const eta = (bus, name, i) => { const stop = bus.stops?.[at(bus, name, i)]; return stop?.status === 'upcoming' ? stop.etaSec : null; };
   const nearest = (name, i) => list.filter((b) => eta(b, name, i) != null).sort((a, b) => eta(a, name, i) - eta(b, name, i))[0];
   const coming = nearest(boardingStop, boardingIndex);
@@ -29,14 +33,14 @@ export function trackedSummary(tracked, boardingStop, destinationStop) {
 }
 
 // The saved journey, if its route is still listed: the route and the two stops. A stop that no longer exists, or a trip that
-// would go backwards, falls back to the route's terminals.
+// would start and end at the same stop, falls back to the route's terminals.
 export function restoreJourney(routes, saved) {
   const route = routes.find((r) => r.id === saved?.routeId);
   if (!route) return null;
   const { stops } = route;
   const b = stops.indexOf(saved.boarding);
   const d = stops.indexOf(saved.destination);
-  const keep = b >= 0 && d >= b;
+  const keep = b >= 0 && d >= 0 && d !== b;
   return { route, boarding: keep ? saved.boarding : stops[0] || null, destination: keep ? saved.destination : stops[stops.length - 1] || null };
 }
 

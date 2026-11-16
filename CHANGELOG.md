@@ -2,6 +2,10 @@
 
 Notable changes, newest first, grouped by milestone. Pull request numbers refer to this repository.
 
+## Unreleased
+
+- Return trips: a bus runs the route in both directions and flips legs at each terminal; passengers can pick a trip from a later stop to an earlier one and see buses that are still on their way out, with the wait to the terminal included; trips and the ETA history are kept per direction
+
 ## 1.0.0: first complete, deployed release (November 2026)
 
 ### Repository quality

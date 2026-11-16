@@ -39,16 +39,16 @@ function createTripRecorder({ models = mongoModels(), onHistoryAdded = () => {},
     if (!bus.trip || (eta.segIndex < bus.trip.segIndex && eta.distAlong < BACK_AT_START_M)) {
       await endTrip(bus, false, fix.ts);
       bus.trip = startTrip(route, eta, fix, makeTripId());
-      await Trip.create({ tripId: bus.trip.tripId, busId: bus.busId, routeId: bus.routeId, startedAt: toDate(fix.ts) });
+      await Trip.create({ tripId: bus.trip.tripId, busId: bus.busId, routeId: bus.routeId, direction: bus.direction, startedAt: toDate(fix.ts) });
       return;
     }
     const res = advance(bus.trip, route, eta, fix);
-    const base = { routeId: bus.routeId, tripId: bus.trip.tripId, busId: bus.busId };
+    const base = { routeId: bus.routeId, direction: bus.direction, tripId: bus.trip.tripId, busId: bus.busId };
     if (res.segmentLogs.length) await SegmentLog.insertMany(res.segmentLogs.map((l) => ({ ...base, ...l, at: toDate(fix.ts) })));
     if (res.etaLogs.length) await EtaLog.insertMany(res.etaLogs.map((l) => etaLogDoc(base, l)));
     if (res.ended) {
       await endTrip(bus, true, fix.ts);
-      onHistoryAdded(bus.routeId); // the next trip on this route uses the history this one just added
+      onHistoryAdded(bus.routeId); // the next trip on this route (either direction) uses the history this one just added
     }
   }
 
