@@ -115,8 +115,12 @@ function createRealtime(io, store, {
       return fn(payload, ack);
     });
 
-    socket.on(EVENTS.DUTY, driverEvent(async ({ onDuty } = {}, ack) => {
-      if (onDuty) { bus.onDuty = true; bus.lastSeen = Date.now(); } else await takeOffMap(bus);
+    socket.on(EVENTS.DUTY, driverEvent(async ({ onDuty, direction } = {}, ack) => {
+      if (onDuty) {
+        bus.onDuty = true; bus.lastSeen = Date.now();
+        // the driver says which terminal the run starts from: 'out' = first stop, 'back' = last stop (no guessing)
+        if (direction === 'out' || direction === 'back') { bus.direction = direction; bus.dirProbe = undefined; }
+      } else await takeOffMap(bus);
       ack?.({ ok: true, onDuty: bus.onDuty });
     }));
 

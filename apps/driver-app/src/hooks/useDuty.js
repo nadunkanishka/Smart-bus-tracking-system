@@ -35,7 +35,7 @@ export function useDuty({ showToast }) {
     });
   }, [log]);
 
-  async function toggle() {
+  async function toggle(startDirection) {
     if (busy) return;
     setBusy(true);
     try {
@@ -44,7 +44,7 @@ export function useDuty({ showToast }) {
         await telemetry.stopDuty();
         message = DUTY_MESSAGE.off;
       } else {
-        await telemetry.startDuty({ notificationColor: COLORS.orange });
+        await telemetry.startDuty({ notificationColor: COLORS.orange, direction: startDirection });
         message = DUTY_MESSAGE.on;
       }
       log(message);
