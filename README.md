@@ -53,7 +53,7 @@ flowchart LR
 |---|---|
 | Backend | Node.js 22, Express 5, Socket.IO, Mongoose, optional Redis, JWT with scrypt-hashed passwords, helmet, rate limiting |
 | Admin dashboard | React (Create React App), Leaflet, anime.js |
-| Phone apps | Expo SDK 57, React Native, a flat black-and-orange design (no gradients, light and dark), a map drawn by the app on Esri tiles (no map key), EAS Build and EAS Update |
+| Phone apps | Expo SDK 57, React Native, a flat "Studio" design (charcoal and white blocks, blue and orange colour blocks, light oversized type, no gradients, light and dark), a map drawn by the app on Esri tiles (no map key), EAS Build and EAS Update |
 | Shared | One contract (events, statuses, ids, timing) and one design system, generated into every client and checked in CI |
 | Data | MongoDB with 2dsphere indexes and a 14-day TTL on raw GPS |
 | Hosting | MongoDB Atlas, Railway, Vercel (all on free tiers for the pilot) |

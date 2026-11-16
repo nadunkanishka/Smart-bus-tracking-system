@@ -1,12 +1,12 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Banner, OverlapHeader, OverlapSheet, NotchStat } from '../shared/ui';
+import { Banner, OverlapSheet } from '../shared/ui';
 import { PlayIcon, StopIcon } from '../shared/icons';
-import { ProfileRow } from '../shared/shell';
 import { useD } from './ShiftScreen.styles';
 
-// Intentionally minimal: one large On Duty / Off Duty toggle and the status a driver needs at a glance.
+// Duty: the bus and driver up top, where this run starts (white = first stop, blue = last stop), one huge duty block
+// (black off duty, orange on duty), then three number blocks and the run details.
 export function ShiftScreen({ session, duty }) {
   const D = useD();
   const [start, setStart] = React.useState('out'); // which terminal this run starts from
@@ -17,28 +17,28 @@ export function ShiftScreen({ session, duty }) {
   const gpsOk = gpsStatus === 'Connected';
   return (
     <ScrollView style={D.flex} contentContainerStyle={D.routeScroll} showsVerticalScrollIndicator={false}>
-      <OverlapHeader minHeight={150}>
-        <Text style={D.screenTitle}><Text style={D.titleBold}>{busRegistration}</Text></Text>
-        <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
-      </OverlapHeader>
-
       <OverlapSheet>
+        <Text style={D.screenTitle}>{busRegistration}</Text>
+        <Text style={D.screenSubHeader}>{driverName ? `${driverName} · ` : ''}{routeNumber}</Text>
+
         {!hasRoute ? (
           <Banner tone="danger">This bus has no route with a map path and stops yet. Ask the admin to assign one before going on duty.</Banner>
         ) : null}
 
         {!isOnShift && hasRoute && routeStops.length > 1 ? (
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-            {[['out', routeStops[0]], ['back', routeStops[routeStops.length - 1]]].map(([dir, stop]) => (
+          <View style={D.startRow}>
+            {[['out', routeStops[0]], ['back', routeStops[routeStops.length - 1]]].map(([dir, stop], i) => (
               <Pressable
                 key={dir}
                 onPress={() => setStart(dir)}
                 accessibilityRole="radio"
+                accessibilityLabel={`Start from ${stop}`}
                 accessibilityState={{ selected: start === dir }}
-                style={{ flex: 1, padding: 12, borderRadius: 14, borderWidth: 2, borderColor: start === dir ? COLORS.orange : COLORS.muted }}
+                style={[D.startBlock, i === 0 ? D.startWhite : D.startBlue, start !== dir && D.startDim]}
               >
-                <Text style={{ color: COLORS.muted, fontSize: 12 }}>Start from</Text>
-                <Text style={{ color: COLORS.ink, fontWeight: '700' }} numberOfLines={1}>{stop}</Text>
+                <Text style={[D.startLabel, i === 1 && D.onBlueSoft]}>Start from</Text>
+                <Text style={[D.startStop, i === 1 && D.onBlue]} numberOfLines={2}>{stop}</Text>
+                {start === dir ? <View style={D.startTick} /> : null}
               </Pressable>
             ))}
           </View>
@@ -59,17 +59,28 @@ export function ShiftScreen({ session, duty }) {
         >
           <View style={[D.dutyIcon, isOnShift && D.dutyIconOn]}>
             {busy
-              ? <ActivityIndicator color={isOnShift ? COLORS.green : COLORS.onBright} />
-              : isOnShift ? <StopIcon color={COLORS.green} size={24} /> : <PlayIcon color={COLORS.onBright} size={24} />}
+              ? <ActivityIndicator color={isOnShift ? COLORS.onCard : COLORS.onBright} />
+              : isOnShift ? <StopIcon color={COLORS.onCard} size={22} /> : <PlayIcon color={COLORS.onBright} size={22} />}
           </View>
-          <Text style={[D.dutyState, isOnShift && D.dutyTextOn]}>{isOnShift ? 'ON DUTY' : 'OFF DUTY'}</Text>
-          <Text style={[D.dutyHint, isOnShift && D.dutyTextOn]}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>
+          <View>
+            <Text style={[D.dutyState, isOnShift && D.dutyTextOn]}>{isOnShift ? 'On duty' : 'Off duty'}</Text>
+            <Text style={[D.dutyHint, isOnShift && D.dutyHintOn]}>{isOnShift ? 'Tap to go off duty' : 'Tap to go on duty'}</Text>
+          </View>
         </Pressable>
 
         <View style={D.specsRow}>
-          <NotchStat label="Server" tone="orange" value={connected ? 'Online' : 'Offline'} valueColor={connected ? COLORS.success : COLORS.danger} />
-          <NotchStat label="GPS" tone="purple" value={isOnShift ? gpsStatus : 'Off'} valueColor={gpsOk ? COLORS.success : isOnShift ? COLORS.warning : COLORS.muted} />
-          <NotchStat label="Buffered" tone="orange" value={String(queued)} valueColor={queued ? COLORS.warning : COLORS.ink} />
+          <View style={[D.stat, D.statWhite]}>
+            <Text style={D.statLabel}>Server</Text>
+            <Text style={[D.statValue, { color: connected ? COLORS.success : COLORS.danger }]}>{connected ? 'Online' : 'Offline'}</Text>
+          </View>
+          <View style={[D.stat, D.statBlue]}>
+            <Text style={[D.statLabel, D.onBlueSoft]}>GPS</Text>
+            <Text style={[D.statValue, D.onBlue]}>{isOnShift ? gpsStatus : 'Off'}</Text>
+          </View>
+          <View style={[D.stat, D.statBlack]}>
+            <Text style={[D.statLabel, D.onCardSoft]}>Buffered</Text>
+            <Text style={[D.statValueBig, { color: queued ? COLORS.orange : COLORS.onCard }]}>{String(queued)}</Text>
+          </View>
         </View>
 
         {queued > 0 ? (
@@ -77,16 +88,26 @@ export function ShiftScreen({ session, duty }) {
             {connected ? 'Sending saved positions…' : `No connection. ${queued} position${queued === 1 ? '' : 's'} saved and will be sent when the signal returns.`}
           </Text>
         ) : null}
+        {isOnShift && !gpsOk ? <Text style={D.dutyNote}>Waiting for a GPS fix…</Text> : null}
 
         {isOnShift ? (
-          <View style={D.profileCard}>
-            <ProfileRow label="Route" value={routeLabel} />
-            <ProfileRow label="Next stop" value={nextStop || '—'} accent={COLORS.success} />
-            <ProfileRow label="Speed" value={`${busSpeed} km/h`} />
-            <ProfileRow label="Tracking" value={mode === 'background' ? 'Continues with the screen off' : 'While this screen is open'} last />
+          <View style={D.detailBlock}>
+            <Detail D={D} label="Route" value={routeLabel} />
+            <Detail D={D} label="Next stop" value={nextStop || '—'} accent />
+            <Detail D={D} label="Speed" value={`${busSpeed} km/h`} />
+            <Detail D={D} label="Tracking" value={mode === 'background' ? 'Continues with the screen off' : 'While this screen is open'} last />
           </View>
         ) : null}
       </OverlapSheet>
     </ScrollView>
+  );
+}
+
+function Detail({ D, label, value, accent, last }) {
+  return (
+    <View style={[D.detailRow, last && D.detailLast]}>
+      <Text style={D.detailLabel}>{label}</Text>
+      <Text style={[D.detailValue, accent && { color: COLORS.orange }]}>{value}</Text>
+    </View>
   );
 }

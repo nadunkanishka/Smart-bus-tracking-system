@@ -4,6 +4,8 @@ Notable changes, newest first, grouped by milestone. Pull request numbers refer 
 
 ## Unreleased
 
+- The phone apps are redesigned from scratch ("Studio": charcoal and white blocks, blue and orange colour blocks, light oversized type, round-button navigation, new sign-in, Home, Tracking, Routes, Profile, Settings and driver screens), with new app icons (an orange map pin for passengers, a blue steering wheel for drivers); the stops menu is one route row, From and To boxes with a swap button and a tappable stop list
+- The driver picks the terminal a run starts from (A or B) before going on duty; a passenger's trip shows only buses on its leg; a bus that starts without a choice is settled by its first 40 m of movement
 - Return trips: a bus runs the route in both directions and flips legs at each terminal; passengers can pick a trip from a later stop to an earlier one and see buses that are still on their way out, with the wait to the terminal included; trips and the ETA history are kept per direction
 
 ## 1.0.0: first complete, deployed release (November 2026)

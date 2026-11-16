@@ -11,20 +11,20 @@ import { useTheme } from '../themeRuntime';
 export const IS_WEB = Platform.OS === 'web';
 export const native = !IS_WEB;
 
-// Urbanist on web (same as the admin); native keeps the system font (no font-loading dependency).
+// Inter Tight on web (light-weight, tight type); native keeps the system font (no font-loading dependency).
 // Android draws edge to edge, so the status bar and gesture bar overlap the app. iOS is handled by SafeAreaView.
 // TOP_INSET is the one top inset every screen header uses. StatusBar.currentHeight can read 0 on edge-to-edge Android and
 // both sources can read 0 at import time, so it never goes below 24dp (the smallest Android status bar).
 export const TOP_INSET = Platform.OS === 'android' ? Math.max(24, initialWindowMetrics?.insets.top ?? 0, StatusBar.currentHeight ?? 0) : 0;
 export const SAFE_BOTTOM = Platform.OS === 'android' ? (initialWindowMetrics?.insets.bottom ?? 0) : 0;
 
-export const FONT = IS_WEB ? { fontFamily: "'Urbanist', system-ui, sans-serif" } : null;
+export const FONT = IS_WEB ? { fontFamily: "'Inter Tight', system-ui, sans-serif" } : null;
 // A text style for one role of the type scale, in the kit's font: { ...type('small'), color }.
 export const type = (role, extra) => ({ ...TYPE[role], ...FONT, ...extra });
 if (IS_WEB && typeof document !== 'undefined' && !document.getElementById('sb-font')) {
   const l = document.createElement('link');
   l.id = 'sb-font'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700;800&display=swap';
+  l.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&display=swap';
   document.head.appendChild(l);
 }
 

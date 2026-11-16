@@ -8,11 +8,11 @@ import { useTheme } from '../themeRuntime';
 import { EASE_OUT, FONT, IS_WEB, PRESS_WEB, native, themed, useReducedMotion, webRing } from './core';
 
 // ─── Surfaces ───────────────────────────────────────────────────────────────
-// A flat card. tint 'bus' (the default) is the light grey card, 'hero' the orange card, 'ink' the black card whose text is
-// white (onCard). No gradient, no border, no shadow: the colour is the separation. (The name is from the old skin.)
+// A flat card. tint 'bus' (the default) is the white card with a hairline border, 'hero' the orange card, 'ink' the black card whose
+// text is white (onCard). No gradient, no shadow. (The name is from the old skin.)
 export const GradientCard = themed(function GradientCard({ tint = 'bus', style, children }) {
   const fill = tint === 'hero' ? COLORS.orange : tint === 'ink' ? COLORS.card : COLORS.surface;
-  return <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', backgroundColor: fill }, style]}>{children}</View>;
+  return <View style={[{ borderRadius: RADII.lg, overflow: 'hidden', backgroundColor: fill, borderWidth: fill === COLORS.surface ? 1 : 0, borderColor: COLORS.glassLine }, style]}>{children}</View>;
 });
 
 export const Banner = themed(function Banner({ tone = 'danger', children }) {
@@ -29,8 +29,10 @@ export const Banner = themed(function Banner({ tone = 'danger', children }) {
 const tones = () => ({
   ink: { bg: COLORS.ink, fg: COLORS.white },
   primary: { bg: COLORS.primaryStrong, fg: COLORS.onBright },
-  accent: { bg: COLORS.accent, fg: COLORS.onBright },
-  orange: { bg: COLORS.orange, fg: COLORS.onBright },
+  accent: { bg: COLORS.accent, fg: COLORS.onBlue },
+  blue: { bg: COLORS.blue, fg: COLORS.onBlue },
+  orange: { bg: COLORS.orange, fg: '#101114' },
+  ghost: { bg: 'transparent', fg: COLORS.ink },
   soft: { bg: COLORS.surfaceSoft, fg: COLORS.ink },
   dangerSoft: { bg: COLORS.dangerSoft, fg: COLORS.danger },
   glass: { bg: COLORS.surface, fg: COLORS.ink },
@@ -48,7 +50,7 @@ export const Button = themed(function Button({ title, onPress, tone = 'primary',
       accessibilityState={{ disabled: !!off, busy: !!loading }}
       style={({ pressed, hovered, focused }) => [
         {
-          minHeight: size === 'lg' ? 56 : 44, paddingHorizontal: size === 'lg' ? 24 : 18, borderRadius: RADII.pill,
+          minHeight: size === 'lg' ? 60 : 44, paddingHorizontal: size === 'lg' ? 28 : 20, borderWidth: tone === 'ghost' ? 1.5 : 0, borderColor: COLORS.outline, borderRadius: RADII.pill,
           backgroundColor: t.bg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
           alignSelf: full ? 'stretch' : 'flex-start', opacity: off ? 0.55 : hovered ? 0.92 : 1,
           transform: [{ scale: pressed ? 0.97 : 1 }],
@@ -61,7 +63,7 @@ export const Button = themed(function Button({ title, onPress, tone = 'primary',
       {loading ? <ActivityIndicator color={t.fg} size="small" /> : (
         <>
           {icon}
-          <Text style={[{ ...TYPE.bodyBold, ...FONT, color: t.fg }, textStyle]}>{title}</Text>
+          <Text style={[{ ...TYPE.bodyBold, fontSize: size === 'lg' ? 17 : 15, ...FONT, color: t.fg }, textStyle]}>{title}</Text>
         </>
       )}
     </Pressable>
@@ -157,9 +159,9 @@ export const TextField = themed(function TextField({ label, icon, error, hint, s
       {label ? <Text style={{ ...TYPE.smallBold, ...FONT, color: COLORS.ink, marginBottom: 8, marginLeft: 8 }}>{label}</Text> : null}
       <View
         style={{
-          minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[4], borderRadius: RADII.md,
-          backgroundColor: COLORS.surface, borderWidth: 1.5,
-          borderColor: error ? COLORS.danger : focused ? COLORS.ink : 'transparent',
+          minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: SPACE[3], paddingHorizontal: SPACE[5], borderRadius: RADII.md,
+          backgroundColor: COLORS.surfaceSoft, borderWidth: 1.5,
+          borderColor: error ? COLORS.danger : focused ? COLORS.orange : 'transparent',
           ...(IS_WEB && focused ? { boxShadow: error ? `0 0 0 4px ${COLORS.dangerSoft}` : `0 0 0 4px ${COLORS.primaryLight}` } : null),
         }}
       >

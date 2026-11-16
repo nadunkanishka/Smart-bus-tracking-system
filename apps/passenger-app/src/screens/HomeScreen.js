@@ -1,169 +1,116 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { COLORS } from '../shared/theme';
-import { Button, CountUp, GradientCard, IconButton, LiveDot, NotchStat, OverlapHeader, OverlapSheet, Reveal, Tap, Vehicle } from '../shared/ui';
+import { CountUp, IconButton, LiveDot, OverlapSheet, Reveal, Tap, Vehicle } from '../shared/ui';
 import { liveryFor } from '../shared/vehicleShapes';
-import { ArrowRightIcon, BellIcon, BusIcon, ClockIcon, MapPinIcon, NavigationArrowIcon, RouteIcon, SettingsIcon } from '../shared/icons';
+import { ArrowRightIcon, BellIcon, ChevronDownIcon, SettingsIcon } from '../shared/icons';
 import { trackedSummary } from '../utils';
 import { useS } from './HomeScreen.styles';
 
-// Home follows the dashboard's layout: a large greeting, the orange hero card, round actions, two small stat cards,
-// then glass cards. Each block eases in after the one above it.
+// Home is a stack of big flat blocks: who you are, two number blocks (buses live, minutes to your stop), the live bus as the
+// orange block with one bar per stop, and the stop you are travelling to as the blue block.
 export function HomeScreen({ userProfile, selectedRoute, tracked, liveCount, boardingStop, destinationStop, onGoTracking, onGoRoutes, onOpenStops, onOpenSettings, showToast }) {
   const S = useS();
   const bus = tracked?.bus;
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-  const first = (userProfile?.name || 'Passenger').split(' ')[0];
-  const services = [
-    { key: 'track', label: 'Live tracker', onPress: onGoTracking, icon: <NavigationArrowIcon color={COLORS.primaryDeep} size={22} /> },
-    { key: 'routes', label: 'Browse routes', onPress: onGoRoutes, icon: <RouteIcon color={COLORS.primaryDeep} size={22} /> },
-    { key: 'stops', label: 'My stops', onPress: onOpenStops, icon: <MapPinIcon color={COLORS.primaryDeep} size={22} /> },
-  ];
+  const name = userProfile?.name || 'Passenger';
+  const first = name.split(' ')[0];
   const eta = tracked?.etaMin;
+  const stops = bus?.stops || [];
+  const etaWhat = !tracked ? 'no live bus' : tracked.phase === 'coming' ? 'to your stop' : 'to your destination';
   return (
     <ScrollView style={S.flex} contentContainerStyle={S.homeScroll} showsVerticalScrollIndicator={false}>
-      <OverlapHeader>
+      <OverlapSheet>
         <View style={S.homeHeader}>
+          <View style={S.avatar}><Text style={S.avatarText}>{first.charAt(0).toUpperCase()}</Text></View>
           <View style={S.homeHeaderText}>
+            <Text style={S.homeUserName} numberOfLines={1}>{first}</Text>
             <Text style={S.homeGreeting}>{today}</Text>
-            <Text style={S.homeUserName} numberOfLines={1}><Text style={S.homeHello}>Hello, </Text>{first}</Text>
           </View>
-          <IconButton label="Settings" onPress={onOpenSettings}>
-            <SettingsIcon color={COLORS.ink} size={20} />
-          </IconButton>
           <IconButton
             label="Notifications"
             onPress={() => showToast(bus ? trackedSummary(tracked, boardingStop, destinationStop) : `No live bus on ${selectedRoute.shortName} right now.`)}
           >
             <BellIcon color={COLORS.ink} size={20} hasBadge={!!bus} />
           </IconButton>
+          <IconButton label="Settings" onPress={onOpenSettings}>
+            <SettingsIcon color={COLORS.ink} size={20} />
+          </IconButton>
         </View>
-      </OverlapHeader>
 
-      <OverlapSheet>
-        {/* The live bus for your stops, as the orange card */}
         <Reveal index={0}>
-          {bus ? (
-            <GradientCard tint="hero" style={S.journeyCard}>
-              <Pressable
-                onPress={onGoTracking}
-                accessibilityRole="button"
-                accessibilityLabel={`Open live tracker for bus ${bus.registration}`}
-                style={({ pressed }) => [S.journeyPress, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}
-              >
-                <View style={S.journeyCardTop}>
-                  <View style={S.flex}>
-                    {!bus.stale ? (
-                      <View style={S.livePill}>
-                        <LiveDot color={COLORS.onBright} size={7} />
-                        <Text style={S.livePillText}>LIVE</Text>
-                      </View>
-                    ) : null}
-                    <Text style={S.journeyBusId}>Bus {bus.registration}</Text>
-                    <Text style={S.journeyRouteName}>{selectedRoute.shortName}</Text>
-                    <View style={S.journeyKv}>
-                      <View>
-                        <Text style={S.journeyKvLabel}>Status</Text>
-                        <Text style={S.journeyKvVal}>{bus.stale ? 'Signal lost' : tracked.phase === 'coming' ? 'On the way' : 'In transit'}</Text>
-                      </View>
-                      <View>
-                        <Text style={S.journeyKvLabel}>{tracked.phase === 'coming' ? 'At your stop' : 'At destination'}</Text>
-                        <Text style={S.journeyKvVal}>{eta != null ? `${eta} min` : '—'}</Text>
-                      </View>
-                    </View>
-                  </View>
-                  <Vehicle name="bus" livery={liveryFor(selectedRoute.id)} status={bus.stale ? 'off' : undefined} running={!bus.stale} width={124} style={S.journeyBus} label="Illustrated city bus" />
-                </View>
+          <View style={S.splitRow}>
+            <View style={[S.splitBlock, S.splitWhite]}>
+              <CountUp value={liveCount} style={S.splitNumber} />
+              <Text style={S.splitLabel}>{liveCount === 1 ? 'Bus' : 'Buses'}{'\n'}live</Text>
+            </View>
+            <View style={[S.splitBlock, S.splitBlue]}>
+              {eta != null ? <CountUp value={eta} style={[S.splitNumber, S.onBlue]} /> : <Text style={[S.splitNumber, S.onBlue]}>–</Text>}
+              <Text style={[S.splitLabel, S.onBlue]}>min{'\n'}{etaWhat}</Text>
+            </View>
+          </View>
+        </Reveal>
 
-                <View style={S.journeyTerminals}>
-                  <View style={S.flex}>
-                    <Text style={S.journeyTerminalLabel}>From</Text>
-                    <Text style={S.journeyTerminalName} numberOfLines={1}>{boardingStop}</Text>
-                  </View>
-                  <View style={S.journeyTerminalRight}>
-                    <Text style={S.journeyTerminalLabel}>To</Text>
-                    <Text style={S.journeyTerminalName} numberOfLines={1}>{destinationStop}</Text>
-                  </View>
+        <Reveal index={1}>
+          <View style={S.sectionRow}>
+            <Text style={S.sectionTitle}>Live bus</Text>
+            <Tap onPress={onGoRoutes} style={S.linkTap} accessibilityRole="link"><Text style={S.link}>See all</Text></Tap>
+          </View>
+          {bus ? (
+            <Pressable
+              onPress={onGoTracking}
+              accessibilityRole="button"
+              accessibilityLabel={`Open live tracker for bus ${bus.registration}`}
+              style={({ pressed }) => [S.orangeBlock, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}
+            >
+              <View style={S.orangeTop}>
+                <View style={S.flex}>
+                  <Text style={S.orangeTitle}>{bus.registration}</Text>
+                  <Text style={S.orangeSub}>{selectedRoute.shortName} · {bus.stale ? 'Signal lost' : trackedSummary(tracked, boardingStop, destinationStop)}</Text>
                 </View>
-              </Pressable>
-            </GradientCard>
+                <View style={S.livePill}>
+                  {!bus.stale ? <LiveDot color={COLORS.onBright} size={7} /> : null}
+                  <Text style={S.livePillText}>{bus.stale ? 'OFFLINE' : 'LIVE'}</Text>
+                </View>
+              </View>
+              <Text style={S.barsLabel}>Stops</Text>
+              <View style={S.bars}>
+                {stops.map((s) => (
+                  <View key={s.index} style={[S.bar, s.status === 'passed' ? S.barPassed : S.barUpcoming, (s.name === boardingStop || s.name === destinationStop) && S.barMine]}>
+                    <Text style={S.barText}>{String(s.index + 1).padStart(2, '0')}</Text>
+                  </View>
+                ))}
+              </View>
+              <Vehicle name="bus" livery={liveryFor(selectedRoute.id)} status={bus.stale ? 'off' : undefined} running={!bus.stale} width={96} style={S.orangeBus} label="Illustrated city bus" />
+            </Pressable>
           ) : (
-            <View style={[S.routeSummaryCard, S.journeyCard, S.emptyState]}>
-              <Vehicle name="bus" status="idle" width={108} label="No live bus" />
+            <View style={S.emptyBlock}>
+              <Vehicle name="bus" status="idle" width={96} label="No live bus" />
               <Text style={S.emptyStateTitle}>No live bus right now</Text>
               <Text style={S.emptyStateSub}>{selectedRoute.id ? `Nothing is running on ${selectedRoute.shortName} at the moment.` : 'Pick a route to start tracking.'}</Text>
             </View>
           )}
         </Reveal>
 
-        <Reveal index={1}>
-          <View style={S.quickRow}>
-            {services.map((s) => (
-              <Tap key={s.key} onPress={s.onPress} accessibilityRole="button" accessibilityLabel={s.label} style={S.quickItem}>
-                <View style={S.quickTile}>{s.icon}</View>
-                <Text style={S.quickLabel}>{s.label}</Text>
-              </Tap>
-            ))}
-          </View>
-        </Reveal>
-
         <Reveal index={2}>
-          <View style={S.statRow}>
-            <NotchStat
-              label="Buses live"
-              icon={(c) => <BusIcon color={c} size={14} />}
-              value={<CountUp value={liveCount} style={S.statValue} />}
-              pill={liveCount ? 'on this route' : 'none yet'}
-              pillTone={liveCount ? 'green' : 'neutral'}
-            />
-            <NotchStat
-              label="Arriving in"
-              tone="ink"
-              icon={(c) => <ClockIcon color={c} size={14} />}
-              value={eta != null ? <CountUp value={eta} suffix=" min" style={[S.statValue, S.statValueOnCard]} /> : <Text style={[S.statValue, S.statValueOnCard]}>—</Text>}
-              pill={tracked ? (tracked.phase === 'coming' ? 'to your stop' : 'to destination') : 'no live bus'}
-              pillTone={tracked ? 'green' : 'neutral'}
-            />
-          </View>
+          <Pressable onPress={onOpenStops} accessibilityRole="button" accessibilityLabel="My stops" style={({ pressed }) => [S.blueBlock, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}>
+            <View style={S.flex}>
+              <Text style={S.blueLabel}>Travelling to</Text>
+              <Text style={S.blueTitle} numberOfLines={2}>{destinationStop || 'Choose a route'}</Text>
+            </View>
+            <View style={S.blueChevron}><ChevronDownIcon color={COLORS.onBlue} size={20} /></View>
+          </Pressable>
         </Reveal>
 
         <Reveal index={3}>
-          <View style={S.travelCard}>
-            <View style={S.travelCardLeft}>
-              <View style={S.travelIcon}>
-                <MapPinIcon color={COLORS.accentText} size={20} />
-              </View>
-              <View style={S.flex}>
-                <Text style={S.travelCardLabel}>Travelling to</Text>
-                <Text style={S.travelCardPlace} numberOfLines={1}>{destinationStop || 'Choose a route'}</Text>
-              </View>
+          <Tap onPress={onGoTracking} accessibilityRole="button" accessibilityLabel="Live tracker" style={S.routeRow}>
+            <View style={S.routeBadge}><Text style={S.routeBadgeText}>{selectedRoute.shortName}</Text></View>
+            <View style={S.flex}>
+              <Text style={S.routeSummaryName} numberOfLines={1}>{selectedRoute.startTerminal} to {selectedRoute.endTerminal}</Text>
+              <Text style={S.routeSummaryMeta}>{selectedRoute.distanceKm} km</Text>
             </View>
-            <Button title="Change" tone="soft" size="sm" full={false} onPress={onOpenStops} />
-          </View>
-        </Reveal>
-
-        <Reveal index={4}>
-          <View style={S.sectionRow}>
-            <Text style={S.sectionTitleFlat}>My Route</Text>
-            <Tap onPress={onGoRoutes} style={S.linkTap} accessibilityRole="link">
-              <Text style={S.link}>See all</Text>
-            </Tap>
-          </View>
-
-          <View style={S.routeSummaryCard}>
-            <View style={S.routeSummaryHeader}>
-              <View style={S.routeBadge}>
-                <Text style={S.routeBadgeText}>{selectedRoute.shortName}</Text>
-              </View>
-              <Text style={S.routeSummaryMeta}>{selectedRoute.distanceKm} km · {liveCount} {liveCount === 1 ? 'bus' : 'buses'} live</Text>
-            </View>
-            <Text style={S.routeSummaryName}>{selectedRoute.name}</Text>
-            <View style={S.routeTerminalRow}>
-              <Text style={S.routeTerminalText}>{selectedRoute.startTerminal}</Text>
-              <ArrowRightIcon color={COLORS.accentText} size={12} />
-              <Text style={S.routeTerminalText}>{selectedRoute.endTerminal}</Text>
-            </View>
-          </View>
+            <ArrowRightIcon color={COLORS.muted} size={18} />
+          </Tap>
         </Reveal>
       </OverlapSheet>
     </ScrollView>
