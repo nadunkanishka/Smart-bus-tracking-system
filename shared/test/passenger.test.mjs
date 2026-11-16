@@ -24,16 +24,9 @@ test('coming: the bus with the shortest wait at the boarding stop wins', () => {
 const REVERSED = [...STOPS].reverse();
 const leg = (statuses) => REVERSED.map((name, i) => stop(name, statuses[i][0], statuses[i][1]));
 
-test('a return trip waits for a bus still on its way out: its nextStops carry the wait to the terminal and back', () => {
-  const going = bus('BUS-010', at([['passed'], ['upcoming', 3], ['upcoming', 8], ['upcoming', 14], ['upcoming', 22]]), {
-    direction: 'out',
-    nextStops: leg([['upcoming', 22], ['upcoming', 25], ['upcoming', 33], ['upcoming', 40], ['upcoming', 48]]),
-  });
-  const t = pickBus([going], 4, 2, 'Pettah', 'Maharagama');
-  assert.equal(t.phase, 'coming');
-  assert.equal(t.etaMin, 22);
-  assert.equal(t.bus.stops[0].name, 'Pettah'); // the stop list the passenger sees runs in the direction of the trip
-  assert.equal(trackedSummary(t, 'Pettah', 'Maharagama'), 'Arrives at Pettah in 22 min');
+test('a return trip does not show a bus that started from the other terminal', () => {
+  const going = bus('BUS-010', at([['passed'], ['upcoming', 3], ['upcoming', 8], ['upcoming', 14], ['upcoming', 22]]), { direction: 'out' });
+  assert.equal(pickBus([going], 4, 2, 'Pettah', 'Maharagama'), null);
 });
 
 test('a return trip prefers a bus that is already running back, when it gets there sooner', () => {
@@ -44,13 +37,9 @@ test('a return trip prefers a bus that is already running back, when it gets the
   assert.equal(pickBus([going, returning], 3, 2, 'Nugegoda', 'Maharagama').bus.busId, 'BUS-011');
 });
 
-test('an outward trip counts a bus that is running back through its nextStops', () => {
-  const returning = bus('BUS-011', leg([['passed'], ['upcoming', 2], ['upcoming', 9], ['upcoming', 14], ['upcoming', 20]]), {
-    direction: 'back',
-    nextStops: at([['upcoming', 20], ['upcoming', 24], ['upcoming', 30], ['upcoming', 36], ['upcoming', 45]]),
-  });
-  const t = pickBus([returning], 2, 3, 'Maharagama', 'Nugegoda');
-  assert.equal(t.etaMin, 30);
+test('an outward trip does not show a bus that is running back', () => {
+  const returning = bus('BUS-011', leg([['passed'], ['upcoming', 2], ['upcoming', 9], ['upcoming', 14], ['upcoming', 20]]), { direction: 'back' });
+  assert.equal(pickBus([returning], 2, 3, 'Maharagama', 'Nugegoda'), null);
 });
 
 test('passed: once every bus is past the boarding stop, the one heading to the destination is shown', () => {

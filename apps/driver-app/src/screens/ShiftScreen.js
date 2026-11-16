@@ -9,6 +9,7 @@ import { useD } from './ShiftScreen.styles';
 // Intentionally minimal: one large On Duty / Off Duty toggle and the status a driver needs at a glance.
 export function ShiftScreen({ session, duty }) {
   const D = useD();
+  const [start, setStart] = React.useState('out'); // which terminal this run starts from
   const { registration: busRegistration, driverName, routeLabel, routeNumber, route, routeStops } = session;
   const { isOnShift, busy, busSpeed, gpsStatus, connected, queued, mode, currentStopIndex, direction, toggle: onToggleShift } = duty;
   const hasRoute = !!route?.trackable;
@@ -26,8 +27,25 @@ export function ShiftScreen({ session, duty }) {
           <Banner tone="danger">This bus has no route with a map path and stops yet. Ask the admin to assign one before going on duty.</Banner>
         ) : null}
 
+        {!isOnShift && hasRoute && routeStops.length > 1 ? (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            {[['out', routeStops[0]], ['back', routeStops[routeStops.length - 1]]].map(([dir, stop]) => (
+              <Pressable
+                key={dir}
+                onPress={() => setStart(dir)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: start === dir }}
+                style={{ flex: 1, padding: 12, borderRadius: 14, borderWidth: 2, borderColor: start === dir ? COLORS.orange : COLORS.muted }}
+              >
+                <Text style={{ color: COLORS.muted, fontSize: 12 }}>Start from</Text>
+                <Text style={{ color: COLORS.ink, fontWeight: '700' }} numberOfLines={1}>{stop}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
         <Pressable
-          onPress={onToggleShift}
+          onPress={() => onToggleShift(start)}
           disabled={busy || (!hasRoute && !isOnShift)}
           accessibilityRole="switch"
           accessibilityState={{ checked: isOnShift, busy, disabled: !hasRoute && !isOnShift }}

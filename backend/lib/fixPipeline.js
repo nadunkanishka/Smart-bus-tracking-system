@@ -13,6 +13,7 @@ const { LIVE_WINDOW_MS, MAX_SPEED_MPS } = require('./contract');
 const { MIN_FIX_GAP_MS, JUMP_FACTOR, TURNAROUND_SEC } = require('./limits');
 
 const OK_RESULTS = new Set(['accepted', 'duplicate']); // what the driver app may drop from its queue
+const DIRECTION_SETTLE_M = 40; // movement along the route that settles which way a bus that started mid-route is heading
 const other = (direction) => (direction === 'out' ? 'back' : 'out');
 
 // A route is run in two legs. A bus starts on the leg that begins at the terminal it is nearer to, and flips legs by
@@ -80,7 +81,16 @@ function createFixPipeline({ getRoute, track, recordFix, publish, metrics, smoot
 
     if (!bus.direction) {
       const out = await getRoute(bus.routeId, 'out');
-      bus.direction = out && nearerEnd(out, used) ? 'back' : 'out';
+      bus.direction = out && nearerEnd(out, used) ? 'back' : 'out'; // a guess, settled by the first real movement below
+      if (out) bus.dirProbe = computeEta(out, used).distAlong;
+    } else if (bus.dirProbe !== undefined) {
+      const out = await getRoute(bus.routeId, 'out');
+      const moved = out ? computeEta(out, used, bus.dirProbe).distAlong - bus.dirProbe : 0;
+      if (Math.abs(moved) >= DIRECTION_SETTLE_M) {
+        const settled = moved > 0 ? 'out' : 'back';
+        if (settled !== bus.direction) { bus.direction = settled; bus.distAlong = undefined; }
+        bus.dirProbe = undefined;
+      }
     }
     const direction = bus.direction; // the leg this fix is on (the bus may flip legs below)
     const route = await getRoute(bus.routeId, direction);
