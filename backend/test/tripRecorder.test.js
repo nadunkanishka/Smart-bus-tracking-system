@@ -33,7 +33,7 @@ function setup() {
   return { rec, bus, db, drive, historyFor, done: () => rec.close() };
 }
 
-test('a trip driven to the final stop ends completed, and its route gets new history', async () => {
+test('a trip driven to the final stop ends completed, and its route gets new history after every segment', async () => {
   const s = setup();
   await s.drive(0, 0, 10, 0);
   await s.drive(0.009, 0.001, 8, 130);
@@ -42,7 +42,7 @@ test('a trip driven to the final stop ends completed, and its route gets new his
   assert.deepEqual(s.db.created.map((t) => [t.tripId, t.startedAt.getTime()]), [['TRIP-1', T0]]);
   assert.deepEqual(s.db.updates, [{ tripId: 'TRIP-1', endedAt: new Date(T0 + 300000), completed: true }]);
   assert.equal(s.bus.trip, null);
-  assert.deepEqual(s.historyFor, ['RT-1']);
+  assert.deepEqual(s.historyFor, ['RT-1', 'RT-1']); // one per crossed segment, not one at the end
   assert.ok(s.db.segments.length >= 1);
   assert.ok(s.db.segments.every((l) => l.at instanceof Date && l.tripId === 'TRIP-1'));
 });
@@ -69,5 +69,5 @@ test('a trip ended early (off duty, or a new trip from the start) is not complet
   s.done();
   assert.deepEqual(s.db.created.map((t) => t.tripId), ['TRIP-1', 'TRIP-2']);
   assert.deepEqual(s.db.updates.map((u) => [u.tripId, u.completed, u.endedAt.getTime()]), [['TRIP-1', false, T0 + 400000], ['TRIP-2', false, T0 + 500000]]);
-  assert.deepEqual(s.historyFor, []);
+  assert.deepEqual(s.historyFor, ['RT-1']); // the crossing it did drive already counted, though the trip never completed
 });
