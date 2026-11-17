@@ -13,7 +13,8 @@ const etaLogDoc = (base, log) => ({ ...base, ...log, ...Object.fromEntries(ETA_D
 const newTripId = () => `TRIP-${crypto.randomUUID().slice(0, 8)}`;
 
 // models: { Trip, SegmentLog, EtaLog, GpsLog } (injected so tests run without MongoDB).
-// onHistoryAdded(routeId): called when a finished trip added segment history for its route.
+// onHistoryAdded(routeId): called as soon as a segment log is written, so the route's history reaches the ETA engine
+// during the first trip, not after it ends.
 const mongoModels = () => ({
   Trip: require('../models/Trip'),
   SegmentLog: require('../models/SegmentLog'),
@@ -44,12 +45,12 @@ function createTripRecorder({ models = mongoModels(), onHistoryAdded = () => {},
     }
     const res = advance(bus.trip, route, eta, fix);
     const base = { routeId: bus.routeId, direction: bus.direction, tripId: bus.trip.tripId, busId: bus.busId };
-    if (res.segmentLogs.length) await SegmentLog.insertMany(res.segmentLogs.map((l) => ({ ...base, ...l, at: toDate(fix.ts) })));
-    if (res.etaLogs.length) await EtaLog.insertMany(res.etaLogs.map((l) => etaLogDoc(base, l)));
-    if (res.ended) {
-      await endTrip(bus, true, fix.ts);
-      onHistoryAdded(bus.routeId); // the next trip on this route (either direction) uses the history this one just added
+    if (res.segmentLogs.length) {
+      await SegmentLog.insertMany(res.segmentLogs.map((l) => ({ ...base, ...l, at: toDate(fix.ts) })));
+      onHistoryAdded(bus.routeId); // the very next fix, on either leg, predicts with the segment just driven
     }
+    if (res.etaLogs.length) await EtaLog.insertMany(res.etaLogs.map((l) => etaLogDoc(base, l)));
+    if (res.ended) await endTrip(bus, true, fix.ts);
   }
 
   // Accepted fixes are buffered and written in batches, off the live path.

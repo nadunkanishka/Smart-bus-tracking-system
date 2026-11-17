@@ -113,6 +113,7 @@ The trip tracker (`lib/tripTracker.js`, pure) watches each bus's progress and `l
 
 - When a bus crosses from one segment to the next it writes a `SegmentLog` (traversal seconds, dwell seconds). Dwell is time spent under 1.5 m/s within 40 m of a stop. A segment the bus joined part-way is not logged.
 - When a bus leaves a stop, the predicted arrival at every later stop is remembered. On arrival an `EtaLog` is written with predicted time, actual time and the error.
+- History reaches the ETA engine during the first trip: every time a segment is crossed its log is written and the route's cached history is dropped (`onHistoryAdded`), so the next fix, and the analytics page, already use it. A bus that joins a segment part-way does not log that first segment, since its time would be partial.
 - A trip ends in one place (`endTrip`). `Trip.completed` is true only when the bus reached the final stop; a trip closed by going off duty, by starting again near the first stop, or by a route change is not completed.
 
 ## Offline buffer
